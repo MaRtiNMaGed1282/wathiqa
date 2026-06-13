@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>الموكلين</title>
+    <script src="../assets/js/auth.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Cairo Font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 overflow-auto">
+      <h2 class="text-xl font-semibold mb-4">الموكلين</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">إجمالي الموكلين</p>
+          <h3 id="totalClients" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">آخر موكل مضاف</p>
+          <h3 id="latestClient" class="text-xl font-bold">---</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">البحث السريع</p>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="ابحث بالاسم أو الرقم القومي"
+            class="w-full border rounded p-2 mt-2"
+          />
+        </div>
+      </div>
+
+      <!-- Form لإضافة موكل جديد -->
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">إدارة الموكلين</h2>
+
+        <button
+          onclick="openAddClientModal()"
+          class="bg-accent text-white px-5 py-3 rounded-lg"
+        >
+          + إضافة موكل
+        </button>
+      </div>
+      <!-- جدول عرض الموكلين -->
+      <div
+        id="clientsTableContainer"
+        class="bg-white shadow rounded p-4 overflow-auto"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">قائمة الموكلين</h3>
+
+          <button
+            onclick="exportClients()"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            تصدير Excel
+          </button>
+        </div>
+
+        <table class="min-w-full text-right">
+          <thead>
+            <tr class="bg-secondary text-white">
+              <th class="p-2">#</th>
+              <th class="p-2">الاسم</th>
+              <th class="p-2">الرقم القومي</th>
+              <th class="p-2">الهاتف</th>
+              <th class="p-2">العنوان</th>
+              <th class="p-2">الملاحظات</th>
+              <th class="p-2">تاريخ الإضافة</th>
+              <th class="p-2">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="clientsTableBody"></tbody>
+        </table>
+      </div>
+    </main>
+    <div
+      id="addClientModal"
+      class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-bold">إضافة موكل جديد</h3>
+
+          <button
+            type="button"
+            onclick="closeAddClientModal()"
+            class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form
+          id="addClientForm"
+          class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3"
+        >
+          <input
+            type="text"
+            id="full_name"
+            placeholder="الاسم الكامل"
+            class="border p-2 rounded"
+          />
+          <input
+            type="text"
+            id="national_id"
+            placeholder="الرقم القومي"
+            class="border p-2 rounded"
+          />
+          <input
+            type="text"
+            id="phone"
+            placeholder="رقم الهاتف"
+            class="border p-2 rounded"
+          />
+          <input
+            type="text"
+            id="address"
+            placeholder="العنوان"
+            class="border p-2 rounded"
+          />
+          <textarea
+            id="notes"
+            placeholder="ملاحظات"
+            class="border p-2 rounded min-h-[100px]"
+          ></textarea>
+          <button
+            type="submit"
+            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+          >
+            إضافة موكل
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const clientsTableBody = document.getElementById("clientsTableBody");
+      const addClientForm = document.getElementById("addClientForm");
+
+      const API_URL = "http://localhost:5000/api/clients"; // رابط الـ Backend
+      let currentClientId = null;
+      let currentClients = [];
+
+      function showToast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          close: true,
+          stopOnFocus: true,
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+      function renderClients(data) {
+        if (data.length === 0) {
+          clientsTableBody.innerHTML = `
+    <tr>
+      <td
+        colspan="6"
+        class="text-center py-8 text-gray-500">
+
+        لا يوجد موكلون
+
+      </td>
+    </tr>
+  `;
+
+          return;
+        }
+
+        clientsTableBody.innerHTML = "";
+
+        data.forEach((client, i) => {
+          clientsTableBody.innerHTML += `
+      <tr class="border-b hover:bg-gray-50">
+
+        <td class="p-2">${i + 1}</td>
+
+        <td class="p-2">${client.full_name}</td>
+
+        <td class="p-2">${client.national_id}</td>
+
+        <td class="p-2">${client.phone}</td>
+
+        <td class="p-2">${client.address}</td>
+        <td class="p-2">
+
+<button
+onclick="openProfile(${client.id})"
+class="bg-primary text-white px-3 py-1 rounded">
+
+الملف
+
+</button>
+
+<button
+onclick="viewNotes('${(client.notes || "").replace(/'/g, "\\'")}')"
+class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+
+عرض
+
+</button>
+
+        <td class="p-2">${new Date(client.created_at).toLocaleDateString("ar-EG")}</td>
+
+        <td class="p-2">
+
+          <div class="flex gap-2">
+
+            <button
+              onclick="editClient(${client.id})"
+              class="bg-accent text-white px-3 py-1 rounded hover:opacity-90">
+
+              تعديل
+
+            </button>
+
+            <button
+              onclick="deleteClient(${client.id})"
+              class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+
+              حذف
+
+            </button>
+
+          </div>
+
+        </td>
+
+      </tr>
+    `;
+        });
+      }
+
+      async function fetchClients() {
+        try {
+          const res = await fetch(API_URL);
+
+          const data = await res.json();
+
+          currentClients = data;
+
+          renderClients(data);
+
+          const totalClients = document.getElementById("totalClients");
+
+          const latestClient = document.getElementById("latestClient");
+
+          if (totalClients) {
+            totalClients.textContent = data.length;
+          }
+
+          if (latestClient && data.length > 0) {
+            latestClient.textContent = data[0].full_name;
+          }
+        } catch (err) {
+          console.error("Failed to fetch clients:", err);
+        }
+      }
+
+      async function searchClients() {
+        const q = document.getElementById("searchInput").value.trim();
+
+        if (q === "") {
+          fetchClients();
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${API_URL}/search?q=${encodeURIComponent(q)}`,
+          );
+
+          const data = await res.json();
+
+          currentClients = data;
+
+          renderClients(data);
+        } catch (err) {
+          console.error("Search Error:", err);
+        }
+      }
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", searchClients);
+      async function deleteClient(id) {
+        const result = await Swal.fire({
+          title: "تأكيد الحذف",
+          text: "سيتم حذف الموكل نهائياً",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "حذف",
+          cancelButtonText: "إلغاء",
+          reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+          const res = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+          });
+
+          const data = await res.json();
+
+          showToast(data.message, true);
+
+          fetchClients();
+        } catch (err) {
+          showToast("حدث خطأ أثناء الحذف", false);
+
+          console.error("Delete Error:", err);
+        }
+      }
+
+      function openEditModal() {
+        document.getElementById("editModal").classList.remove("hidden");
+      }
+
+      function closeEditModal() {
+        document.getElementById("editModal").classList.add("hidden");
+      }
+
+      function viewNotes(notes) {
+        Swal.fire({
+          title: "ملاحظات الموكل",
+          html: `
+      <div style="
+        text-align:right;
+        font-size:16px;
+        line-height:1.8;
+        white-space:pre-wrap;
+      ">
+        ${notes || "لا توجد ملاحظات"}
+      </div>
+    `,
+          width: "700px",
+          confirmButtonText: "إغلاق",
+        });
+      }
+
+      function openProfile(id) {
+        window.location.href = `client-profile.html?id=${id}`;
+      }
+
+      async function editClient(id) {
+        try {
+          const res = await fetch(`${API_URL}/${id}`);
+
+          const client = await res.json();
+
+          currentClientId = id;
+
+          document.getElementById("edit_full_name").value =
+            client.full_name || "";
+
+          document.getElementById("edit_national_id").value =
+            client.national_id || "";
+
+          document.getElementById("edit_phone").value = client.phone || "";
+
+          document.getElementById("edit_address").value = client.address || "";
+
+          document.getElementById("edit_notes").value = client.notes || "";
+
+          openEditModal();
+        } catch (err) {
+          showToast("فشل تحميل بيانات الموكل", false);
+
+          console.error(err);
+        }
+      }
+
+      // إضافة موكل جديد
+      addClientForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const clientData = {
+          full_name: document.getElementById("full_name").value,
+          national_id: document.getElementById("national_id").value,
+          phone: document.getElementById("phone").value,
+          address: document.getElementById("address").value,
+          notes: document.getElementById("notes").value,
+        };
+
+        // Validation
+
+        if (!clientData.full_name.trim()) {
+          showToast("يرجى إدخال اسم الموكل", false);
+          return;
+        }
+
+        if (!clientData.national_id.trim()) {
+          showToast("يرجى إدخال الرقم القومي", false);
+          return;
+        }
+
+        if (!clientData.national_id.trim()) {
+          showToast("يرجى إدخال الرقم القومي", false);
+          return;
+        }
+
+        if (!/^\d{14}$/.test(clientData.national_id)) {
+          showToast("يجب أن يتكون الرقم القومي من 14 رقم", false);
+          return;
+        }
+
+        if (!clientData.phone.trim()) {
+          showToast("يرجى إدخال رقم الهاتف", false);
+          return;
+        }
+
+        if (!clientData.phone.trim()) {
+          showToast("يرجى إدخال رقم الهاتف", false);
+          return;
+        }
+
+        if (!clientData.address.trim()) {
+          showToast("يرجى إدخال العنوان", false);
+          return;
+        }
+
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(clientData),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast(data.message || "تم إضافة الموكل بنجاح", true);
+
+            closeAddClientModal();
+
+            const form = document.getElementById("addClientForm");
+            if (form) {
+              form.reset();
+            }
+
+            await fetchClients();
+          } else {
+            showToast(data.message || "فشل إضافة الموكل", false);
+          }
+        } catch (err) {
+          console.error("Error adding client:", err);
+
+          showToast(err.message || "حدث خطأ أثناء إضافة الموكل", false);
+        }
+      });
+
+      function exportClients() {
+        const exportData = currentClients.map((client) => ({
+          الاسم: client.full_name,
+
+          "الرقم القومي": client.national_id,
+
+          الهاتف: client.phone,
+
+          العنوان: client.address,
+
+          الملاحظات: client.notes || "",
+
+          "تاريخ الإضافة": new Date(client.created_at).toLocaleDateString(
+            "ar-EG",
+          ),
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
+
+        XLSX.writeFile(workbook, "clients.xlsx");
+      }
+
+      function openAddClientModal() {
+        document.getElementById("addClientModal").classList.remove("hidden");
+      }
+
+      function closeAddClientModal() {
+        document.getElementById("addClientModal").classList.add("hidden");
+      }
+
+      // استدعاء جلب البيانات عند تحميل الصفحة
+      fetchClients();
+    </script>
+    <div
+      id="editModal"
+      class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl">
+        <h3 class="text-xl font-bold mb-4">تعديل بيانات الموكل</h3>
+
+        <input
+          id="edit_full_name"
+          class="w-full border rounded p-3 mb-3"
+          placeholder="الاسم الكامل"
+        />
+
+        <input
+          id="edit_national_id"
+          class="w-full border rounded p-3 mb-3"
+          placeholder="الرقم القومي"
+        />
+
+        <input
+          id="edit_phone"
+          class="w-full border rounded p-3 mb-3"
+          placeholder="رقم الهاتف"
+        />
+
+        <input
+          id="edit_address"
+          class="w-full border rounded p-3 mb-3"
+          placeholder="العنوان"
+        />
+
+        <textarea
+          id="edit_notes"
+          class="w-full border rounded p-3 mb-3"
+          placeholder="ملاحظات"
+        ></textarea>
+
+        <div class="flex justify-end gap-3 mt-4">
+          <button
+            id="saveEditBtn"
+            class="bg-primary text-white px-5 py-2 rounded"
+          >
+            حفظ
+          </button>
+
+          <button
+            onclick="closeEditModal()"
+            class="bg-gray-300 px-5 py-2 rounded"
+          >
+            إلغاء
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("saveEditBtn")
+        .addEventListener("click", async () => {
+          try {
+            const res = await fetch(`${API_URL}/${currentClientId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                full_name: document.getElementById("edit_full_name").value,
+                national_id: document.getElementById("edit_national_id").value,
+                phone: document.getElementById("edit_phone").value,
+                address: document.getElementById("edit_address").value,
+                notes: document.getElementById("edit_notes").value,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              showToast("تم تعديل بيانات الموكل بنجاح", true);
+
+              closeEditModal();
+              fetchClients();
+            } else {
+              showToast(data.message || "فشل تعديل بيانات الموكل", false);
+            }
+          } catch (err) {
+            showToast("حدث خطأ أثناء التعديل", false);
+
+            console.error(err);
+          }
+        });
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  </body>
+</html>

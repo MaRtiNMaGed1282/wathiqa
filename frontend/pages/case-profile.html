@@ -1,0 +1,1505 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>تفاصيل القضية</title>
+    <script src="../assets/js/auth.js"></script>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Cairo -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <div
+      id="hearingModal"
+      class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-bold">إضافة جلسة</h3>
+
+          <button
+            onclick="closeHearingModal()"
+            class="w-10 h-10 rounded-full hover:bg-gray-100"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form id="hearingForm">
+          <div class="space-y-6">
+            <!-- بيانات الجلسة -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                بيانات الجلسة
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    تاريخ الجلسة
+                  </label>
+
+                  <input
+                    type="date"
+                    id="hearing_date"
+                    required
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-1"> وقت الجلسة </label>
+
+                  <input
+                    id="hearing_time"
+                    type="time"
+                    class="w-full border rounded p-2"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    نوع الجلسة
+                  </label>
+
+                  <input
+                    id="hearing_type"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    القاضي
+                  </label>
+
+                  <input id="judge_name" class="w-full border rounded-lg p-3" />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    القاعة
+                  </label>
+
+                  <input id="courtroom" class="w-full border rounded-lg p-3" />
+                </div>
+              </div>
+            </div>
+
+            <!-- نتيجة الجلسة -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                نتيجة الجلسة
+              </h4>
+
+              <select id="hearing_result" class="w-full border rounded-lg p-3">
+                <option value="">اختر النتيجة</option>
+
+                <option value="تم التأجيل">تم التأجيل</option>
+
+                <option value="حكم">حكم</option>
+
+                <option value="حجز للحكم">حجز للحكم</option>
+
+                <option value="شطب">شطب</option>
+
+                <option value="مرافعة">مرافعة</option>
+              </select>
+            </div>
+
+            <!-- المتابعة -->
+            <div id="postponementSection" class="hidden">
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                المتابعة
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    الجلسة القادمة
+                  </label>
+
+                  <input
+                    type="date"
+                    id="next_hearing_date"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    سبب التأجيل
+                  </label>
+
+                  <input
+                    id="postponement_reason"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- ملاحظات -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                ملاحظات
+              </h4>
+
+              <textarea
+                id="hearing_notes"
+                rows="4"
+                class="w-full border rounded-lg p-3"
+              ></textarea>
+            </div>
+
+            <!-- Buttons -->
+
+            <div class="border-t pt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onclick="closeHearingModal()"
+                class="px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="submit"
+                class="px-8 py-3 rounded-lg bg-accent text-white"
+              >
+                حفظ الجلسة
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-6">
+      <h2 id="caseTitle" class="text-2xl font-bold mb-6">تحميل...</h2>
+      <div class="flex gap-2 mb-6">
+        <button
+          id="editCaseBtn"
+          onclick="openEditCaseModal()"
+          class="bg-accent text-white px-4 py-2 rounded hover:opacity-90"
+        >
+          تعديل القضية
+        </button>
+
+        <button
+          id="deleteCaseBtn"
+          onclick="deleteCase()"
+          class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          حذف القضية
+        </button>
+      </div>
+      <div class="space-y-6">
+        <!-- Basic Information -->
+        <div class="bg-white shadow rounded p-6">
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">بيانات القضية</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-gray-500 text-sm">رقم القضية بالمحكمة</p>
+
+              <p id="courtCaseNumber" class="font-semibold text-lg"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">عنوان القضية</p>
+
+              <p id="caseTitleText" class="font-semibold text-lg"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">الموكل</p>
+
+              <p id="clientName" class="font-semibold"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">نوع القضية</p>
+
+              <p id="caseType" class="font-semibold"></p>
+            </div>
+          </div>
+        </div>
+        <!-- Financial Information -->
+
+        <div class="bg-white shadow rounded p-6">
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">البيانات المالية</h3>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <p class="text-gray-500 text-sm">إجمالي الأتعاب</p>
+
+              <p id="totalFees" class="font-bold text-lg text-primary">
+                0 جنيه
+              </p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">المدفوع</p>
+
+              <p id="paidAmount" class="font-bold text-lg text-green-600">
+                0 جنيه
+              </p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">المتبقي</p>
+
+              <p id="remainingAmount" class="font-bold text-lg text-red-600">
+                0 جنيه
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white shadow rounded p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">الدفعات</h3>
+
+            <button
+              onclick="openPaymentModal()"
+              class="bg-accent text-white px-4 py-2 rounded"
+            >
+              + إضافة دفعة
+            </button>
+          </div>
+
+          <div id="paymentsContainer">
+            <p class="text-gray-500">جاري تحميل الدفعات...</p>
+          </div>
+        </div>
+
+        <!-- Court Information -->
+        <div class="bg-white shadow rounded p-6">
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">بيانات المحكمة</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-gray-500 text-sm">المحكمة</p>
+
+              <p id="courtName"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">الدائرة</p>
+
+              <p id="courtChamber"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opponent Information -->
+        <div class="bg-white shadow rounded p-6">
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">بيانات الخصم</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-gray-500 text-sm">الخصم</p>
+
+              <p id="opponentName"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">محامي الخصم</p>
+
+              <p id="opponentLawyer"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+
+        <div class="bg-white shadow rounded p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">الجلسات</h3>
+
+            <button
+              onclick="openHearingModal()"
+              class="bg-accent text-white px-4 py-2 rounded"
+            >
+              + إضافة جلسة
+            </button>
+          </div>
+
+          <div id="hearingsContainer" class="space-y-4">
+            <p class="text-gray-500">جاري تحميل الجلسات...</p>
+          </div>
+        </div>
+        <div class="bg-white shadow rounded p-6">
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">حالة القضية</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-gray-500 text-sm">الحالة</p>
+
+              <p id="caseStatus"></p>
+            </div>
+
+            <div>
+              <p class="text-gray-500 text-sm">الأولوية</p>
+
+              <p id="priorityLevel"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white shadow rounded p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold">المرفقات</h3>
+
+          <button
+            onclick="document.getElementById('caseFileInput').click()"
+            class="bg-accent text-white px-4 py-2 rounded"
+          >
+            + رفع ملف
+          </button>
+        </div>
+
+        <input id="caseFileInput" type="file" class="hidden" />
+
+        <div id="filesContainer" class="space-y-3">
+          <p class="text-gray-500">جاري تحميل الملفات...</p>
+        </div>
+      </div>
+      <div
+        id="editCaseModal"
+        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      >
+        <div
+          class="bg-white rounded-xl shadow-xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+        >
+          <h3 class="text-2xl font-bold mb-6">تعديل القضية</h3>
+
+          <div class="space-y-6">
+            <!-- بيانات القضية -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                بيانات القضية
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    عنوان القضية
+                  </label>
+
+                  <input
+                    id="edit_case_title"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    رقم القضية بالمحكمة
+                  </label>
+
+                  <input
+                    id="edit_court_case_number"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    نوع القضية
+                  </label>
+
+                  <input
+                    id="edit_case_type"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    إجمالي الأتعاب
+                  </label>
+
+                  <input
+                    id="edit_total_fees"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    الموكل
+                  </label>
+
+                  <input
+                    id="edit_client_name"
+                    readonly
+                    class="w-full border rounded-lg p-3 bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- بيانات المحكمة -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                بيانات المحكمة
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    المحكمة
+                  </label>
+
+                  <input
+                    id="edit_court_name"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    الدائرة
+                  </label>
+
+                  <input
+                    id="edit_court_chamber"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- بيانات الخصم -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                بيانات الخصم
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    الخصم
+                  </label>
+
+                  <input
+                    id="edit_opponent_name"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    محامي الخصم
+                  </label>
+
+                  <input
+                    id="edit_opponent_lawyer"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- التواريخ والحالة -->
+            <div>
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                التواريخ والحالة
+              </h4>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    تاريخ فتح القضية
+                  </label>
+
+                  <input
+                    id="edit_opened_at"
+                    type="date"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    تاريخ إغلاق القضية
+                  </label>
+
+                  <input
+                    id="edit_closed_at"
+                    type="date"
+                    class="w-full border rounded-lg p-3"
+                  />
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    حالة القضية
+                  </label>
+
+                  <select
+                    id="edit_case_status"
+                    class="w-full border rounded-lg p-3"
+                  >
+                    <option value="جديدة">جديدة</option>
+                    <option value="قيد النظر">قيد النظر</option>
+                    <option value="مؤجلة">مؤجلة</option>
+                    <option value="محكوم فيها">محكوم فيها</option>
+                    <option value="مغلقة">مغلقة</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block mb-2 text-sm font-semibold">
+                    أولوية القضية
+                  </label>
+
+                  <select
+                    id="edit_priority_level"
+                    class="w-full border rounded-lg p-3"
+                  >
+                    <option value="منخفضة">منخفضة</option>
+                    <option value="متوسطة">متوسطة</option>
+                    <option value="عالية">عالية</option>
+                    <option value="عاجلة">عاجلة</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- وصف القضية -->
+            <div id="postponementSection" class="hidden">
+              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
+                وصف القضية
+              </h4>
+
+              <textarea
+                id="edit_case_description"
+                rows="4"
+                class="w-full border rounded-lg p-3"
+              ></textarea>
+            </div>
+
+            <div class="border-t pt-5 flex justify-end gap-3">
+              <button
+                onclick="closeEditCaseModal()"
+                class="px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300"
+              >
+                إلغاء
+              </button>
+
+              <button
+                id="saveCaseBtn"
+                class="px-8 py-3 rounded-lg bg-accent text-white"
+              >
+                حفظ التعديلات
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="paymentModal"
+        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      >
+        <div class="bg-white rounded-xl p-6 w-full max-w-lg">
+          <h3 class="text-xl font-bold mb-4">إضافة دفعة</h3>
+
+          <div class="space-y-4">
+            <input
+              id="payment_amount"
+              type="number"
+              placeholder="المبلغ"
+              class="w-full border p-3 rounded"
+            />
+
+            <input
+              id="payment_date"
+              type="date"
+              class="w-full border p-3 rounded"
+            />
+
+            <select id="payment_method" class="w-full border p-3 rounded">
+              <option value="Cash">نقدي</option>
+              <option value="Bank Transfer">تحويل بنكي</option>
+              <option value="Instapay">Instapay</option>
+            </select>
+
+            <textarea
+              id="payment_notes"
+              placeholder="ملاحظات"
+              class="w-full border p-3 rounded"
+            ></textarea>
+
+            <div class="flex justify-end gap-2">
+              <button
+                onclick="closePaymentModal()"
+                class="px-4 py-2 bg-gray-200 rounded"
+              >
+                إلغاء
+              </button>
+
+              <button
+                onclick="savePayment()"
+                class="px-4 py-2 bg-accent text-white rounded"
+              >
+                حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const API_URL = "http://localhost:5000/api/cases";
+
+      const HEARINGS_API = "http://localhost:5000/api/hearings";
+
+      const FILES_API = "http://localhost:5000/api/files";
+
+      const PAYMENTS_API = "http://localhost:5000/api/payments";
+
+      const params = new URLSearchParams(window.location.search);
+
+      const caseId = params.get("id");
+
+      const editHearingId = new URLSearchParams(window.location.search).get(
+        "editHearing",
+      );
+
+      let currentCase = null;
+      let editingHearingId = null;
+      async function editHearing(id) {
+        editingHearingId = id;
+
+        const res = await fetch(`${HEARINGS_API}/${id}`);
+
+        const h = await res.json();
+
+        document.getElementById("hearing_date").value =
+          h.hearing_date?.split("T")[0] || "";
+
+        document.getElementById("hearing_time").value = h.hearing_time || "";
+
+        document.getElementById("hearing_type").value = h.hearing_type || "";
+
+        document.getElementById("judge_name").value = h.judge_name || "";
+
+        document.getElementById("courtroom").value = h.courtroom || "";
+
+        document.getElementById("hearing_result").value =
+          h.hearing_result || "";
+
+        togglePostponementFields();
+
+        document.getElementById("hearing_notes").value = h.notes || "";
+
+        document.getElementById("next_hearing_date").value = h.next_hearing_date
+          ? h.next_hearing_date.split("T")[0]
+          : "";
+
+        document.getElementById("postponement_reason").value =
+          h.postponement_reason || "";
+
+        openHearingModal();
+      }
+
+      async function loadCase() {
+        try {
+          const res = await fetch(`${API_URL}/${caseId}`);
+          const data = await res.json();
+          currentCase = data;
+          renderCase(data);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function renderCase(c) {
+        // Store current case globally
+        currentCase = c;
+
+        // Profile Page Data
+
+        document.getElementById("caseTitle").textContent = c.case_title || "-";
+
+        document.getElementById("caseTitleText").textContent =
+          c.case_title || "-";
+
+        document.getElementById("courtCaseNumber").textContent =
+          c.court_case_number || "-";
+
+        document.getElementById("clientName").textContent = c.full_name || "-";
+
+        document.getElementById("caseType").textContent = c.case_type || "-";
+
+        document.getElementById("courtName").textContent = c.court_name || "-";
+
+        document.getElementById("courtChamber").textContent =
+          c.court_chamber || "-";
+
+        document.getElementById("opponentName").textContent =
+          c.opponent_name || "-";
+
+        document.getElementById("opponentLawyer").textContent =
+          c.opponent_lawyer || "-";
+
+        document.getElementById("caseStatus").textContent =
+          c.case_status || "-";
+
+        document.getElementById("priorityLevel").textContent =
+          c.priority_level || "-";
+
+        document.getElementById("totalFees").textContent =
+          `${Number(c.total_fees || 0).toLocaleString()} جنيه`;
+
+        document.getElementById("edit_total_fees").value = c.total_fees || 0;
+
+        // Edit Modal Data
+
+        document.getElementById("edit_case_title").value = c.case_title || "";
+
+        document.getElementById("edit_court_case_number").value =
+          c.court_case_number || "";
+
+        document.getElementById("edit_case_type").value = c.case_type || "";
+
+        document.getElementById("edit_client_name").value = c.full_name || "";
+
+        document.getElementById("edit_court_name").value = c.court_name || "";
+
+        document.getElementById("edit_court_chamber").value =
+          c.court_chamber || "";
+
+        document.getElementById("edit_opponent_name").value =
+          c.opponent_name || "";
+
+        document.getElementById("edit_opponent_lawyer").value =
+          c.opponent_lawyer || "";
+
+        document.getElementById("edit_case_status").value = c.case_status || "";
+
+        document.getElementById("edit_priority_level").value =
+          c.priority_level || "";
+
+        document.getElementById("edit_case_description").value =
+          c.case_description || "";
+
+        document.getElementById("edit_opened_at").value = c.opened_at
+          ? c.opened_at.split("T")[0]
+          : "";
+
+        document.getElementById("edit_closed_at").value = c.closed_at
+          ? c.closed_at.split("T")[0]
+          : "";
+      }
+
+      function openEditCaseModal() {
+        document.getElementById("editCaseModal").classList.remove("hidden");
+      }
+
+      function closeEditCaseModal() {
+        document.getElementById("editCaseModal").classList.add("hidden");
+      }
+
+      async function saveCase() {
+        try {
+          const caseData = {
+            court_case_number: document.getElementById("edit_court_case_number")
+              .value,
+
+            client_id: currentCase.client_id,
+
+            case_title: document.getElementById("edit_case_title").value,
+
+            case_type: document.getElementById("edit_case_type").value,
+
+            court_name: document.getElementById("edit_court_name").value,
+
+            court_chamber: document.getElementById("edit_court_chamber").value,
+
+            opponent_name: document.getElementById("edit_opponent_name").value,
+
+            opponent_lawyer: document.getElementById("edit_opponent_lawyer")
+              .value,
+
+            opened_at: document.getElementById("edit_opened_at").value,
+
+            closed_at: document.getElementById("edit_closed_at").value || null,
+
+            case_status: document.getElementById("edit_case_status").value,
+
+            priority_level: document.getElementById("edit_priority_level")
+              .value,
+
+            case_description: document.getElementById("edit_case_description")
+              .value,
+
+            total_fees: document.getElementById("edit_total_fees").value || 0,
+
+            final_result: currentCase.final_result || null,
+          };
+
+          const res = await fetch(`${API_URL}/${caseId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(caseData),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast("تم تعديل القضية بنجاح", true);
+
+            closeEditCaseModal();
+
+            await loadCase();
+          } else {
+            showToast(data.message || "فشل تعديل القضية", false);
+          }
+        } catch (err) {
+          console.error(err);
+
+          showToast("حدث خطأ أثناء حفظ البيانات", false);
+        }
+      }
+
+      document
+        .getElementById("saveCaseBtn")
+        .addEventListener("click", saveCase);
+
+      async function deleteCase() {
+        const result = await Swal.fire({
+          title: "حذف القضية؟",
+
+          text: "لا يمكن التراجع بعد الحذف",
+
+          icon: "warning",
+
+          showCancelButton: true,
+
+          confirmButtonText: "نعم، حذف",
+
+          cancelButtonText: "إلغاء",
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+          const res = await fetch(`${API_URL}/${caseId}`, {
+            method: "DELETE",
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast("تم حذف القضية بنجاح", true);
+
+            setTimeout(() => {
+              window.location.href = "cases.html";
+            }, 1000);
+          } else {
+            showToast(data.message, false);
+          }
+        } catch (err) {
+          console.error(err);
+
+          showToast("فشل حذف القضية", false);
+        }
+      }
+
+      async function loadHearings() {
+        try {
+          const res = await fetch(`${HEARINGS_API}/case/${caseId}`);
+
+          const hearings = await res.json();
+
+          renderHearings(hearings);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadPayments() {
+        try {
+          const res = await fetch(`${PAYMENTS_API}/case/${caseId}`);
+
+          const payments = await res.json();
+
+          renderPayments(payments);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function renderPayments(payments) {
+        const container = document.getElementById("paymentsContainer");
+
+        const total = Number(currentCase.total_fees) || 0;
+
+        if (!payments.length) {
+          container.innerHTML = `
+      <p class="text-gray-500">
+        لا توجد دفعات
+      </p>
+    `;
+
+          document.getElementById("paidAmount").textContent = "0 جنيه";
+
+          document.getElementById("remainingAmount").textContent =
+            `${total.toLocaleString()} جنيه`;
+
+          return;
+        }
+
+        const paid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+        const remaining = total - paid;
+
+        document.getElementById("paidAmount").textContent =
+          `${paid.toLocaleString()} جنيه`;
+
+        document.getElementById("remainingAmount").textContent =
+          `${remaining.toLocaleString()} جنيه`;
+
+        container.innerHTML = payments
+          .map(
+            (p) => `
+        <div
+          class="border rounded-lg p-4 flex justify-between items-center"
+        >
+
+          <div>
+            <div class="font-bold text-lg">
+              ${Number(p.amount).toLocaleString()} جنيه
+            </div>
+
+            <div class="text-sm text-gray-500">
+              ${p.payment_date?.split("T")[0] || p.payment_date}
+            </div>
+
+            <div class="text-sm text-gray-500">
+              ${p.payment_method || "-"}
+            </div>
+
+            ${
+              p.notes
+                ? `
+                <div class="text-sm mt-1">
+                  ${p.notes}
+                </div>
+              `
+                : ""
+            }
+          </div>
+
+          <button
+            onclick="deletePayment(${p.payment_id})"
+            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded"
+          >
+            حذف
+          </button>
+
+        </div>
+      `,
+          )
+          .join("");
+      }
+      async function deletePayment(id) {
+        const result = await Swal.fire({
+          title: "حذف الدفعة؟",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "نعم",
+          cancelButtonText: "إلغاء",
+        });
+
+        if (!result.isConfirmed) return;
+
+        const res = await fetch(`${PAYMENTS_API}/${id}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast(data.message, true);
+
+          loadPayments();
+        } else {
+          showToast(data.message, false);
+        }
+      }
+
+      function renderHearings(hearings) {
+        const container = document.getElementById("hearingsContainer");
+
+        if (hearings.length === 0) {
+          container.innerHTML = `
+                                    <div class="text-center py-6">
+
+                                      <p class="text-gray-500">
+
+                                        لا توجد جلسات
+
+                                      </p>
+
+                                    </div>
+                                  `;
+
+          return;
+        }
+
+        container.innerHTML = hearings
+          .map(
+            (h) => `
+
+                                    <div
+                                      class="border rounded-lg p-4">
+
+                                      <div class="flex justify-between">
+
+                                        <h4
+                                          class="font-bold">
+
+                                          ${h.hearing_type || "جلسة"}
+
+                                        </h4>
+
+                                        <span
+                                          class="text-sm text-gray-500">
+
+                                          ${h.hearing_date}
+
+                                        </span>
+
+                                      </div>
+
+                                      <p class="mt-2">
+
+                                        <strong>
+                                          القاضي:
+                                        </strong>
+
+                                        ${h.judge_name || "-"}
+
+                                      </p>
+
+                                      <p>
+
+                                        <strong>
+                                          النتيجة:
+                                        </strong>
+
+                                        ${h.hearing_result || "-"}
+
+                                      </p>
+
+                                      <p>
+
+                                        <strong>
+                                          الجلسة القادمة:
+                                        </strong>
+
+                                        ${h.next_hearing_date || "-"}
+
+                                      </p>
+                                      <div class="flex gap-2 mt-4">
+
+                                <button
+                                  onclick="editHearing(${h.hearing_id})"
+                                  class="bg-accent text-white px-3 py-1 rounded">
+
+                                  تعديل
+
+                                </button>
+
+                                <button
+                                  onclick="deleteHearing(${h.hearing_id})"
+                                  class="bg-red-600 text-white px-3 py-1 rounded">
+
+                                  حذف
+
+                                </button>
+
+                              </div>
+
+                                    </div>
+
+                                  `,
+          )
+          .join("");
+      }
+
+      function openHearingModal() {
+        document.getElementById("hearingModal").classList.remove("hidden");
+      }
+
+      function closeHearingModal() {
+        document.getElementById("hearingModal").classList.add("hidden");
+      }
+
+      document
+        .getElementById("hearingForm")
+        .addEventListener("submit", saveHearing);
+
+      document
+        .getElementById("hearing_result")
+        .addEventListener("change", togglePostponementFields);
+
+      async function saveHearing(e) {
+        e.preventDefault();
+
+        const hearingData = {
+          case_id: caseId,
+
+          hearing_date: document.getElementById("hearing_date").value,
+
+          hearing_time: document.getElementById("hearing_time").value,
+
+          hearing_type: document.getElementById("hearing_type").value,
+
+          judge_name: document.getElementById("judge_name").value,
+
+          courtroom: document.getElementById("courtroom").value,
+
+          hearing_result: document.getElementById("hearing_result").value,
+
+          notes: document.getElementById("hearing_notes").value,
+
+          next_hearing_date:
+            document.getElementById("next_hearing_date").value || null,
+
+          postponement_reason: document.getElementById("postponement_reason")
+            .value,
+        };
+
+        try {
+          const res = await fetch(
+            editingHearingId
+              ? `${HEARINGS_API}/${editingHearingId}`
+              : HEARINGS_API,
+            {
+              method: editingHearingId ? "PUT" : "POST",
+
+              headers: {
+                "Content-Type": "application/json",
+              },
+
+              body: JSON.stringify(hearingData),
+            },
+          );
+
+          const data = await res.json();
+
+          if (res.ok) {
+            editingHearingId = null;
+            showToast(data.message, true);
+
+            closeHearingModal();
+
+            document.getElementById("hearingForm").reset();
+
+            loadHearings();
+          } else {
+            showToast(data.message, false);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function showToast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+      async function deleteHearing(id) {
+        const result = await Swal.fire({
+          title: "حذف الجلسة؟",
+
+          icon: "warning",
+
+          showCancelButton: true,
+
+          confirmButtonText: "نعم",
+
+          cancelButtonText: "إلغاء",
+        });
+
+        if (!result.isConfirmed) return;
+
+        const res = await fetch(`${HEARINGS_API}/${id}`, {
+          method: "DELETE",
+        });
+
+        if (res.ok) {
+          showToast("تم حذف الجلسة", true);
+
+          loadHearings();
+        }
+      }
+
+      async function loadFiles() {
+        try {
+          const res = await fetch(`${FILES_API}/case/${caseId}`);
+
+          const files = await res.json();
+
+          renderFiles(files);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function renderFiles(files) {
+        const container = document.getElementById("filesContainer");
+
+        if (files.length === 0) {
+          container.innerHTML = `
+                  <p class="text-gray-500">
+
+                    لا توجد مرفقات
+
+                  </p>
+                `;
+
+          return;
+        }
+
+        container.innerHTML = files
+          .map(
+            (file) => `
+
+                  <div
+                    class="flex justify-between items-center border rounded p-3">
+
+                    <div>
+
+                      📄 ${file.original_name}
+
+                    </div>
+                    <div class="flex gap-2">
+                       <a
+                      href="http://localhost:5000/${file.file_path.replace(/\\/g, "/")}"
+                      target="_blank"
+                      class="bg-blue-600 text-white px-3 py-1 rounded">
+
+                      تحميل
+
+                    </a>
+                        <button onclick="deleteFile(${file.file_id})" 
+                        class="bg-red-600 text-white px-3 py-1 rounded">
+
+                       حذف           
+
+                        </button>
+
+                    </div>
+                   
+
+                  </div>
+
+                `,
+          )
+          .join("");
+      }
+
+      async function deleteFile(id) {
+        const result = await Swal.fire({
+          title: "حذف الملف؟",
+
+          icon: "warning",
+
+          showCancelButton: true,
+
+          confirmButtonText: "نعم",
+
+          cancelButtonText: "إلغاء",
+        });
+
+        if (!result.isConfirmed) return;
+
+        const res = await fetch(`${FILES_API}/${id}`, {
+          method: "DELETE",
+        });
+
+        if (res.ok) {
+          showToast("تم حذف الملف", true);
+
+          loadFiles();
+        }
+      }
+
+      document
+        .getElementById("caseFileInput")
+        .addEventListener("change", uploadFile);
+
+      async function uploadFile(e) {
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+        formData.append("case_id", caseId);
+
+        try {
+          const res = await fetch(`${FILES_API}/upload`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast("File uploaded successfully", true);
+
+            loadFiles();
+          } else {
+            showToast(data.message, false);
+          }
+        } catch (err) {
+          console.error(err);
+
+          showToast("Upload failed", false);
+        }
+      }
+
+      function togglePostponementFields() {
+        const result = document.getElementById("hearing_result").value;
+
+        const section = document.getElementById("postponementSection");
+
+        if (result === "تم التأجيل") {
+          section.classList.remove("hidden");
+        } else {
+          section.classList.add("hidden");
+        }
+      }
+
+      function openPaymentModal() {
+        document.getElementById("paymentModal").classList.remove("hidden");
+
+        document.getElementById("payment_date").value = new Date()
+          .toISOString()
+          .split("T")[0];
+      }
+
+      function closePaymentModal() {
+        document.getElementById("paymentModal").classList.add("hidden");
+      }
+
+      async function savePayment() {
+        const payment = {
+          case_id: caseId,
+
+          amount: document.getElementById("payment_amount").value,
+
+          payment_date: document.getElementById("payment_date").value,
+
+          payment_method: document.getElementById("payment_method").value,
+
+          notes: document.getElementById("payment_notes").value,
+        };
+
+        const res = await fetch(PAYMENTS_API, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(payment),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast(data.message, true);
+
+          closePaymentModal();
+
+          loadPayments();
+        }
+      }
+
+      loadCase();
+
+      loadHearings().then(() => {
+        if (editHearingId) {
+          editHearing(editHearingId);
+        }
+      });
+
+      loadFiles();
+
+      loadPayments();
+    </script>
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </body>
+</html>

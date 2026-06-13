@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>القضايا</title>
+    <script src="../assets/js/auth.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main -->
+    <main class="flex-1 p-6 overflow-auto">
+      <h2 class="text-xl font-semibold mb-4">القضايا</h2>
+
+      <!-- Stats -->
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">إجمالي القضايا</p>
+
+          <h3 id="totalCases" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">آخر قضية مضافة</p>
+
+          <h3 id="latestCase" class="text-xl font-bold">---</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">البحث السريع</p>
+
+          <input
+            id="searchInput"
+            placeholder="ابحث برقم القضية بالمحكمة"
+            class="w-full border rounded p-2 mt-2"
+          />
+        </div>
+      </div>
+
+      <!-- Add Case -->
+
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">إدارة القضايا</h2>
+
+        <button
+          onclick="openAddCaseModal()"
+          class="bg-accent text-white px-5 py-3 rounded-lg"
+        >
+          + إضافة قضية
+        </button>
+      </div>
+
+      <!-- Cases Table -->
+
+      <div class="bg-white shadow rounded-lg p-4 mb-6">
+        <h3 class="font-bold text-lg mb-4">تصفية القضايا</h3>
+
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block mb-2 text-sm"> من تاريخ </label>
+
+            <input
+              type="date"
+              id="filterFromDate"
+              class="w-full border rounded p-2"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2 text-sm"> إلى تاريخ </label>
+
+            <input
+              type="date"
+              id="filterToDate"
+              class="w-full border rounded p-2"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2 text-sm"> نوع القضية </label>
+
+            <select id="filterCaseType" class="w-full border rounded p-2">
+              <option value="">جميع الأنواع</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-2 text-sm"> المحكمة </label>
+
+            <select id="filterCourt" class="w-full border rounded p-2">
+              <option value="">جميع المحاكم</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-2 text-sm"> الدائرة </label>
+
+            <select id="filterChamber" class="w-full border rounded p-2">
+              <option value="">جميع الدوائر</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            onclick="applyFilters()"
+            class="bg-accent text-white px-4 py-2 rounded"
+          >
+            تطبيق الفلاتر
+          </button>
+
+          <button
+            onclick="resetFilters()"
+            class="bg-gray-300 px-4 py-2 rounded"
+          >
+            إعادة ضبط
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="casesTableContainer"
+        class="bg-white shadow rounded p-4 overflow-auto"
+      >
+        <table class="min-w-full text-right">
+          <thead>
+            <tr class="bg-secondary text-white">
+              <th class="p-2">#</th>
+
+              <th class="p-2">رقم القضية</th>
+
+              <th class="p-2">الموكل</th>
+
+              <th class="p-2">عنوان القضية</th>
+
+              <th class="p-2">النوع</th>
+
+              <th class="p-2">الإجراءات</th>
+            </tr>
+          </thead>
+
+          <tbody id="casesTableBody"></tbody>
+        </table>
+      </div>
+    </main>
+    <div
+      id="addCaseModal"
+      class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-bold">إضافة قضية جديدة</h3>
+
+          <button
+            type="button"
+            onclick="closeAddCaseModal()"
+            class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form
+          id="addCaseForm"
+          class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3"
+        >
+          <input
+            id="court_case_number"
+            type="text"
+            placeholder="رقم القضية بالمحكمة"
+            class="border p-2 rounded"
+          />
+
+          <div>
+            <label class="block mb-1 font-semibold"> الموكل </label>
+
+            <input
+              id="clientSearch"
+              type="text"
+              placeholder="ابحث بالاسم أو الرقم القومي"
+              class="w-full border p-2 rounded"
+            />
+
+            <div
+              id="clientResults"
+              class="hidden bg-white border rounded mt-1 max-h-60 overflow-auto"
+            ></div>
+          </div>
+
+          <input
+            id="case_title"
+            type="text"
+            placeholder="عنوان القضية"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="case_type"
+            type="text"
+            placeholder="نوع القضية"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="court_name"
+            placeholder="المحكمة"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="court_chamber"
+            placeholder="الدائرة / الغرفة"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="opponent_name"
+            placeholder="الخصم"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="opponent_lawyer"
+            placeholder="محامي الخصم"
+            class="border p-2 rounded"
+          />
+
+          <div>
+            <label class="block mb-1 font-semibold"> تاريخ فتح القضية </label>
+
+            <input
+              id="opened_at"
+              type="date"
+              class="w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> تاريخ إغلاق القضية </label>
+
+            <input
+              id="closed_at"
+              type="date"
+              class="w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> حالة القضية </label>
+
+            <select id="case_status" class="w-full border p-2 rounded">
+              <option value="جديدة">جديدة</option>
+              <option value="قيد النظر">قيد النظر</option>
+              <option value="مؤجلة">مؤجلة</option>
+              <option value="محكوم فيها">محكوم فيها</option>
+              <option value="مغلقة">مغلقة</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> أولوية القضية </label>
+
+            <select id="priority_level" class="w-full border p-2 rounded">
+              <option value="منخفضة">منخفضة</option>
+              <option value="متوسطة">متوسطة</option>
+              <option value="عالية">عالية</option>
+              <option value="عاجلة">عاجلة</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> مرفقات القضية </label>
+
+            <div>
+              <label class="block mb-1 font-semibold">
+                إجمالي الأتعاب (جنيه)
+              </label>
+
+              <input
+                id="total_fees"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="مثال: 10000"
+                class="w-full border p-2 rounded"
+              />
+            </div>
+
+            <input
+              id="caseFiles"
+              type="file"
+              multiple
+              class="w-full border p-2 rounded"
+            />
+          </div>
+
+          <textarea
+            id="case_description"
+            rows="4"
+            placeholder="وصف القضية"
+            class="border p-2 rounded"
+          ></textarea>
+
+          <button
+            type="submit"
+            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+          >
+            إضافة قضية
+          </button>
+        </form>
+      </div>
+    </div>
+    <script>
+      const CASES_API = "http://localhost:5000/api/cases";
+
+      const CLIENTS_API = "http://localhost:5000/api/clients";
+
+      let selectedClientId = null;
+      let allClients = [];
+
+      function showToast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+      async function searchCases() {
+        const q = document.getElementById("searchInput").value.trim();
+
+        if (q === "") {
+          fetchCases();
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${CASES_API}/search?q=${encodeURIComponent(q)}`,
+          );
+
+          const data = await res.json();
+
+          renderCases(data);
+        } catch (err) {
+          console.error("Search Error:", err);
+        }
+      }
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", searchCases);
+
+      function renderCases(cases) {
+        const tbody = document.getElementById("casesTableBody");
+
+        tbody.innerHTML = "";
+
+        if (cases.length === 0) {
+          tbody.innerHTML = `
+
+    <tr>
+
+      <td
+        colspan="6"
+        class="text-center py-10">
+
+        <div class="flex flex-col items-center">
+
+          <div class="text-6xl mb-4">
+            📁
+          </div>
+
+          <h3
+            class="text-xl font-bold">
+
+            لا توجد قضايا حتى الآن
+
+          </h3>
+
+          <p
+            class="text-gray-500 mt-2">
+
+            قم بإضافة أول قضية للبدء
+
+          </p>
+
+        </div>
+
+      </td>
+
+    </tr>
+
+  `;
+
+          return;
+        }
+
+        cases.forEach((c, i) => {
+          tbody.innerHTML += `
+  <tr class="border-b hover:bg-gray-50">
+
+    <td class="p-2">
+      ${i + 1}
+    </td>
+
+    <td class="p-2">
+      ${c.court_case_number}
+    </td>
+
+    <td class="p-2">
+      ${c.full_name || "-"}
+    </td>
+
+    <td class="p-2">
+      ${c.case_title}
+    </td>
+
+    <td class="p-2">
+      ${c.case_type || "-"}
+    </td>
+
+    <td class="p-2">
+
+      <button
+        onclick="openCaseProfile(${c.case_id})"
+        class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+
+        عرض
+
+      </button>
+
+    </td>
+
+  </tr>
+`;
+        });
+      }
+
+      async function fetchCases() {
+        console.log("fetchCases called");
+        try {
+          const res = await fetch(CASES_API);
+
+          const cases = await res.json();
+
+          renderCases(cases);
+
+          populateFilters(cases);
+
+          document.getElementById("totalCases").textContent = cases.length;
+
+          if (cases.length > 0) {
+            document.getElementById("latestCase").textContent =
+              cases[0].case_title;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      document
+        .getElementById("addCaseForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const data = {
+            court_case_number:
+              document.getElementById("court_case_number").value,
+
+            client_id: selectedClientId,
+
+            total_fees: document.getElementById("total_fees").value || 0,
+
+            case_title: document.getElementById("case_title").value,
+
+            case_type: document.getElementById("case_type").value,
+
+            court_name: document.getElementById("court_name").value,
+
+            court_chamber: document.getElementById("court_chamber").value,
+
+            opponent_name: document.getElementById("opponent_name").value,
+
+            opponent_lawyer: document.getElementById("opponent_lawyer").value,
+
+            opened_at: document.getElementById("opened_at").value,
+
+            closed_at: document.getElementById("closed_at").value,
+
+            case_status: document.getElementById("case_status").value,
+
+            priority_level: document.getElementById("priority_level").value,
+
+            case_description: document.getElementById("case_description").value,
+          };
+
+          try {
+            if (!selectedClientId) {
+              showToast("يرجى اختيار الموكل", false);
+
+              return;
+            }
+
+            const res = await fetch(CASES_API, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+              showToast("تم إضافة القضية بنجاح", true);
+
+              closeAddCaseModal();
+
+              document.getElementById("addCaseForm").reset();
+
+              fetchCases();
+            } else {
+              console.log(result);
+
+              showToast(result.error || result.message, false);
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+      async function loadClients() {
+        try {
+          const res = await fetch(CLIENTS_API);
+
+          allClients = await res.json();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function searchClientsForCase() {
+        console.log(allClients);
+        const query = document
+          .getElementById("clientSearch")
+          .value.toLowerCase()
+          .trim();
+
+        const results = document.getElementById("clientResults");
+
+        if (!query) {
+          results.classList.add("hidden");
+
+          return;
+        }
+
+        const filtered = allClients.filter(
+          (client) =>
+            client.full_name.toLowerCase().includes(query) ||
+            client.national_id.includes(query),
+        );
+
+        results.innerHTML = "";
+
+        filtered.forEach((client) => {
+          results.innerHTML += `
+      <div
+        onclick="selectClient(${client.id})"
+        class="p-2 border-b cursor-pointer hover:bg-gray-100">
+
+        <div>
+          ${client.full_name}
+        </div>
+
+        <div
+          class="text-xs text-gray-500">
+
+          ${client.national_id}
+
+        </div>
+
+      </div>
+    `;
+        });
+
+        results.classList.remove("hidden");
+      }
+
+      function selectClient(id) {
+        const client = allClients.find((c) => c.id == id);
+
+        selectedClientId = id;
+
+        document.getElementById("clientSearch").value = `${client.full_name}`;
+
+        document.getElementById("clientResults").classList.add("hidden");
+      }
+
+      document
+        .getElementById("clientSearch")
+        .addEventListener("input", searchClientsForCase);
+
+      function openCaseProfile(id) {
+        window.location.href = `case-profile.html?id=${id}`;
+      }
+      function openAddCaseModal() {
+        document.getElementById("addCaseModal").classList.remove("hidden");
+      }
+
+      function closeAddCaseModal() {
+        document.getElementById("addCaseModal").classList.add("hidden");
+      }
+
+      async function applyFilters() {
+        const params = new URLSearchParams();
+
+        const fromDate = document.getElementById("filterFromDate").value;
+
+        const toDate = document.getElementById("filterToDate").value;
+
+        const caseType = document.getElementById("filterCaseType").value;
+
+        const court = document.getElementById("filterCourt").value;
+
+        const chamber = document.getElementById("filterChamber").value;
+
+        if (fromDate) params.append("fromDate", fromDate);
+
+        if (toDate) params.append("toDate", toDate);
+
+        if (caseType) params.append("caseType", caseType);
+
+        if (court) params.append("court", court);
+
+        if (chamber) params.append("chamber", chamber);
+
+        const res = await fetch(`${CASES_API}/filter?${params}`);
+
+        const data = await res.json();
+
+        renderCases(data);
+      }
+
+      function populateFilters(cases) {
+        const types = [...new Set(cases.map((c) => c.case_type))];
+
+        const courts = [...new Set(cases.map((c) => c.court_name))];
+
+        const chambers = [...new Set(cases.map((c) => c.court_chamber))];
+
+        document.getElementById("filterCaseType").innerHTML =
+          `
+      <option value="">
+        جميع الأنواع
+      </option>
+    ` + types.map((t) => `<option>${t}</option>`).join("");
+
+        document.getElementById("filterCourt").innerHTML =
+          `
+      <option value="">
+        جميع المحاكم
+      </option>
+    ` + courts.map((c) => `<option>${c}</option>`).join("");
+
+        document.getElementById("filterChamber").innerHTML =
+          `
+      <option value="">
+        جميع الدوائر
+      </option>
+    ` + chambers.map((c) => `<option>${c}</option>`).join("");
+      }
+
+      function resetFilters() {
+        document.getElementById("filterFromDate").value = "";
+
+        document.getElementById("filterToDate").value = "";
+
+        document.getElementById("filterCaseType").value = "";
+
+        document.getElementById("filterCourt").value = "";
+
+        document.getElementById("filterChamber").value = "";
+
+        fetchCases();
+      }
+
+      loadClients();
+
+      fetchCases();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </body>
+</html>

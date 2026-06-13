@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>تفعيل وثيقة</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-slate-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-lg p-8">
+      <h1 class="text-3xl font-bold text-center mb-6">تفعيل نظام وثيقة</h1>
+
+      <p class="text-gray-600 text-center mb-6">
+        الصق ملف الترخيص الذي تم إرساله لك
+      </p>
+
+      <textarea
+        id="licenseData"
+        rows="12"
+        class="w-full border rounded-lg p-4 font-mono text-sm"
+        placeholder='{
+  "payload":"...",
+  "signature":"..."
+}'
+      ></textarea>
+
+      <button
+        onclick="activateLicense()"
+        class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+      >
+        تفعيل النظام
+      </button>
+
+      <div id="result" class="mt-4 text-center font-bold"></div>
+    </div>
+
+    <script>
+      async function activateLicense() {
+        const result = document.getElementById("result");
+
+        try {
+          const license = JSON.parse(
+            document.getElementById("licenseData").value,
+          );
+
+          const response = await fetch(
+            "http://localhost:5000/api/license/activate",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                payload: license.payload,
+                signature: license.signature,
+              }),
+            },
+          );
+
+          const data = await response.json();
+
+          result.innerText = data.message;
+
+          if (response.ok) {
+            result.className = "mt-4 text-center font-bold text-green-600";
+
+            setTimeout(() => {
+              location.reload();
+            }, 2000);
+          } else {
+            result.className = "mt-4 text-center font-bold text-red-600";
+          }
+        } catch {
+          result.innerText = "ملف الترخيص غير صالح";
+
+          result.className = "mt-4 text-center font-bold text-red-600";
+        }
+      }
+    </script>
+  </body>
+</html>

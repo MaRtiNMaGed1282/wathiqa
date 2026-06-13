@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>تسجيل الدخول | وثيقة</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+      <!-- Logo -->
+
+      <div class="text-center mb-8">
+        <img src="../assets/logo.png" alt="وثيقة" class="w-36 mx-auto mb-5" />
+
+        <p class="text-primary font-semibold text-lg">
+          نظام إدارة الموكلين والقضايا
+        </p>
+      </div>
+
+      <!-- Error Message -->
+
+      <div
+        id="errorMessage"
+        class="hidden bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-center"
+      ></div>
+
+      <!-- Form -->
+
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label class="block mb-2 font-semibold text-primary">
+            البريد الإلكتروني
+          </label>
+
+          <input
+            type="email"
+            id="email"
+            required
+            class="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+
+        <div>
+          <label class="block mb-2 font-semibold text-primary">
+            كلمة المرور
+          </label>
+
+          <input
+            type="password"
+            id="password"
+            required
+            class="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+
+        <button
+          id="loginBtn"
+          type="submit"
+          class="w-full bg-primary hover:bg-secondary text-white py-3 rounded-lg transition font-semibold"
+        >
+          تسجيل الدخول
+        </button>
+      </form>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:5000/api/auth/login";
+
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("email").value;
+
+          const password = document.getElementById("password").value;
+
+          const btn = document.getElementById("loginBtn");
+
+          const errorBox = document.getElementById("errorMessage");
+
+          try {
+            btn.disabled = true;
+
+            btn.textContent = "جاري تسجيل الدخول...";
+
+            errorBox.classList.add("hidden");
+
+            const res = await fetch(API_URL, {
+              method: "POST",
+
+              headers: {
+                "Content-Type": "application/json",
+              },
+
+              body: JSON.stringify({
+                email,
+                password,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.message);
+            }
+
+            localStorage.setItem("token", data.token);
+
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            if (data.must_change_password) {
+              window.location.href = "change-password.html";
+            } else {
+              window.location.href = "dashboard.html";
+            }
+          } catch (err) {
+            errorBox.textContent = err.message;
+
+            errorBox.classList.remove("hidden");
+          } finally {
+            btn.disabled = false;
+
+            btn.textContent = "تسجيل الدخول";
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,659 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>لوحة التحكم</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+
+      .fade-out {
+        opacity: 0;
+        transform: translateX(20px);
+        transition: all 0.3s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold">لوحة التحكم</h1>
+
+        <div id="notificationsContainer" class="space-y-3 mb-6 mt-4"></div>
+        <div class="bg-white rounded-xl shadow p-6 mt-6">
+          <h3 class="text-lg font-bold mb-4">معلومات الترخيص</h3>
+
+          <div class="space-y-2">
+            <p>
+              <strong>المكتب:</strong>
+              <span id="licenseOffice">...</span>
+            </p>
+
+            <p>
+              <strong>النوع:</strong>
+              <span id="licenseType">...</span>
+            </p>
+
+            <p>
+              <strong>الحالة:</strong>
+              <span class="text-green-600 font-bold"> مفعل </span>
+            </p>
+
+            <p>
+              <strong>تاريخ الإصدار:</strong>
+              <span id="licenseIssuedAt">...</span>
+            </p>
+          </div>
+        </div>
+        <br />
+
+        <div class="bg-white rounded-xl shadow p-4 mb-6">
+          <input
+            id="globalSearch"
+            type="text"
+            placeholder="ابحث عن موكل أو قضية أو رقم قضية..."
+            class="w-full border rounded-lg p-3"
+          />
+
+          <div id="searchResults" class="mt-3"></div>
+        </div>
+
+        <p class="text-gray-500 mt-2 font-bold">نظرة عامة على المكتب</p>
+      </div>
+
+      <!-- Quick Actions -->
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <a
+          href="clients.html"
+          class="bg-primary text-white rounded-xl p-5 text-center hover:bg-secondary transition shadow"
+        >
+          <div class="flex justify-center mb-3">
+            <i data-lucide="user-plus" class="w-8 h-8"></i>
+          </div>
+
+          <div class="font-bold">موكل جديد</div>
+        </a>
+
+        <a
+          href="cases.html"
+          class="bg-primary text-white rounded-xl p-5 text-center hover:bg-secondary transition shadow"
+        >
+          <div class="flex justify-center mb-3">
+            <i data-lucide="scale" class="w-8 h-8"></i>
+          </div>
+
+          <div class="font-bold">قضية جديدة</div>
+        </a>
+
+        <a
+          href="calendar.html"
+          class="bg-primary text-white rounded-xl p-5 text-center hover:bg-secondary transition shadow"
+        >
+          <div class="flex justify-center mb-3">
+            <i data-lucide="calendar-plus" class="w-8 h-8"></i>
+          </div>
+
+          <div class="font-bold">جلسة جديدة</div>
+        </a>
+
+        <a
+          href="revenues.html"
+          class="bg-primary text-white rounded-xl p-5 text-center hover:bg-secondary transition shadow"
+        >
+          <div class="flex justify-center mb-3">
+            <i data-lucide="wallet" class="w-8 h-8"></i>
+          </div>
+
+          <div class="font-bold">إضافة دفعة</div>
+        </a>
+      </div>
+
+      <!-- Stats -->
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow p-5">
+          <p class="text-gray-500">الموكلين</p>
+
+          <h3 id="totalClients" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-5">
+          <p class="text-gray-500">القضايا</p>
+
+          <h3 id="totalCases" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-5">
+          <p class="text-gray-500">جلسات اليوم</p>
+
+          <h3 id="todayHearings" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-5">
+          <p class="text-gray-500">جلسات الأسبوع</p>
+
+          <h3 id="weekHearings" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-5">
+          <p class="text-gray-500">المستحقات</p>
+
+          <h3 id="remainingFees" class="text-3xl font-bold text-red-600 mt-2">
+            0
+          </h3>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 mb-8">
+        <!-- Upcoming Hearings -->
+
+        <div class="bg-white rounded-lg shadow">
+          <div class="p-4 border-b">
+            <h3 class="font-bold text-lg">الجلسات القادمة</h3>
+          </div>
+
+          <div id="upcomingHearings" class="p-4 space-y-3">جاري التحميل...</div>
+        </div>
+
+        <!-- Financial Summary -->
+
+        <div class="bg-white rounded-lg shadow">
+          <div class="p-4 border-b">
+            <h3 class="font-bold text-lg">الملخص المالي</h3>
+          </div>
+
+          <div class="p-6">
+            <div class="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p class="text-gray-500">الأتعاب</p>
+
+                <h3
+                  id="financialFees"
+                  class="text-2xl font-bold text-primary mt-2"
+                >
+                  0
+                </h3>
+              </div>
+
+              <div>
+                <p class="text-gray-500">المحصل</p>
+
+                <h3
+                  id="financialPaid"
+                  class="text-2xl font-bold text-green-600 mt-2"
+                >
+                  0
+                </h3>
+              </div>
+
+              <div>
+                <p class="text-gray-500">المتبقي</p>
+
+                <h3
+                  id="financialRemaining"
+                  class="text-2xl font-bold text-red-600 mt-2"
+                >
+                  0
+                </h3>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b">
+              <h3 class="font-bold text-lg">إيرادات هذا الشهر</h3>
+            </div>
+
+            <div class="p-6">
+              <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p class="text-gray-500">الأتعاب</p>
+
+                  <h3
+                    id="monthlyFees"
+                    class="text-2xl font-bold text-primary mt-2"
+                  >
+                    0
+                  </h3>
+                </div>
+
+                <div>
+                  <p class="text-gray-500">المحصل</p>
+
+                  <h3
+                    id="monthlyPaid"
+                    class="text-2xl font-bold text-green-600 mt-2"
+                  >
+                    0
+                  </h3>
+                </div>
+
+                <div>
+                  <p class="text-gray-500">المتبقي</p>
+
+                  <h3
+                    id="monthlyRemaining"
+                    class="text-2xl font-bold text-red-600 mt-2"
+                  >
+                    0
+                  </h3>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg shadow">
+              <div class="p-4 border-b">
+                <h3 class="font-bold text-lg">أكبر المستحقات</h3>
+              </div>
+
+              <div id="topDebtors" class="p-4 space-y-3">جاري التحميل...</div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b">
+              <h3 class="font-bold text-lg">آخر الدفعات</h3>
+            </div>
+
+            <div id="recentPayments" class="p-4 space-y-3">جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Cases -->
+
+      <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+          <h3 class="font-bold text-lg">أحدث القضايا</h3>
+        </div>
+
+        <div
+          id="recentCases"
+          class="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          جاري التحميل...
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const CLIENTS_API = "http://localhost:5000/api/clients";
+
+      const HEARINGS_API = "http://localhost:5000/api/hearings";
+
+      const CASES_API = "http://localhost:5000/api/cases";
+
+      async function loadDashboardStats() {
+        const res = await fetch(`${CLIENTS_API}/dashboard/stats`);
+
+        const data = await res.json();
+
+        document.getElementById("totalClients").textContent =
+          data.total_clients;
+
+        document.getElementById("totalCases").textContent = data.total_cases;
+
+        document.getElementById("todayHearings").textContent =
+          data.today_hearings;
+
+        document.getElementById("weekHearings").textContent =
+          data.week_hearings;
+
+        document.getElementById("remainingFees").textContent = Number(
+          data.remaining_fees,
+        ).toLocaleString();
+      }
+
+      async function loadFinancialSummary() {
+        const res = await fetch(`${CLIENTS_API}/revenues/summary`);
+
+        const data = await res.json();
+
+        document.getElementById("financialFees").textContent = Number(
+          data.total_fees,
+        ).toLocaleString();
+
+        document.getElementById("financialPaid").textContent = Number(
+          data.total_paid,
+        ).toLocaleString();
+
+        document.getElementById("financialRemaining").textContent = Number(
+          data.remaining,
+        ).toLocaleString();
+      }
+
+      async function loadMonthlyRevenue() {
+        const res = await fetch(`${CLIENTS_API}/dashboard/monthly-revenue`);
+
+        const data = await res.json();
+
+        document.getElementById("monthlyFees").textContent = Number(
+          data.monthly_fees,
+        ).toLocaleString();
+
+        document.getElementById("monthlyPaid").textContent = Number(
+          data.monthly_paid,
+        ).toLocaleString();
+
+        document.getElementById("monthlyRemaining").textContent = Number(
+          data.monthly_remaining,
+        ).toLocaleString();
+      }
+
+      async function loadUpcomingHearings() {
+        const res = await fetch(`${HEARINGS_API}/upcoming`);
+
+        const hearings = await res.json();
+
+        const container = document.getElementById("upcomingHearings");
+
+        if (!hearings.length) {
+          container.innerHTML = "لا توجد جلسات قادمة";
+
+          return;
+        }
+
+        container.innerHTML = hearings
+          .map(
+            (h) => `
+            <a
+              href="case-profile.html?id=${h.case_id}"
+              class="block border rounded p-3 hover:bg-gray-50"
+            >
+              <div class="font-bold">
+                ${h.case_title}
+              </div>
+
+              <div class="text-sm text-gray-500">
+                ${h.hearing_date.split("T")[0]}
+              </div>
+            </a>
+          `,
+          )
+          .join("");
+      }
+
+      async function loadNotifications() {
+        const res = await fetch(`${CLIENTS_API}/dashboard/notifications`);
+
+        const notifications = await res.json();
+
+        const container = document.getElementById("notificationsContainer");
+
+        if (!notifications.length) {
+          container.innerHTML = `
+      <div class="bg-green-100 text-green-700 p-4 rounded-lg">
+        لا توجد تنبيهات حالياً
+      </div>
+    `;
+
+          return;
+        }
+
+        container.innerHTML = notifications
+          .map((n) => {
+            let bg = "bg-blue-100 text-blue-700";
+
+            if (n.type === "danger") bg = "bg-red-100 text-red-700";
+
+            if (n.type === "warning") bg = "bg-yellow-100 text-yellow-700";
+
+            return `
+  <div
+    class="${bg} p-4 rounded-lg flex justify-between items-center"
+  >
+    <span class="font-semibold">
+      ${n.message}
+    </span>
+
+    <button
+      onclick="dismissNotification(this)"
+      class="font-bold text-lg hover:opacity-70"
+    >
+      ✕
+    </button>
+  </div>
+`;
+          })
+          .join("");
+      }
+
+      async function loadRecentCases() {
+        const res = await fetch(`${CASES_API}/recent`);
+
+        const cases = await res.json();
+
+        const container = document.getElementById("recentCases");
+
+        container.innerHTML = cases
+          .map(
+            (c) => `
+            <a
+              href="case-profile.html?id=${c.case_id}"
+              class="block border rounded-lg p-4 hover:bg-gray-50"
+            >
+              <h4 class="font-bold">
+                ${c.case_title}
+              </h4>
+
+              <p class="text-gray-500 text-sm mt-2">
+                ${c.court_case_number}
+              </p>
+
+              <span
+                class="inline-block mt-3 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
+              >
+                ${c.case_status}
+              </span>
+            </a>
+          `,
+          )
+          .join("");
+      }
+
+      function dismissNotification(button) {
+        const notification = button.closest("div");
+
+        notification.classList.add("fade-out");
+
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      }
+
+      let searchTimeout;
+
+      document.getElementById("globalSearch").addEventListener("input", (e) => {
+        clearTimeout(searchTimeout);
+
+        searchTimeout = setTimeout(() => {
+          searchGlobal(e.target.value);
+        }, 300);
+      });
+
+      async function searchGlobal(query) {
+        if (!query.trim()) {
+          document.getElementById("searchResults").innerHTML = "";
+
+          return;
+        }
+
+        const res = await fetch(
+          `http://localhost:5000/api/cases/search/global?q=${encodeURIComponent(query)}`,
+        );
+
+        const results = await res.json();
+
+        const container = document.getElementById("searchResults");
+
+        container.innerHTML = results
+          .map((item) => {
+            const url =
+              item.type === "client"
+                ? `client-profile.html?id=${item.id}`
+                : `case-profile.html?id=${item.id}`;
+
+            return `
+          <a
+            href="${url}"
+            class="block border rounded p-3 mb-2 hover:bg-gray-50"
+          >
+            <div class="font-bold">
+              ${item.title}
+            </div>
+
+            <div class="text-sm text-gray-500">
+              ${item.subtitle}
+            </div>
+          </a>
+        `;
+          })
+          .join("");
+      }
+
+      async function loadTopDebtors() {
+        const res = await fetch(`${CLIENTS_API}/dashboard/top-debtors`);
+
+        const debtors = await res.json();
+
+        const container = document.getElementById("topDebtors");
+
+        if (!debtors.length) {
+          container.innerHTML = "لا توجد مستحقات حالياً";
+
+          return;
+        }
+
+        container.innerHTML = debtors
+          .map(
+            (d) => `
+          <a
+            href="client-profile.html?id=${d.id}"
+            class="flex justify-between items-center border rounded p-3 hover:bg-gray-50"
+          >
+            <span>
+              ${d.full_name}
+            </span>
+
+            <span class="text-red-600 font-bold">
+              ${Number(d.remaining).toLocaleString()} جنيه
+            </span>
+          </a>
+        `,
+          )
+          .join("");
+      }
+
+      async function loadRecentPayments() {
+        const res = await fetch(`${CLIENTS_API}/dashboard/recent-payments`);
+
+        const payments = await res.json();
+
+        const container = document.getElementById("recentPayments");
+
+        if (!payments.length) {
+          container.innerHTML = "لا توجد دفعات";
+
+          return;
+        }
+
+        container.innerHTML = payments
+          .map(
+            (p) => `
+          <div class="border rounded p-3">
+
+            <div class="flex justify-between">
+
+              <span class="font-bold">
+                ${Number(p.amount).toLocaleString()} جنيه
+              </span>
+
+              <span class="text-green-600">
+                ✓
+              </span>
+
+            </div>
+
+            <div class="text-sm text-gray-500 mt-1">
+              ${p.full_name}
+            </div>
+
+            <div class="text-sm text-gray-400">
+              ${p.case_title}
+            </div>
+
+          </div>
+        `,
+          )
+          .join("");
+      }
+
+      loadDashboardStats();
+      loadFinancialSummary();
+      loadMonthlyRevenue();
+      loadUpcomingHearings();
+      loadRecentPayments();
+      loadTopDebtors();
+      loadNotifications();
+      loadRecentCases();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+    <script>
+      async function loadLicenseInfo() {
+        const response = await fetch("http://localhost:5000/api/license/info");
+
+        const data = await response.json();
+
+        document.getElementById("licenseOffice").textContent = data.office;
+
+        document.getElementById("licenseType").textContent = data.type;
+
+        document.getElementById("licenseIssuedAt").textContent = new Date(
+          data.issued_at,
+        ).toLocaleDateString("ar-EG");
+      }
+
+      loadLicenseInfo();
+    </script>
+  </body>
+</html>

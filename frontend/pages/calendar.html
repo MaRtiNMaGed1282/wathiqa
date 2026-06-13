@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>المواعيد والجلسات</title>
+    <script src="../assets/js/auth.js"></script>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Cairo -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/locales/ar.global.min.js"></script>
+
+    <!-- FullCalendar -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.css"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+
+      .fc-toolbar-title {
+        font-size: 1.4rem !important;
+        font-weight: bold;
+      }
+
+      .fc-button {
+        background: #293040 !important;
+        border: none !important;
+      }
+
+      .fc-button:hover {
+        background: #3b475c !important;
+      }
+
+      .fc-event {
+        border: none !important;
+        cursor: pointer;
+        padding: 3px;
+      }
+
+      .fc-daygrid-event-dot {
+        display: none;
+      }
+      .fc-h-event {
+        border: none !important;
+      }
+
+      .fc-daygrid-event {
+        border: none !important;
+      }
+
+      .fc-event-main {
+        color: white !important;
+      }
+      .fc-daygrid-event {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+      }
+
+      .fc-view-harness {
+        overflow: visible !important;
+      }
+
+      .fc-scrollgrid {
+        table-layout: fixed !important;
+        width: 100% !important;
+      }
+
+      .fc-col-header,
+      .fc-daygrid-body,
+      .fc-scrollgrid-sync-table {
+        width: 100% !important;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main -->
+    <main class="flex-1 p-6">
+      <!-- Page Title -->
+
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">المواعيد والجلسات</h2>
+      </div>
+
+      <!-- Statistics -->
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">جلسات اليوم</p>
+
+          <h3 id="todayCount" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">جلسات هذا الأسبوع</p>
+
+          <h3 id="weekCount" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">جلسات هذا الشهر</p>
+
+          <h3 id="monthCount" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">إجمالي الجلسات</p>
+
+          <h3 id="totalCount" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Calendar -->
+
+        <div class="lg:col-span-3 min-w-0">
+          <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex flex-wrap gap-4 mb-5">
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded bg-green-600"></div>
+                <span>اليوم</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded bg-yellow-500"></div>
+                <span>خلال 7 أيام</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded bg-blue-600"></div>
+                <span>مستقبلية</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded bg-red-600"></div>
+                <span>متأخرة</span>
+              </div>
+            </div>
+            <div id="calendar"></div>
+            <hr class="my-6" />
+
+            <h3 class="text-lg font-bold mb-4">الجلسات القادمة</h3>
+
+            <div id="upcomingHearingsContainer" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Today's Hearings -->
+
+        <div>
+          <div class="bg-white shadow rounded-lg p-4">
+            <h3 class="text-lg font-bold mb-4 border-b pb-2">جلسات اليوم</h3>
+
+            <div id="todayHearingsContainer" class="space-y-3">
+              <p class="text-gray-500">لا توجد جلسات اليوم</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const HEARINGS_API = "http://localhost:5000/api/hearings";
+
+      let allHearings = [];
+
+      function parseDateOnly(dateString) {
+        const datePart = dateString.split("T")[0];
+
+        const [year, month, day] = datePart.split("-");
+
+        return new Date(year, month - 1, day);
+      }
+
+      async function loadCalendar() {
+        try {
+          const res = await fetch(HEARINGS_API);
+
+          const hearings = await res.json();
+
+          allHearings = hearings;
+
+          renderTodayHearings(hearings);
+
+          renderUpcomingHearings(hearings);
+
+          calculateStatistics(hearings);
+
+          const events = hearings.map((h) => {
+            const today = new Date();
+
+            today.setHours(0, 0, 0, 0);
+
+            const hearingDate = parseDateOnly(h.hearing_date);
+
+            hearingDate.setHours(0, 0, 0, 0);
+
+            const diffDays = Math.floor(
+              (hearingDate - today) / (1000 * 60 * 60 * 24),
+            );
+
+            let color;
+
+            if (diffDays < 0) {
+              color = "#dc2626";
+            } else if (diffDays === 0) {
+              color = "#16a34a";
+            } else if (diffDays <= 7) {
+              color = "#D3AC2B";
+            } else {
+              color = "#2563eb";
+            }
+
+            console.log(h.case_title, h.hearing_date, diffDays, color);
+            return {
+              title: h.case_title,
+
+              start: h.hearing_date.split("T")[0],
+
+              color: color,
+
+              backgroundColor: color,
+
+              borderColor: color,
+
+              textColor: "#ffffff",
+
+              extendedProps: {
+                hearingId: h.hearing_id,
+
+                caseId: h.case_id,
+
+                hearingType: h.hearing_type,
+
+                judge: h.judge_name,
+
+                courtNumber: h.court_case_number,
+
+                result: h.hearing_result,
+
+                hearingTime: h.hearing_time,
+              },
+            };
+          });
+
+          renderCalendar(events);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function calculateStatistics(hearings) {
+        const today = new Date();
+
+        let todayCount = 0;
+        let weekCount = 0;
+        let monthCount = 0;
+
+        hearings.forEach((h) => {
+          const hearingDate = parseDateOnly(h.hearing_date);
+
+          const sameDay =
+            hearingDate.getDate() === today.getDate() &&
+            hearingDate.getMonth() === today.getMonth() &&
+            hearingDate.getFullYear() === today.getFullYear();
+
+          if (sameDay) {
+            todayCount++;
+          }
+
+          today.setHours(0, 0, 0, 0);
+          hearingDate.setHours(0, 0, 0, 0);
+
+          const diffDays = Math.floor(
+            (hearingDate - today) / (1000 * 60 * 60 * 24),
+          );
+
+          if (diffDays >= 0 && diffDays <= 7) {
+            weekCount++;
+          }
+
+          if (
+            hearingDate.getMonth() === today.getMonth() &&
+            hearingDate.getFullYear() === today.getFullYear()
+          ) {
+            monthCount++;
+          }
+        });
+
+        document.getElementById("todayCount").textContent = todayCount;
+
+        document.getElementById("weekCount").textContent = weekCount;
+
+        document.getElementById("monthCount").textContent = monthCount;
+
+        document.getElementById("totalCount").textContent = hearings.length;
+      }
+
+      function renderTodayHearings(hearings) {
+        const container = document.getElementById("todayHearingsContainer");
+
+        const now = new Date();
+
+        const todayHearings = hearings.filter((h) => {
+          const hearingDate = parseDateOnly(h.hearing_date);
+
+          return (
+            hearingDate.getDate() === now.getDate() &&
+            hearingDate.getMonth() === now.getMonth() &&
+            hearingDate.getFullYear() === now.getFullYear()
+          );
+        });
+        todayHearings.sort((a, b) =>
+          (a.hearing_time || "").localeCompare(b.hearing_time || ""),
+        );
+        if (todayHearings.length === 0) {
+          container.innerHTML = `
+            <p class="text-gray-500">
+              لا توجد جلسات اليوم
+            </p>
+          `;
+
+          return;
+        }
+
+        container.innerHTML = todayHearings
+          .map(
+            (h) => `
+
+              <div
+                class="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                onclick="window.location='case-profile.html?id=${h.case_id}'">
+
+                <div class="font-semibold">
+                  ${h.case_title}
+                </div>
+
+<div class="text-sm text-gray-500">
+
+  ${h.hearing_type || "جلسة"}
+
+</div>
+
+<div class="text-xs text-accent font-semibold mt-1">
+
+  ${h.hearing_time || ""}
+
+</div>
+
+                <div class="text-xs text-gray-400 mt-1">
+                  ${h.court_case_number || ""}
+                </div>
+
+              </div>
+
+            `,
+          )
+          .join("");
+      }
+
+      function renderUpcomingHearings(hearings) {
+        const container = document.getElementById("upcomingHearingsContainer");
+
+        const today = new Date();
+
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = hearings
+          .filter((h) => {
+            const date = parseDateOnly(h.hearing_date);
+
+            date.setHours(0, 0, 0, 0);
+
+            return date >= today;
+          })
+
+          .sort((a, b) => {
+            const dateA = `${a.hearing_date} ${a.hearing_time || ""}`;
+
+            const dateB = `${b.hearing_date} ${b.hearing_time || ""}`;
+
+            return dateA.localeCompare(dateB);
+          })
+
+          .slice(0, 10);
+
+        if (upcoming.length === 0) {
+          container.innerHTML = `
+      <p class="text-gray-500">
+        لا توجد جلسات قادمة
+      </p>
+    `;
+
+          return;
+        }
+
+        container.innerHTML = upcoming
+          .map(
+            (h) => `
+        <div
+          onclick="window.location='case-profile.html?id=${h.case_id}'"
+          class="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer">
+
+          <div class="font-semibold">
+            ${h.case_title}
+          </div>
+
+          <div class="text-sm text-gray-500">
+            ${h.hearing_date}
+          </div>
+
+          <div class="text-sm text-accent font-bold">
+            ${h.hearing_time || ""}
+          </div>
+
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      async function openNewHearingFromCalendar(selectedDate) {
+        document
+          .getElementById("calendarHearingModal")
+          .classList.remove("hidden");
+
+        document.getElementById("calendarHearingModal").classList.add("flex");
+
+        document.getElementById("calendarHearingDate").value = selectedDate;
+
+        const res = await fetch("http://localhost:5000/api/cases");
+
+        const cases = await res.json();
+
+        const select = document.getElementById("calendarCaseId");
+
+        select.innerHTML = cases
+          .map(
+            (c) => `
+        <option value="${c.case_id}">
+          ${c.case_title}
+        </option>
+      `,
+          )
+          .join("");
+      }
+
+      function closeCalendarHearingModal() {
+        document.getElementById("calendarHearingModal").classList.add("hidden");
+
+        document
+          .getElementById("calendarHearingModal")
+          .classList.remove("flex");
+      }
+
+      async function saveCalendarHearing() {
+        const payload = {
+          case_id: document.getElementById("calendarCaseId").value,
+
+          hearing_date: document.getElementById("calendarHearingDate").value,
+
+          hearing_time: document.getElementById("calendarHearingTime").value,
+
+          hearing_type: document.getElementById("calendarHearingType").value,
+
+          judge_name: document.getElementById("calendarJudge").value,
+
+          courtroom: document.getElementById("calendarCourtroom").value,
+
+          notes: document.getElementById("calendarNotes").value,
+
+          hearing_result: "",
+          next_hearing_date: null,
+          postponement_reason: "",
+        };
+
+        const res = await fetch(HEARINGS_API, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          Swal.fire("تم", "تم إضافة الجلسة بنجاح", "success");
+
+          closeCalendarHearingModal();
+
+          loadCalendar();
+        } else {
+          Swal.fire("خطأ", "فشل إضافة الجلسة", "error");
+        }
+      }
+
+      function renderCalendar(events) {
+        const calendarEl = document.getElementById("calendar");
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          locale: "ar",
+
+          direction: "rtl",
+          dayHeaderFormat: {
+            weekday: "long",
+          },
+          firstDay: 0,
+
+          contentHeight: "auto",
+
+          expandRows: true,
+
+          eventDisplay: "block",
+
+          dayMaxEvents: true,
+
+          editable: true,
+
+          eventStartEditable: true,
+
+          eventContent(info) {
+            const time = info.event.extendedProps.hearingTime
+              ? info.event.extendedProps.hearingTime.substring(0, 5)
+              : "";
+
+            return {
+              html: `
+      <div style="
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+      ">
+        <div style="
+          font-weight:600;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        ">
+          ${info.event.title}
+        </div>
+
+        <div style="
+          font-size:11px;
+          opacity:.9;
+        ">
+          ${time}
+        </div>
+      </div>
+    `,
+            };
+          },
+
+          dateClick(info) {
+            openNewHearingFromCalendar(info.dateStr);
+          },
+
+          buttonText: {
+            today: "اليوم",
+            month: "عرض شهري",
+            week: "عرض أسبوعي",
+            day: "عرض يومي",
+          },
+
+          initialView: "dayGridMonth",
+
+          height: 700,
+
+          headerToolbar: {
+            left: "prev,next today",
+
+            center: "title",
+
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          },
+
+          events,
+
+          eventDrop: async function (info) {
+            const hearingId = info.event.extendedProps.hearingId;
+
+            const newDate = info.event.startStr.split("T")[0];
+
+            try {
+              const hearingRes = await fetch(`${HEARINGS_API}/${hearingId}`);
+
+              const hearing = await hearingRes.json();
+
+              const payload = {
+                ...hearing,
+
+                hearing_date: newDate,
+              };
+
+              const updateRes = await fetch(`${HEARINGS_API}/${hearingId}`, {
+                method: "PUT",
+
+                headers: {
+                  "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify(payload),
+              });
+
+              if (!updateRes.ok) {
+                throw new Error();
+              }
+
+              Swal.fire("تم", "تم تعديل موعد الجلسة", "success");
+
+              loadCalendar();
+            } catch {
+              info.revert();
+
+              Swal.fire("خطأ", "فشل تعديل الموعد", "error");
+            }
+          },
+
+          eventClick(info) {
+            Swal.fire({
+              title: info.event.title,
+
+              html: `
+
+      <div class="text-right">
+
+        <p>
+          <strong>
+            نوع الجلسة:
+          </strong>
+          ${info.event.extendedProps.hearingType || "-"}
+        </p>
+
+        <p>
+          <strong>
+            رقم القضية:
+          </strong>
+          ${info.event.extendedProps.courtNumber || "-"}
+        </p>
+
+        <p>
+          <strong>
+            القاضي:
+          </strong>
+          ${info.event.extendedProps.judge || "-"}
+        </p>
+
+        <p>
+          <strong>
+            النتيجة:
+          </strong>
+          ${info.event.extendedProps.result || "-"}
+        </p>
+
+      </div>
+
+    `,
+
+              showDenyButton: true,
+
+              showCancelButton: true,
+
+              confirmButtonText: "فتح القضية",
+
+              denyButtonText: "تعديل الجلسة",
+
+              cancelButtonText: "إلغاء",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.href = `case-profile.html?id=${info.event.extendedProps.caseId}`;
+              } else if (result.isDenied) {
+                window.location.href = `case-profile.html?id=${info.event.extendedProps.caseId}&editHearing=${info.event.extendedProps.hearingId}`;
+              }
+            });
+          },
+        });
+
+        calendar.render();
+      }
+
+      loadCalendar();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <!-- Add Hearing Modal -->
+
+    <div
+      id="calendarHearingModal"
+      class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold">إضافة جلسة جديدة</h3>
+
+          <button
+            onclick="closeCalendarHearingModal()"
+            class="text-red-500 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <select id="calendarCaseId" class="border rounded p-2"></select>
+
+          <input
+            id="calendarHearingDate"
+            type="date"
+            class="border rounded p-2"
+          />
+
+          <input
+            id="calendarHearingTime"
+            type="time"
+            class="border rounded p-2"
+          />
+
+          <input
+            id="calendarJudge"
+            placeholder="القاضي"
+            class="border rounded p-2"
+          />
+
+          <input
+            id="calendarCourtroom"
+            placeholder="رقم القاعة"
+            class="border rounded p-2"
+          />
+
+          <input
+            id="calendarHearingType"
+            placeholder="نوع الجلسة"
+            class="border rounded p-2"
+          />
+
+          <textarea
+            id="calendarNotes"
+            placeholder="ملاحظات"
+            rows="4"
+            class="border rounded p-2 md:col-span-2"
+          >
+          </textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button
+            onclick="closeCalendarHearingModal()"
+            class="px-4 py-2 bg-gray-300 rounded"
+          >
+            إلغاء
+          </button>
+
+          <button
+            onclick="saveCalendarHearing()"
+            class="px-4 py-2 bg-accent text-white rounded"
+          >
+            حفظ الجلسة
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

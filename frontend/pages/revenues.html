@@ -1,0 +1,269 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>الإيرادات</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#293040",
+              secondary: "#3B475C",
+              accent: "#D3AC2B",
+              light: "#EEE5D9",
+              beige: "#D2B68A",
+              darkBlue: "#222D52",
+              white: "#FDFFFF",
+            },
+            fontFamily: {
+              cairo: ["Cairo", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da]">
+    <div class="flex min-h-screen">
+      <div id="sidebar-container"></div>
+
+      <main class="flex-1 p-6">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-[#1f2a44]">الإيرادات</h1>
+
+          <p class="text-gray-600 mt-2">ملخص الإيرادات والمستحقات</p>
+        </div>
+
+        <!-- Cards -->
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الموكلين</p>
+
+            <p id="totalClients" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي القضايا</p>
+
+            <p id="totalCases" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الأتعاب</p>
+
+            <p id="totalFees" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">المحصل</p>
+
+            <p id="totalPaid" class="text-3xl font-bold text-green-600">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">المستحق</p>
+
+            <p id="remaining" class="text-3xl font-bold text-red-600">0</p>
+          </div>
+        </div>
+
+        <!-- Search -->
+
+        <div class="bg-white rounded-xl shadow p-5 mb-6">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="بحث باسم الموكل..."
+            class="w-full border rounded-lg p-3"
+          />
+        </div>
+
+        <!-- Table -->
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <div class="p-5 border-b font-bold text-lg">المستحقات حسب الموكل</div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="p-4">الموكل</th>
+
+                  <th class="p-4">القضايا</th>
+
+                  <th class="p-4">الأتعاب</th>
+
+                  <th class="p-4">المدفوع</th>
+
+                  <th class="p-4">المتبقي</th>
+
+                  <th class="p-4">الحالة</th>
+                </tr>
+              </thead>
+
+              <tbody id="clientsTable">
+                <tr>
+                  <td colspan="6" class="text-center p-6">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const API = "http://localhost:5000/api/clients";
+
+      let allClients = [];
+
+      async function loadSummary() {
+        const res = await fetch(`${API}/revenues/summary`);
+
+        const data = await res.json();
+
+        document.getElementById("totalClients").textContent =
+          data.total_clients;
+
+        document.getElementById("totalCases").textContent = data.total_cases;
+
+        document.getElementById("totalFees").textContent = Number(
+          data.total_fees,
+        ).toLocaleString();
+
+        document.getElementById("totalPaid").textContent = Number(
+          data.total_paid,
+        ).toLocaleString();
+
+        document.getElementById("remaining").textContent = Number(
+          data.remaining,
+        ).toLocaleString();
+      }
+
+      async function loadClients() {
+        const res = await fetch(`${API}/revenues/clients`);
+
+        allClients = await res.json();
+
+        renderTable(allClients);
+      }
+
+      function renderTable(clients) {
+        const tbody = document.getElementById("clientsTable");
+
+        if (!clients.length) {
+          tbody.innerHTML = `
+        <tr>
+          <td
+            colspan="6"
+            class="text-center p-6"
+          >
+            لا توجد بيانات
+          </td>
+        </tr>
+      `;
+
+          return;
+        }
+
+        tbody.innerHTML = clients
+          .map(
+            (client) => `
+          <tr class="border-b hover:bg-gray-50">
+
+            <td class="p-4">
+
+              <a
+                href="client-profile.html?id=${client.id}"
+                class="font-semibold text-[#1f2a44]"
+              >
+                ${client.full_name}
+              </a>
+
+            </td>
+
+            <td class="p-4">
+              ${client.total_cases}
+            </td>
+
+            <td class="p-4">
+              ${Number(client.total_fees).toLocaleString()}
+            </td>
+
+            <td class="p-4 text-green-600 font-semibold">
+              ${Number(client.total_paid).toLocaleString()}
+            </td>
+
+            <td class="p-4 text-red-600 font-semibold">
+              ${Number(client.remaining).toLocaleString()}
+            </td>
+
+            <td class="p-4">
+
+              ${
+                Number(client.remaining) > 0
+                  ? `
+                    <span
+                      class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm"
+                    >
+                      مديون
+                    </span>
+                  `
+                  : `
+                    <span
+                      class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
+                    >
+                      مسدد
+                    </span>
+                  `
+              }
+
+            </td>
+
+          </tr>
+        `,
+          )
+          .join("");
+      }
+
+      document.getElementById("searchInput").addEventListener("input", (e) => {
+        const value = e.target.value.toLowerCase();
+
+        const filtered = allClients.filter((c) =>
+          c.full_name.toLowerCase().includes(value),
+        );
+
+        renderTable(filtered);
+      });
+
+      loadSummary();
+      loadClients();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  </body>
+</html>
