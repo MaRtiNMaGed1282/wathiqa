@@ -2,7 +2,7 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 
-require("./config/db");
+require("./config/sqlite");
 
 const app = express();
 
