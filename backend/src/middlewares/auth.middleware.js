@@ -1,0 +1,32 @@
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../config/env");
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({
+      message: "غير مصرح",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({
+      message: "غير مصرح",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    req.user = decoded;
+
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      message: "رمز الدخول غير صالح",
+    });
+  }
+};

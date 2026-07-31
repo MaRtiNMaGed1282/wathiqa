@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta name="description" content="لوحة التحكم الرئيسية لنظام وثيقة" />
+
+    <title>لوحة التحكم | وثيقة</title>
+
+    <!-- Core -->
+
+    <script src="../assets/js/auth.js"></script>
+
+    <script src="../assets/js/api.js"></script>
+
+    <script src="../assets/js/loadNavbar.js"></script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+
+    <script src="../assets/js/activityTimeline.js"></script>
+
+    <script src="../assets/js/notificationCenter.js"></script>
+
+    <script src="../assets/vendor/lucide/lucide.js"></script>
+
+    <script src="../assets/js/core/app.js"></script>
+
+    <script src="../assets/js/pages/dashboard.js"></script>
+
+    <!-- Styles -->
+
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/css/input.css" />
+  </head>
+
+  <body class="font-cairo bg-light text-primary">
+    <div id="app-shell">
+      <div id="sidebar-container"></div>
+
+      <div id="app">
+        <div id="navbar-container"></div>
+
+        <main id="dashboard-page" class="page">
+          <div class="page-content space-y-8">
+            <!-- Hero -->
+            <section
+              id="dashboard-hero"
+              class="rounded-3xl bg-gradient-to-l bg-gradient-to-l from-slate-900 via-slate-800 to-slate-700 text-white shadow-xl overflow-hidden"
+            >
+              <div class="grid grid-cols-12 gap-8 px-8 py-6">
+                <!-- Left -->
+                <div class="col-span-12 lg:col-span-8">
+                  <div class="flex items-center gap-3 mb-4">
+                    <span
+                      class="px-3 py-1 rounded-full bg-green-500/20 border border-green-400 text-green-200 text-sm"
+                    >
+                      النظام يعمل بكفاءة
+                    </span>
+
+                    <span
+                      class="px-3 py-1 rounded-full bg-white/10 text-sm"
+                      id="dashboard-date"
+                    >
+                      --
+                    </span>
+                  </div>
+
+                  <h1 id="dashboard-greeting" class="text-3xl font-extrabold">
+                    صباح الخير،
+                  </h1>
+
+                  <p
+                    id="dashboard-office-name"
+                    class="mt-2 text-xl text-white/90"
+                  >
+                    مكتب وثيقة للمحاماة والاستشارات القانونية
+                  </p>
+
+                  <p
+                    id="dashboard-summary"
+                    class="mt-6 max-w-3xl leading-8 text-white/80"
+                  >
+                    لديك اليوم 0 جلسات، 0 مواعيد، 0 مهام عاجلة و0 إشعارات جديدة.
+                  </p>
+                </div>
+
+                <!-- Right -->
+
+                <div
+                  class="col-span-12 lg:col-span-4 flex flex-col justify-between"
+                >
+                  <div class="grid gap-3">
+                    <div
+                      class="flex items-center justify-between rounded-2xl bg-white/10 backdrop-blur p-4"
+                    >
+                      <span class="text-white/70"> الوقت الحالي </span>
+
+                      <span id="dashboard-time" class="font-bold text-xl">
+                        --
+                      </span>
+                    </div>
+
+                    <div
+                      class="flex items-center justify-between rounded-2xl bg-white/10 backdrop-blur p-4"
+                    >
+                      <span class="text-white/70"> آخر نسخة احتياطية </span>
+
+                      <span id="dashboard-backup" class="font-semibold">
+                        --
+                      </span>
+                    </div>
+
+                    <div
+                      class="flex items-center justify-between rounded-2xl bg-white/10 backdrop-blur p-4"
+                    >
+                      <span class="text-white/70"> قاعدة البيانات </span>
+
+                      <span
+                        id="dashboard-db-status"
+                        class="flex items-center gap-2 text-green-300"
+                      >
+                        <span class="w-2 h-2 rounded-full bg-green-400"></span>
+
+                        متصلة
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- KPI Cards -->
+            <section id="dashboard-kpis">
+              <div
+                class="grid grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8 gap-6"
+              >
+                <article
+                  id="kpi-total-clients"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">إجمالي الموكلين</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-green-600">+0 هذا الشهر</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+                    >
+                      <i data-lucide="users"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-active-cases"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">القضايا النشطة</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-blue-600">0 جديدة</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"
+                    >
+                      <i data-lucide="briefcase-business"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-hearings"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">جلسات اليوم</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-orange-600">اليوم</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-700"
+                    >
+                      <i data-lucide="gavel"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-tasks"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">المهام</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-red-600">عاجلة</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-700"
+                    >
+                      <i data-lucide="list-todo"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-revenue"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">الإيرادات</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-green-600">هذا الشهر</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-700"
+                    >
+                      <i data-lucide="wallet"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-outstanding"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">المستحقات</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-amber-600">غير محصلة</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700"
+                    >
+                      <i data-lucide="coins"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-notifications"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">الإشعارات</p>
+                      <h2 class="mt-3 text-3xl font-bold">0</h2>
+                      <p class="mt-2 text-xs text-purple-600">غير مقروءة</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100 text-purple-700"
+                    >
+                      <i data-lucide="bell"></i>
+                    </div>
+                  </div>
+                </article>
+
+                <article
+                  id="kpi-success-rate"
+                  class="card rounded-3xl bg-white p-6 shadow-sm border border-gray-100"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-500">نسبة النجاح</p>
+                      <h2 class="mt-3 text-3xl font-bold">0%</h2>
+                      <p class="mt-2 text-xs text-primary">آخر 12 شهر</p>
+                    </div>
+
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+                    >
+                      <i data-lucide="badge-check"></i>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section id="dashboard-quick-actions">
+              <div class="flex items-center justify-between mb-5">
+                <div>
+                  <h2 class="text-2xl font-bold">الإجراءات السريعة</h2>
+                  <p class="text-gray-500 mt-1">
+                    أكثر العمليات استخدامًا داخل النظام
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+                <button
+                  id="action-new-client"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"
+                  >
+                    <i data-lucide="user-plus"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">موكل جديد</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">إضافة موكل للنظام</p>
+                </button>
+
+                <button
+                  id="action-new-case"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-700"
+                  >
+                    <i data-lucide="briefcase-business"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">قضية جديدة</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">إنشاء قضية</p>
+                </button>
+
+                <button
+                  id="action-new-hearing"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-700"
+                  >
+                    <i data-lucide="calendar-plus"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">جلسة</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">جدولة جلسة</p>
+                </button>
+
+                <button
+                  id="action-upload-document"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-green-700"
+                  >
+                    <i data-lucide="file-plus"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">مستند</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">رفع مستند</p>
+                </button>
+
+                <button
+                  id="action-payment"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700"
+                  >
+                    <i data-lucide="wallet"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">دفعة</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">تسجيل دفعة</p>
+                </button>
+
+                <button
+                  id="action-search"
+                  class="group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div
+                    class="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-700"
+                  >
+                    <i data-lucide="search"></i>
+                  </div>
+
+                  <h3 class="mt-5 font-bold text-lg">بحث</h3>
+
+                  <p class="text-sm text-gray-500 mt-2">البحث في النظام</p>
+                </button>
+              </div>
+            </section>
+
+            <!-- Main Workspace -->
+            <section class="grid grid-cols-12 gap-6">
+              <div class="col-span-12 xl:col-span-8 space-y-6">
+                <section
+                  id="dashboard-hearings"
+                  class="card rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden"
+                >
+                  <div
+                    class="flex items-center justify-between px-6 py-5 border-b border-gray-100"
+                  >
+                    <div>
+                      <h2 class="text-2xl font-bold">جلسات اليوم</h2>
+
+                      <p class="mt-1 text-sm text-gray-500">
+                        جميع الجلسات والمواعيد المجدولة لليوم
+                      </p>
+                    </div>
+
+                    <button
+                      id="view-all-hearings"
+                      class="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-white transition"
+                    >
+                      عرض الكل
+                    </button>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-4 text-right font-semibold">
+                            الوقت
+                          </th>
+
+                          <th class="px-6 py-4 text-right font-semibold">
+                            رقم القضية
+                          </th>
+
+                          <th class="px-6 py-4 text-right font-semibold">
+                            الموكل
+                          </th>
+
+                          <th class="px-6 py-4 text-right font-semibold">
+                            المحكمة
+                          </th>
+
+                          <th class="px-6 py-4 text-right font-semibold">
+                            نوع القضية
+                          </th>
+
+                          <th class="px-6 py-4 text-center font-semibold">
+                            الحالة
+                          </th>
+
+                          <th class="px-6 py-4 text-center font-semibold">
+                            الإجراء
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody id="today-hearings-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section id="dashboard-activity"></section>
+
+                <section id="dashboard-financial-chart"></section>
+
+                <section id="dashboard-recent-cases"></section>
+              </div>
+
+              <div class="col-span-12 xl:col-span-4 space-y-6">
+                <section id="dashboard-calendar"></section>
+
+                <section
+                  id="dashboard-notifications"
+                  class="card rounded-3xl bg-white border border-gray-100 shadow-sm"
+                >
+                  <div class="border-b border-gray-100 px-6 py-5">
+                    <h2 class="text-xl font-bold">الإشعارات</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                      آخر التنبيهات داخل النظام
+                    </p>
+                  </div>
+
+                  <div
+                    id="notifications-list"
+                    class="divide-y divide-gray-100"
+                  ></div>
+                </section>
+
+                <section id="dashboard-deadlines"></section>
+
+                <section id="dashboard-office-status"></section>
+              </div>
+            </section>
+
+            <!-- Bottom -->
+            <section class="grid grid-cols-12 gap-6">
+              <div class="col-span-12 xl:col-span-7">
+                <section id="dashboard-recent-clients"></section>
+              </div>
+
+              <div class="col-span-12 xl:col-span-5">
+                <section id="dashboard-case-distribution"></section>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

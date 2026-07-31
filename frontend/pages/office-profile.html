@@ -1,0 +1,857 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>إعدادات المكتب</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da]">
+    <div class="flex min-h-screen">
+      <div id="navbar-container"></div>
+      <div id="sidebar-container"></div>
+
+      <main class="flex-1 p-6">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-[#1f2a44]">إعدادات المكتب</h1>
+
+          <p class="text-gray-600 mt-2">إدارة بيانات المكتب والمستخدمين</p>
+          <br />
+          <div class="bg-white rounded-xl shadow p-2 mb-6">
+            <div class="flex gap-2">
+              <button
+                id="officeTabBtn"
+                class="px-4 py-2 rounded-lg bg-[#1f2a44] text-white"
+              >
+                معلومات المكتب
+              </button>
+
+              <button id="usersTabBtn" class="px-4 py-2 rounded-lg bg-gray-100">
+                المستخدمون
+              </button>
+            </div>
+          </div>
+          <div id="officeTab" class="bg-white rounded-xl shadow p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-2 font-semibold"> اسم المكتب </label>
+
+                <input
+                  id="office_name"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold">
+                  اسم المحامي المسؤول
+                </label>
+
+                <input
+                  id="owner_name"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold"> رقم الهاتف </label>
+
+                <input
+                  id="phone"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold"> هاتف إضافي </label>
+
+                <input
+                  id="secondary_phone"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold">
+                  البريد الإلكتروني
+                </label>
+
+                <input
+                  id="email"
+                  type="email"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold"> العنوان </label>
+
+                <input
+                  id="address"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+            </div>
+            <hr class="my-6" />
+
+            <h3 class="text-lg font-bold text-[#1f2a44] mb-4">
+              بيانات إضافية (اختيارية)
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block mb-2 font-semibold"> الرقم الضريبي </label>
+
+                <input
+                  id="tax_number"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold">
+                  رقم السجل التجاري
+                </label>
+
+                <input
+                  id="commercial_register"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold"> رقم الترخيص </label>
+
+                <input
+                  id="license_number"
+                  type="text"
+                  class="w-full border rounded-lg p-3"
+                />
+              </div>
+            </div>
+            <hr class="my-6" />
+
+            <h3 class="text-lg font-bold text-[#1f2a44] mb-4">
+              الهوية البصرية
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block mb-2 font-semibold"> شعار المكتب </label>
+
+                <input
+                  id="office_logo"
+                  type="file"
+                  accept="image/*"
+                  class="w-full border rounded-lg p-3"
+                />
+
+                <img
+                  id="logoPreview"
+                  class="hidden mt-3 h-32 w-32 object-contain border rounded-lg p-2 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block mb-2 font-semibold"> ختم المكتب </label>
+
+                <input
+                  id="office_stamp"
+                  type="file"
+                  accept="image/*"
+                  class="w-full border rounded-lg p-3"
+                />
+                <img
+                  id="stampPreview"
+                  class="hidden mt-3 h-32 w-32 object-contain border rounded-lg p-2 bg-white"
+                />
+              </div>
+            </div>
+            <hr class="my-6" />
+
+            <div class="flex justify-end">
+              <button
+                id="saveOfficeBtn"
+                class="bg-[#1f2a44] text-white px-6 py-3 rounded-lg"
+              >
+                حفظ بيانات المكتب
+              </button>
+            </div>
+          </div>
+
+          <div id="usersTab" class="hidden bg-white rounded-xl shadow p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-bold text-[#1f2a44]">المستخدمون</h3>
+
+              <button
+                id="addUserBtn"
+                class="bg-[#1f2a44] text-white px-4 py-2 rounded-lg"
+              >
+                إضافة مستخدم
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-right">
+                <thead>
+                  <tr class="border-b">
+                    <th class="p-4">الاسم</th>
+
+                    <th class="p-4">البريد الإلكتروني</th>
+
+                    <th class="p-4">الدور</th>
+
+                    <th class="p-4">آخر دخول</th>
+
+                    <th class="p-4">الحالة</th>
+
+                    <th class="p-4">إجراءات</th>
+                  </tr>
+                </thead>
+
+                <tbody id="usersTableBody">
+                  <tr>
+                    <td colspan="6" class="text-center p-8 text-gray-500">
+                      لا يوجد مستخدمون
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <div
+      id="userModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl p-6 w-full max-w-xl">
+        <h3 class="text-xl font-bold mb-6">إضافة مستخدم</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2"> الاسم </label>
+
+            <input
+              id="user_full_name"
+              type="text"
+              class="w-full border rounded-lg p-3"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2"> اسم المستخدم </label>
+
+            <div class="flex">
+              <input
+                id="user_username"
+                type="text"
+                class="flex-1 border rounded-r-lg p-3"
+              />
+
+              <div
+                class="bg-gray-100 border border-r-0 rounded-l-lg px-4 flex items-center"
+              >
+                @wathiqa.com
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block mb-2"> كلمة المرور </label>
+
+            <input
+              id="user_password"
+              type="password"
+              class="w-full border rounded-lg p-3"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2"> تأكيد كلمة المرور </label>
+
+            <input
+              id="user_confirm_password"
+              type="password"
+              class="w-full border rounded-lg p-3"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2"> الدور </label>
+
+            <select id="user_role" class="w-full border rounded-lg p-3">
+              <option value="admin">مدير النظام</option>
+
+              <option value="lawyer">محامي</option>
+
+              <option value="secretary">سكرتير</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button id="closeUserModal" class="px-4 py-2 border rounded-lg">
+            إلغاء
+          </button>
+
+          <button
+            id="saveUserBtn"
+            class="px-4 py-2 bg-[#1f2a44] text-white rounded-lg"
+          >
+            حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="resetPasswordModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl p-6 w-full max-w-md">
+        <h3 class="text-xl font-bold mb-6">إعادة تعيين كلمة المرور</h3>
+
+        <input type="hidden" id="resetUserId" />
+
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2"> كلمة المرور الجديدة </label>
+
+            <input
+              id="newPassword"
+              type="password"
+              class="w-full border rounded-lg p-3"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2"> تأكيد كلمة المرور </label>
+
+            <input
+              id="confirmNewPassword"
+              type="password"
+              class="w-full border rounded-lg p-3"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button
+            id="closeResetPasswordModal"
+            class="px-4 py-2 border rounded-lg"
+          >
+            إلغاء
+          </button>
+
+          <button
+            id="saveNewPasswordBtn"
+            class="px-4 py-2 bg-[#1f2a44] text-white rounded-lg"
+          >
+            حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let activeTab = "office";
+      const officeTabBtn = document.getElementById("officeTabBtn");
+
+      const usersTabBtn = document.getElementById("usersTabBtn");
+
+      const officeTab = document.getElementById("officeTab");
+
+      const usersTab = document.getElementById("usersTab");
+
+      if (window.currentUser?.role !== "admin") {
+        usersTabBtn.classList.add("hidden");
+
+        document.body.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center bg-gray-50">
+      <div class="bg-white p-8 rounded-xl shadow text-center max-w-md">
+
+        <h2 class="text-2xl font-bold text-red-600 mb-4">
+          غير مصرح لك بالدخول
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+          هذه الصفحة متاحة فقط لمدير النظام
+        </p>
+
+        <a
+          href="dashboard.html"
+          class="inline-block px-6 py-3 bg-[#1f2a44] text-white rounded-lg"
+        >
+          رجوع إلى لوحة التحكم
+        </a>
+
+      </div>
+    </div>
+  `;
+
+        throw new Error("Unauthorized");
+      }
+
+      officeTabBtn.addEventListener("click", () => {
+        activeTab = "office";
+        officeTab.classList.remove("hidden");
+        usersTab.classList.add("hidden");
+
+        officeTabBtn.classList.add("bg-[#1f2a44]", "text-white");
+
+        officeTabBtn.classList.remove("bg-gray-100");
+
+        usersTabBtn.classList.remove("bg-[#1f2a44]", "text-white");
+
+        usersTabBtn.classList.add("bg-gray-100");
+      });
+
+      usersTabBtn.addEventListener("click", () => {
+        activeTab = "users";
+        usersTab.classList.remove("hidden");
+        officeTab.classList.add("hidden");
+
+        usersTabBtn.classList.add("bg-[#1f2a44]", "text-white");
+
+        usersTabBtn.classList.remove("bg-gray-100");
+
+        officeTabBtn.classList.remove("bg-[#1f2a44]", "text-white");
+
+        officeTabBtn.classList.add("bg-gray-100");
+      });
+      const addUserBtn = document.getElementById("addUserBtn");
+
+      const userModal = document.getElementById("userModal");
+
+      addUserBtn.addEventListener("click", () => {
+        userModal.classList.remove("hidden");
+        userModal.classList.add("flex");
+      });
+      const closeUserModal = document.getElementById("closeUserModal");
+
+      closeUserModal.addEventListener("click", () => {
+        userModal.classList.remove("flex");
+        userModal.classList.add("hidden");
+      });
+      userModal.addEventListener("click", (e) => {
+        if (e.target === userModal) {
+          userModal.classList.remove("flex");
+          userModal.classList.add("hidden");
+        }
+      });
+
+      function authHeaders() {
+        return {};
+      }
+      async function saveUser() {
+        const full_name = document.getElementById("user_full_name").value;
+
+        const username = document.getElementById("user_username").value;
+
+        const password = document.getElementById("user_password").value;
+
+        const confirmPassword = document.getElementById(
+          "user_confirm_password",
+        ).value;
+
+        const role = document.getElementById("user_role").value;
+
+        if (password !== confirmPassword) {
+          alert("كلمتا المرور غير متطابقتين");
+          return;
+        }
+
+        const data = await api.post("/users", {
+          full_name,
+          username,
+          password,
+          role,
+        });
+
+        if (data) {
+          showToast(data.message, true);
+
+          userModal.classList.remove("flex");
+          userModal.classList.add("hidden");
+
+          document.getElementById("user_full_name").value = "";
+          document.getElementById("user_username").value = "";
+          document.getElementById("user_password").value = "";
+          document.getElementById("user_confirm_password").value = "";
+
+          document.getElementById("user_role").value = "lawyer";
+        }
+      }
+
+      async function loadUsers() {
+        const users = await api.get("/users");
+
+        renderUsers(users);
+      }
+
+      function renderUsers(users) {
+        const tbody = document.getElementById("usersTableBody");
+
+        tbody.innerHTML = users
+          .map(
+            (user) => `
+      <tr class="border-b hover:bg-gray-50">
+
+        <td class="p-4">
+          ${user.full_name}
+        </td>
+
+        <td class="p-4">
+          ${user.email}
+        </td>
+
+        <td class="p-4">
+          ${
+            user.role === "admin"
+              ? "مدير النظام"
+              : user.role === "lawyer"
+                ? "محامي"
+                : "سكرتير"
+          }
+        </td>
+
+        <td class="p-4">
+          ${user.last_login || "لم يسجل الدخول بعد"}
+        </td>
+
+        <td class="p-4">
+          ${user.is_active ? "نشط" : "معطل"}
+        </td>
+
+<td class="p-4">
+  <div class="flex gap-2">
+
+    <button
+      onclick="toggleUserStatus(${user.id}, ${user.is_active})"
+      class="px-3 py-1 rounded-lg text-white ${
+        user.is_active ? "bg-red-600" : "bg-green-600"
+      }"
+    >
+      ${user.is_active ? "تعطيل" : "تفعيل"}
+    </button>
+
+    <button
+      onclick="resetPassword(${user.id})"
+      class="px-3 py-1 rounded-lg bg-[#1f2a44] text-white"
+    >
+      كلمة المرور
+    </button>
+
+  ${
+    user.id !== window.currentUser.id
+      ? `
+<button
+  onclick="deleteUser(${user.id})"
+  class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white transition"
+>
+  حذف
+</button>
+`
+      : ""
+  }
+
+  </div>
+</td>
+
+      </tr>
+    `,
+          )
+          .join("");
+      }
+
+      async function toggleUserStatus(id, currentStatus) {
+        console.log("Toggle clicked");
+        const data = await api.put(`/users/${id}/status`, {
+          is_active: currentStatus ? 0 : 1,
+        });
+
+        if (data) {
+          showToast(data.message, true);
+
+          await loadUsers();
+
+          restoreActiveTab();
+        }
+      }
+
+      async function deleteUser(id) {
+        const result = await Swal.fire({
+          title: "حذف المستخدم",
+          text: "هل أنت متأكد من حذف هذا المستخدم؟",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "حذف",
+          cancelButtonText: "إلغاء",
+        });
+
+        if (!result.isConfirmed) {
+          return;
+        }
+
+        const data = await api.delete(`/users/${id}`);
+
+        if (data) {
+          showToast(data.message, true);
+
+          await loadUsers();
+
+          restoreActiveTab();
+        } else {
+          showToast(data.message, false);
+        }
+      }
+
+      function resetPassword(userId) {
+        document.getElementById("resetUserId").value = userId;
+
+        const modal = document.getElementById("resetPasswordModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      const resetPasswordModal = document.getElementById("resetPasswordModal");
+
+      document
+        .getElementById("closeResetPasswordModal")
+        .addEventListener("click", () => {
+          resetPasswordModal.classList.remove("flex");
+
+          resetPasswordModal.classList.add("hidden");
+        });
+
+      resetPasswordModal.addEventListener("click", (e) => {
+        if (e.target === resetPasswordModal) {
+          resetPasswordModal.classList.remove("flex");
+
+          resetPasswordModal.classList.add("hidden");
+        }
+      });
+
+      async function saveNewPassword() {
+        const userId = document.getElementById("resetUserId").value;
+
+        const password = document.getElementById("newPassword").value;
+
+        const confirmPassword =
+          document.getElementById("confirmNewPassword").value;
+
+        if (password !== confirmPassword) {
+          showToast("كلمتا المرور غير متطابقتين", false);
+
+          return;
+        }
+
+        const data = await api.put(`/users/${userId}/password`, {
+          password,
+        });
+
+        if (data) {
+          showToast(data.message, true);
+
+          resetPasswordModal.classList.remove("flex");
+
+          resetPasswordModal.classList.add("hidden");
+
+          document.getElementById("newPassword").value = "";
+
+          document.getElementById("confirmNewPassword").value = "";
+        }
+      }
+
+      document
+        .getElementById("saveNewPasswordBtn")
+        .addEventListener("click", saveNewPassword);
+
+      function restoreActiveTab() {
+        if (activeTab === "users") {
+          usersTab.classList.remove("hidden");
+          officeTab.classList.add("hidden");
+
+          usersTabBtn.classList.add("bg-[#1f2a44]", "text-white");
+          usersTabBtn.classList.remove("bg-gray-100");
+
+          officeTabBtn.classList.remove("bg-[#1f2a44]", "text-white");
+          officeTabBtn.classList.add("bg-gray-100");
+        }
+      }
+
+      async function saveOfficeSettings() {
+        const data = await api.post("/office", {
+          office_name: document.getElementById("office_name").value,
+
+          owner_name: document.getElementById("owner_name").value,
+
+          phone: document.getElementById("phone").value,
+
+          secondary_phone: document.getElementById("secondary_phone").value,
+
+          email: document.getElementById("email").value,
+
+          address: document.getElementById("address").value,
+
+          tax_number: document.getElementById("tax_number").value,
+
+          commercial_register: document.getElementById("commercial_register")
+            .value,
+
+          license_number: document.getElementById("license_number").value,
+        });
+        if (data) {
+          await uploadOfficeAssets();
+
+          showToast(data.message, true);
+        }
+      }
+
+      document
+        .getElementById("saveOfficeBtn")
+        .addEventListener("click", saveOfficeSettings);
+
+      async function loadOfficeSettings() {
+        const office = await api.get("/office");
+
+        document.getElementById("office_name").value = office.office_name || "";
+
+        document.getElementById("owner_name").value = office.owner_name || "";
+
+        document.getElementById("phone").value = office.phone || "";
+
+        document.getElementById("secondary_phone").value =
+          office.secondary_phone || "";
+
+        document.getElementById("email").value = office.email || "";
+
+        document.getElementById("address").value = office.address || "";
+
+        document.getElementById("tax_number").value = office.tax_number || "";
+
+        document.getElementById("commercial_register").value =
+          office.commercial_register || "";
+
+        document.getElementById("license_number").value =
+          office.license_number || "";
+
+        if (office.logo_path) {
+          const logoPreview = document.getElementById("logoPreview");
+
+          logoPreview.src = `/uploads/${office.logo_path}`;
+
+          logoPreview.classList.remove("hidden");
+        }
+
+        if (office.stamp_path) {
+          const stampPreview = document.getElementById("stampPreview");
+
+          stampPreview.src = `/uploads/${office.stamp_path}`;
+
+          stampPreview.classList.remove("hidden");
+        }
+      }
+
+      async function uploadOfficeAssets() {
+        const formData = new FormData();
+
+        const logo = document.getElementById("office_logo").files[0];
+        const stamp = document.getElementById("office_stamp").files[0];
+
+        if (logo) {
+          formData.append("logo", logo);
+        }
+
+        if (stamp) {
+          formData.append("stamp", stamp);
+        }
+
+        const data = await api.upload("/office/upload", formData);
+
+        if (data) {
+          showToast(data.message, true);
+        }
+      }
+      function showToast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+
+      document
+        .getElementById("saveUserBtn")
+        .addEventListener("click", saveUser);
+
+      document.getElementById("office_logo").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        const preview = document.getElementById("logoPreview");
+
+        preview.src = URL.createObjectURL(file);
+
+        preview.classList.remove("hidden");
+      });
+
+      document
+        .getElementById("office_stamp")
+        .addEventListener("change", (e) => {
+          const file = e.target.files[0];
+
+          if (!file) return;
+
+          const preview = document.getElementById("stampPreview");
+
+          preview.src = URL.createObjectURL(file);
+
+          preview.classList.remove("hidden");
+        });
+
+      loadUsers();
+
+      loadOfficeSettings();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+  </body>
+</html>

@@ -1,0 +1,425 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>التقارير</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da]">
+    <div class="flex min-h-screen">
+      <div id="navbar-container"></div>
+      <div id="sidebar-container"></div>
+
+      <main class="flex-1 p-6">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-[#1f2a44]">التقارير</h1>
+
+          <p class="text-gray-600 mt-2">تقارير وإحصائيات المكتب</p>
+        </div>
+        <div class="bg-[#1f2a44] text-white rounded-2xl p-8 mb-8 shadow-lg">
+          <p class="text-lg opacity-80">ملخص أداء المكتب</p>
+
+          <p id="heroProfit" class="text-5xl font-bold mt-3">0 جنيه</p>
+
+          <p class="opacity-70 mt-2">صافي الأرباح بعد خصم المصروفات</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4 mb-8">
+          <div class="flex flex-wrap gap-3">
+            <button
+              class="report-filter px-4 py-2 rounded-lg bg-[#1f2a44] text-white"
+              data-filter="all"
+            >
+              الكل
+            </button>
+
+            <button
+              class="report-filter px-4 py-2 rounded-lg bg-gray-100"
+              data-filter="month"
+            >
+              هذا الشهر
+            </button>
+
+            <button
+              class="report-filter px-4 py-2 rounded-lg bg-gray-100"
+              data-filter="year"
+            >
+              هذا العام
+            </button>
+            <button
+              class="report-filter px-4 py-2 rounded-lg bg-gray-100"
+              data-filter="custom"
+            >
+              فترة مخصصة
+            </button>
+          </div>
+          <div id="customDateFilters" class="hidden mt-4 flex-wrap gap-3">
+            <input
+              type="date"
+              id="startDate"
+              class="border rounded-lg px-3 py-2"
+            />
+
+            <input
+              type="date"
+              id="endDate"
+              class="border rounded-lg px-3 py-2"
+            />
+
+            <button
+              id="applyCustomFilter"
+              class="bg-[#1f2a44] text-white px-4 py-2 rounded-lg"
+            >
+              تطبيق
+            </button>
+            <button
+              id="exportExcelBtn"
+              class="bg-green-600 text-white px-4 py-2 rounded-lg"
+            >
+              تصدير Excel
+            </button>
+
+            <button
+              id="exportPdfBtn"
+              class="bg-red-600 text-white px-4 py-2 rounded-lg"
+            >
+              تصدير PDF
+            </button>
+          </div>
+          <p id="reportPeriod" class="text-gray-500 mt-4 text-sm">
+            عرض جميع البيانات
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الإيرادات</p>
+            <p id="totalRevenue" class="text-3xl font-bold text-green-600">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي المصروفات</p>
+            <p id="totalExpenses" class="text-3xl font-bold text-red-600">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">صافي الربح</p>
+            <p id="netProfit" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الموكلين</p>
+            <p id="totalClients" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي القضايا</p>
+            <p id="totalCases" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الخدمات</p>
+            <p id="totalServices" class="text-3xl font-bold text-indigo-600">
+              0
+            </p>
+          </div>
+        </div>
+        <br />
+        <div class="bg-white rounded-xl shadow mt-8 overflow-hidden">
+          <div class="p-5 border-b">
+            <h2 class="font-bold text-lg">أعلى الموكلين من حيث الإيرادات</h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="p-4">الموكل</th>
+                  <th class="p-4">القضايا</th>
+                  <th class="p-4">إجمالي الأتعاب</th>
+                  <th class="p-4">المحصل</th>
+                </tr>
+              </thead>
+
+              <tbody id="topClientsTable">
+                <tr>
+                  <td colspan="4" class="text-center p-6">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <br />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="font-bold text-lg mb-4">إيرادات القضايا</h3>
+
+            <p id="caseRevenue" class="text-4xl font-bold text-blue-700">0</p>
+
+            <p class="text-gray-500 mt-2">إجمالي أتعاب القضايا</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="font-bold text-lg mb-4">إيرادات الخدمات</h3>
+
+            <p id="serviceRevenue" class="text-4xl font-bold text-indigo-700">
+              0
+            </p>
+
+            <p class="text-gray-500 mt-2">إجمالي أتعاب الخدمات</p>
+          </div>
+        </div>
+        <br />
+        <div class="bg-white rounded-xl shadow mt-8 overflow-hidden">
+          <div class="p-5 border-b">
+            <h2 class="font-bold text-lg">أكثر الملفات ربحية</h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="p-4">الملف</th>
+                  <th class="p-4">النوع</th>
+                  <th class="p-4">إجمالي الأتعاب</th>
+                </tr>
+              </thead>
+
+              <tbody id="topRevenueItemsTable">
+                <tr>
+                  <td colspan="3" class="text-center p-6">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      let currentFilter = "all";
+      let customStartDate = "";
+      let customEndDate = "";
+      async function loadReportSummary() {
+        let url = `/clients/revenues/summary?filter=${currentFilter}`;
+
+        if (currentFilter === "custom" && customStartDate && customEndDate) {
+          url += `&startDate=${customStartDate}` + `&endDate=${customEndDate}`;
+        }
+
+        const data = await api.get(url);
+
+        document.getElementById("totalRevenue").textContent = Number(
+          data.total_fees,
+        ).toLocaleString();
+
+        document.getElementById("totalExpenses").textContent = Number(
+          data.total_expenses,
+        ).toLocaleString();
+
+        document.getElementById("netProfit").textContent = Number(
+          data.net_profit,
+        ).toLocaleString();
+
+        document.getElementById("heroProfit").textContent =
+          `${Number(data.net_profit).toLocaleString()} جنيه`;
+
+        document.getElementById("totalClients").textContent =
+          data.total_clients;
+
+        document.getElementById("totalCases").textContent = data.total_cases;
+
+        document.getElementById("totalServices").textContent =
+          data.total_services;
+
+        document.getElementById("caseRevenue").textContent =
+          Number(data.case_fees).toLocaleString() + " جنيه";
+
+        document.getElementById("serviceRevenue").textContent =
+          Number(data.service_fees).toLocaleString() + " جنيه";
+      }
+      async function loadTopClients() {
+        const clients = await api.get(
+          `/clients/revenues/clients?filter=${currentFilter}`,
+        );
+
+        const tbody = document.getElementById("topClientsTable");
+
+        const topClients = clients
+          .filter((c) => Number(c.total_fees) > 0)
+          .sort((a, b) => Number(b.total_fees) - Number(a.total_fees))
+          .slice(0, 10);
+        if (!topClients.length) {
+          tbody.innerHTML = `
+    <tr>
+      <td colspan="4" class="text-center p-6 text-gray-500">
+        لا توجد بيانات للفترة المحددة
+      </td>
+    </tr>
+  `;
+
+          return;
+        }
+        tbody.innerHTML = topClients
+          .map(
+            (client) => `
+      <tr class="border-b hover:bg-gray-50">
+
+        <td class="p-4 font-semibold">
+          ${client.full_name}
+        </td>
+
+        <td class="p-4">
+          ${client.total_cases}
+        </td>
+
+        <td class="p-4">
+          ${Number(client.total_fees).toLocaleString()}
+        </td>
+
+        <td class="p-4 text-green-600 font-bold">
+          ${Number(client.total_paid).toLocaleString()}
+        </td>
+
+      </tr>
+    `,
+          )
+          .join("");
+      }
+
+      async function loadTopRevenueItems() {
+        const items = await api.get(
+          `/clients/reports/top-revenue-items?filter=${currentFilter}`,
+        );
+
+        const tbody = document.getElementById("topRevenueItemsTable");
+
+        tbody.innerHTML = items
+          .map(
+            (item) => `
+      <tr class="border-b hover:bg-gray-50">
+
+        <td class="p-4 font-semibold">
+          ${item.title}
+        </td>
+
+        <td class="p-4">
+
+          ${
+            item.item_type === "خدمة"
+              ? `
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm">
+                  خدمة
+                </span>
+              `
+              : `
+                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                  قضية
+                </span>
+              `
+          }
+
+        </td>
+
+        <td class="p-4 font-bold">
+          ${Number(item.total_fees).toLocaleString()}
+        </td>
+
+      </tr>
+    `,
+          )
+          .join("");
+      }
+
+      document.querySelectorAll(".report-filter").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".report-filter").forEach((b) => {
+            b.classList.remove("bg-[#1f2a44]", "text-white");
+
+            b.classList.add("bg-gray-100");
+          });
+
+          btn.classList.remove("bg-gray-100");
+
+          btn.classList.add("bg-[#1f2a44]", "text-white");
+
+          currentFilter = btn.dataset.filter;
+          const customFilters = document.getElementById("customDateFilters");
+
+          if (currentFilter === "custom") {
+            customFilters.classList.remove("hidden");
+          } else {
+            customFilters.classList.add("hidden");
+            customStartDate = "";
+            customEndDate = "";
+          }
+
+          loadReportSummary();
+          loadTopClients();
+          loadTopRevenueItems();
+
+          const now = new Date();
+
+          const labels = {
+            all: "عرض جميع البيانات",
+            month: `عرض بيانات ${now.toLocaleDateString("ar-EG", {
+              month: "long",
+              year: "numeric",
+            })}`,
+            year: `عرض بيانات عام ${now.getFullYear()}`,
+          };
+
+          document.getElementById("reportPeriod").textContent =
+            labels[currentFilter];
+        });
+      });
+
+      document
+        .getElementById("applyCustomFilter")
+        .addEventListener("click", () => {
+          customStartDate = document.getElementById("startDate").value;
+
+          customEndDate = document.getElementById("endDate").value;
+
+          document.getElementById("reportPeriod").textContent =
+            `عرض البيانات من ${customStartDate} إلى ${customEndDate}`;
+          if (!customStartDate || !customEndDate) {
+            return;
+          }
+
+          loadReportSummary();
+          loadTopClients();
+          loadTopRevenueItems();
+        });
+
+      loadReportSummary();
+      loadTopClients();
+      loadTopRevenueItems();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+  </body>
+</html>

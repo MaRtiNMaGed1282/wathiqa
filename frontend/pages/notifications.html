@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>الإشعارات</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+    <script src="../assets/js/notificationCenter.js"></script>
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold">الإشعارات</h1>
+        <p class="text-gray-500 mt-2">متابعة جميع إشعارات النظام</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div
+          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        >
+          <div class="flex flex-wrap gap-2 items-center">
+            <button
+              id="refreshNotificationsButton"
+              type="button"
+              class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition"
+            >
+              تحديث
+            </button>
+            <button
+              id="markAllReadButton"
+              type="button"
+              class="bg-secondary text-white px-4 py-2 rounded hover:bg-primary transition"
+            >
+              تحديد الكل كمقروء
+            </button>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-filter="all"
+              class="filter-button bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition"
+            >
+              الكل
+            </button>
+            <button
+              type="button"
+              data-filter="unread"
+              class="filter-button bg-white text-primary border border-primary px-4 py-2 rounded hover:bg-secondary hover:text-white transition"
+            >
+              غير المقروءة
+            </button>
+            <button
+              type="button"
+              data-filter="read"
+              class="filter-button bg-white text-primary border border-primary px-4 py-2 rounded hover:bg-secondary hover:text-white transition"
+            >
+              المقروءة
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">إجمالي الإشعارات</p>
+          <h3
+            id="totalNotifications"
+            class="text-3xl font-bold text-primary mt-2"
+          >
+            0
+          </h3>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">غير المقروءة</p>
+          <h3
+            id="unreadNotifications"
+            class="text-3xl font-bold text-blue-600 mt-2"
+          >
+            0
+          </h3>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">المقروءة</p>
+          <h3
+            id="readNotifications"
+            class="text-3xl font-bold text-green-600 mt-2"
+          >
+            0
+          </h3>
+        </div>
+      </div>
+
+      <div
+        id="notificationsListContainer"
+        class="bg-white rounded-xl shadow p-6"
+      ></div>
+    </main>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+    <script>
+      function toggleFilterButtons(activeFilter) {
+        document.querySelectorAll(".filter-button").forEach((button) => {
+          const filter = button.dataset.filter;
+          const isActive = filter === activeFilter;
+
+          button.className = isActive
+            ? "filter-button bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition"
+            : "filter-button bg-white text-primary border border-primary px-4 py-2 rounded hover:bg-secondary hover:text-white transition";
+        });
+      }
+
+      async function fetchNotificationTotal() {
+        let total = 0;
+        const pageSize = 100;
+        let offset = 0;
+
+        while (true) {
+          const page = await api.get(
+            `/notifications?limit=${pageSize}&offset=${offset}`,
+          );
+          const notifications = Array.isArray(page) ? page : [];
+          total += notifications.length;
+
+          if (notifications.length < pageSize) {
+            break;
+          }
+
+          offset += pageSize;
+        }
+
+        return total;
+      }
+
+      function setupNotificationPage() {
+        const containerId = "notificationsListContainer";
+        let center = NotificationCenter.load(containerId, {
+          endpoint: "/notifications",
+          pageSize: 20,
+          filter: "all",
+          onLoaded: () => {
+            window.refreshNotificationBadge();
+            updateStats();
+          },
+          onItemRead: () => {
+            window.refreshNotificationBadge();
+            updateStats();
+          },
+          onError: () => {
+            window.refreshNotificationBadge();
+          },
+        });
+
+        const updateStats = async () => {
+          try {
+            const userCount = await fetchNotificationTotal();
+            const unreadCount = await api.get("/notifications/unread-count");
+            const unread = Number(unreadCount?.count) || 0;
+            const read = Math.max(userCount - unread, 0);
+            document.getElementById("totalNotifications").textContent =
+              userCount;
+            document.getElementById("unreadNotifications").textContent = unread;
+            document.getElementById("readNotifications").textContent = read;
+          } catch (error) {
+            console.error("Failed to update stats:", error.message || error);
+          }
+        };
+
+        document.querySelectorAll(".filter-button").forEach((button) => {
+          button.addEventListener("click", () => {
+            const filter = button.dataset.filter;
+            toggleFilterButtons(filter);
+            center.setFilter(filter);
+          });
+        });
+
+        document
+          .getElementById("refreshNotificationsButton")
+          .addEventListener("click", () => {
+            center.reload();
+          });
+
+        document
+          .getElementById("markAllReadButton")
+          .addEventListener("click", async () => {
+            try {
+              await api.put("/notifications/read-all", {});
+              center.reload();
+              window.refreshNotificationBadge();
+              updateStats();
+            } catch (error) {
+              console.error(
+                "Failed to mark all notifications read:",
+                error.message || error,
+              );
+            }
+          });
+
+        toggleFilterButtons("all");
+        updateStats();
+        if (typeof NotificationCenter.startPolling === "function") {
+          NotificationCenter.startPolling();
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", setupNotificationPage);
+      window.addEventListener("beforeunload", () => {
+        if (typeof NotificationCenter.stopPolling === "function") {
+          NotificationCenter.stopPolling();
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,556 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>الإيرادات</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da]">
+    <div class="flex min-h-screen">
+      <div id="navbar-container"></div>
+      <div id="sidebar-container"></div>
+
+      <main class="flex-1 p-6">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-[#1f2a44]">الإيرادات</h1>
+
+          <p class="text-gray-600 mt-2">ملخص الإيرادات والمستحقات</p>
+        </div>
+        <div class="bg-[#1f2a44] text-white rounded-2xl p-8 mb-8 shadow-lg">
+          <p class="text-lg opacity-80">إجمالي الإيرادات</p>
+
+          <p id="heroRevenue" class="text-5xl font-bold mt-3">0 جنيه</p>
+          <div class="flex gap-8 mt-4 text-sm opacity-90">
+            <div>
+              القضايا:
+              <span id="heroCaseFees">0</span>
+            </div>
+
+            <div>
+              الخدمات:
+              <span id="heroServiceFees">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 mb-6">
+          <div class="flex justify-between mb-2">
+            <span class="font-semibold"> نسبة التحصيل العامة </span>
+
+            <span id="globalCollectionRate"> 0% </span>
+          </div>
+
+          <div class="w-full bg-gray-200 rounded-full h-4">
+            <div
+              id="globalCollectionBar"
+              class="bg-green-600 h-4 rounded-full"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-[#1f2a44]">
+              أعلى الموكلين مديونية
+            </h2>
+
+            <span class="text-sm text-gray-500"> أعلى 5 أرصدة مستحقة </span>
+          </div>
+
+          <div id="topDebtors" class="grid md:grid-cols-5 gap-4">
+            <div class="text-center text-gray-500">جاري التحميل...</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-[#1f2a44]">آخر المدفوعات</h2>
+
+            <span class="text-sm text-gray-500"> آخر العمليات المالية </span>
+          </div>
+
+          <div id="recentPayments" class="space-y-3">
+            <div class="text-center text-gray-500">جاري التحميل...</div>
+          </div>
+        </div>
+        <!-- Cards -->
+        <h2 class="text-lg font-bold text-[#1f2a44] mb-3">النشاط العام</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الموكلين</p>
+
+            <p id="totalClients" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي القضايا</p>
+
+            <p id="totalCases" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الخدمات</p>
+
+            <p id="totalServices" class="text-3xl font-bold text-indigo-600">
+              0
+            </p>
+          </div>
+        </div>
+        <h2 class="text-lg font-bold text-[#1f2a44] mb-3">الإيرادات</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">إجمالي الأتعاب</p>
+
+            <p id="totalFees" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">أتعاب الخدمات</p>
+
+            <p id="serviceFees" class="text-3xl font-bold text-indigo-600">0</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">المحصل</p>
+
+            <p id="totalPaid" class="text-3xl font-bold text-green-600">0</p>
+          </div>
+        </div>
+        <h2 class="text-lg font-bold text-[#1f2a44] mb-3">المؤشرات المالية</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">المستحق</p>
+
+            <p id="remaining" class="text-3xl font-bold text-red-600">0</p>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">المصروفات</p>
+
+            <p id="totalExpenses" class="text-3xl font-bold text-orange-600">
+              0
+            </p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-5 text-center">
+            <p class="text-gray-500 mb-2">صافي الربح</p>
+
+            <p id="netProfit" class="text-4xl font-bold text-purple-700">0</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 mb-6">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="بحث باسم الموكل..."
+            class="w-full border rounded-lg p-3"
+          />
+        </div>
+
+        <!-- Table -->
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <div
+            class="grid md:grid-cols-2 gap-6 p-6 border-b bg-linear-to-r from-red-50 to-orange-50"
+          >
+            <div class="bg-white rounded-2xl p-6 text-center shadow-sm">
+              <p class="text-gray-500">العملاء المدينون</p>
+
+              <p id="debtorsCount" class="text-3xl font-bold text-red-600">0</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 text-center shadow-sm">
+              <p class="text-gray-500">إجمالي المستحقات</p>
+
+              <p
+                id="totalRemainingAmount"
+                class="text-3xl font-bold text-orange-600"
+              >
+                0
+              </p>
+            </div>
+          </div>
+          <div class="p-6 border-b flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-[#1f2a44]">
+                المستحقات حسب الموكل
+              </h2>
+
+              <p class="text-gray-500 text-sm mt-1">
+                متابعة المبالغ المحصلة والمستحقة لكل موكل
+              </p>
+            </div>
+
+            <div class="bg-[#1f2a44] text-white px-4 py-2 rounded-lg text-sm">
+              السجل المالي
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right">
+              <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th class="p-4">الموكل</th>
+
+                  <th class="p-4">القضايا</th>
+
+                  <th class="p-4">الأتعاب</th>
+
+                  <th class="p-4">المدفوع</th>
+
+                  <th class="p-4">المتبقي</th>
+
+                  <th class="p-4">الحالة</th>
+                </tr>
+              </thead>
+
+              <tbody id="clientsTable">
+                <tr>
+                  <td colspan="6" class="text-center p-6">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Search -->
+      </main>
+    </div>
+
+    <script>
+      const API = "/clients";
+
+      let allClients = [];
+
+      async function loadSummary() {
+        const data = await api.get(`${API}/revenues/summary`);
+        const collectionRate =
+          data.total_fees > 0
+            ? ((data.total_paid / data.total_fees) * 100).toFixed(1)
+            : 0;
+
+        document.getElementById("globalCollectionRate").textContent =
+          `${collectionRate}%`;
+
+        document.getElementById("globalCollectionBar").style.width =
+          `${collectionRate}%`;
+        document.getElementById("heroRevenue").textContent =
+          `${Number(data.total_fees).toLocaleString()} جنيه`;
+
+        document.getElementById("totalClients").textContent =
+          data.total_clients;
+
+        document.getElementById("heroCaseFees").textContent = Number(
+          data.case_fees,
+        ).toLocaleString();
+
+        document.getElementById("heroServiceFees").textContent = Number(
+          data.service_fees,
+        ).toLocaleString();
+
+        document.getElementById("totalCases").textContent = data.total_cases;
+
+        document.getElementById("totalFees").textContent = Number(
+          data.total_fees,
+        ).toLocaleString();
+
+        document.getElementById("totalPaid").textContent = Number(
+          data.total_paid,
+        ).toLocaleString();
+
+        document.getElementById("remaining").textContent = Number(
+          data.remaining,
+        ).toLocaleString();
+
+        document.getElementById("totalServices").textContent =
+          data.total_services;
+
+        document.getElementById("serviceFees").textContent = Number(
+          data.service_fees,
+        ).toLocaleString();
+
+        document.getElementById("totalExpenses").textContent = Number(
+          data.total_expenses,
+        ).toLocaleString();
+
+        document.getElementById("netProfit").textContent = Number(
+          data.net_profit,
+        ).toLocaleString();
+      }
+
+      async function loadTopDebtors() {
+        try {
+          const debtors = await api.get(`${API}/dashboard/top-debtors`);
+
+          const container = document.getElementById("topDebtors");
+
+          if (!debtors.length) {
+            container.innerHTML = `
+        <div class="text-green-600 font-bold">
+          لا توجد مديونيات حالياً
+        </div>
+      `;
+            return;
+          }
+
+          container.innerHTML = debtors
+            .map(
+              (d, index) => `
+      <a
+        href="client-profile.html?id=${d.id}"
+        class="bg-gradient-to-br from-red-50 to-white border border-red-200 rounded-2xl p-5 hover:shadow-lg transition"
+      >
+
+        <div class="flex justify-between items-center mb-3">
+
+          <span
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 text-white font-bold"
+          >
+            ${index + 1}
+          </span>
+
+          <span class="text-xs text-red-600 font-semibold">
+            مديونية
+          </span>
+
+        </div>
+
+        <h3 class="font-bold text-[#1f2a44] mb-2">
+          ${d.full_name}
+        </h3>
+
+        <p class="text-3xl font-bold text-red-600">
+          ${Number(d.remaining).toLocaleString()}
+        </p>
+
+        <p class="text-sm text-gray-500 mt-1">
+          جنيه مستحق
+        </p>
+
+      </a>
+    `,
+            )
+            .join("");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadRecentPayments() {
+        try {
+          const payments = await api.get(`${API}/dashboard/recent-payments`);
+
+          const container = document.getElementById("recentPayments");
+
+          if (!payments.length) {
+            container.innerHTML = `
+        <div class="text-gray-500">
+          لا توجد مدفوعات
+        </div>
+      `;
+            return;
+          }
+
+          container.innerHTML = payments
+            .map(
+              (p) => `
+          <div
+            class="flex justify-between items-center border rounded-xl p-4 hover:bg-gray-50"
+          >
+
+            <div>
+
+              <div class="font-bold text-[#1f2a44]">
+                ${p.full_name || "غير مرتبط بموكل"}
+              </div>
+
+              <div class="text-sm text-gray-500">
+                ${p.case_title || p.service_title || "بدون عنوان"}
+              </div>
+
+            </div>
+
+            <div class="text-left">
+
+              <div class="font-bold text-green-600 text-lg">
+                ${Number(p.amount).toLocaleString()} جنيه
+              </div>
+
+              <div class="text-xs text-gray-500">
+                ${p.payment_date}
+              </div>
+
+            </div>
+
+          </div>
+        `,
+            )
+            .join("");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadClients() {
+        allClients = await api.get(`${API}/revenues/clients`);
+
+        renderTable(allClients);
+      }
+
+      function renderTable(clients) {
+        const tbody = document.getElementById("clientsTable");
+
+        const debtorsCount = clients.filter(
+          (c) => Number(c.remaining) > 0,
+        ).length;
+
+        const totalRemaining = clients.reduce(
+          (sum, c) => sum + Number(c.remaining || 0),
+          0,
+        );
+
+        document.getElementById("debtorsCount").textContent = debtorsCount;
+
+        document.getElementById("totalRemainingAmount").textContent =
+          totalRemaining.toLocaleString() + " جنيه";
+
+        if (!clients.length) {
+          tbody.innerHTML = `
+        <tr>
+          <td
+            colspan="6"
+            class="text-center p-6"
+          >
+            لا توجد بيانات
+          </td>
+        </tr>
+      `;
+
+          return;
+        }
+
+        tbody.innerHTML = [...clients]
+          .sort((a, b) => Number(b.remaining) - Number(a.remaining))
+          .map((client) => {
+            const isDebtor = Number(client.remaining) > 0;
+
+            return `
+<tr
+  class="
+    border-b
+    hover:bg-blue-50
+    transition-all
+    duration-200
+    ${isDebtor ? "bg-red-50/30 border-r-4 border-red-500" : ""}
+  "
+>
+
+<td class="p-4">
+
+  <a
+    href="client-profile.html?id=${client.id}"
+    class="block"
+  >
+
+    <div class="font-bold text-[#1f2a44] text-lg">
+      ${client.full_name}
+    </div>
+
+<div class="flex items-center gap-2 mt-2">
+
+  <span
+    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+  >
+    الملف المالي
+  </span>
+
+</div>
+
+  </a>
+
+</td>
+
+            <td class="p-4">
+              ${client.total_cases}
+            </td>
+
+            <td class="p-4">
+              ${Number(client.total_fees).toLocaleString()}
+            </td>
+<td class="p-4">
+  <span
+    class="bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold"
+  >
+    ${Number(client.total_paid).toLocaleString()}
+  </span>
+</td>
+<td class="p-4">
+  <span
+    class="bg-red-100 text-red-700 px-3 py-2 rounded-lg font-bold"
+  >
+    ${Number(client.remaining).toLocaleString()}
+  </span>
+</td>
+
+            <td class="p-4">
+
+              ${
+                Number(client.remaining) > 0
+                  ? `
+                    <span
+                      class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm"
+                    >
+                      مديون
+                    </span>
+                  `
+                  : `
+                    <span
+                      class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
+                    >
+                      مسدد
+                    </span>
+                  `
+              }
+
+            </td>
+
+          </tr>
+               `;
+          })
+          .join("");
+      }
+
+      document.getElementById("searchInput").addEventListener("input", (e) => {
+        const value = e.target.value.toLowerCase();
+
+        const filtered = allClients.filter((c) =>
+          c.full_name.toLowerCase().includes(value),
+        );
+
+        renderTable(filtered);
+      });
+
+      loadSummary();
+      loadTopDebtors();
+      loadRecentPayments();
+      loadClients();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+  </body>
+</html>

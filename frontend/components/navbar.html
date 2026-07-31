@@ -1,0 +1,56 @@
+<header id="navbar" class="app-navbar" role="banner">
+  <div class="navbar-left" id="navbar-left"></div>
+
+  <div class="navbar-center" id="navbar-center">
+    <div class="navbar-search" role="search">
+      <i data-lucide="search" class="navbar-search-icon" aria-hidden="true">
+      </i>
+
+      <input
+        id="headerSearchInput"
+        type="search"
+        class="search-input"
+        placeholder="ابحث عن موكل، قضية، رقم قضية..."
+        autocomplete="off"
+        spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off"
+        aria-label="البحث العام"
+        aria-expanded="false"
+        aria-controls="headerSearchResults"
+      />
+
+      <div
+        id="headerSearchResults"
+        class="search-results"
+        aria-hidden="true"
+        role="listbox"
+        aria-label="نتائج البحث"
+      ></div>
+    </div>
+  </div>
+
+  <div class="navbar-right" id="navbar-right">
+    <button
+      id="navbar-notifications-button"
+      type="button"
+      class="navbar-action"
+      data-action="toggle-notifications"
+      aria-label="الإشعارات"
+      aria-expanded="false"
+      aria-controls="notificationsDropdown"
+    >
+      <i data-lucide="bell" aria-hidden="true"> </i>
+
+      <span
+        id="navbar-notifications-badge"
+        class="navbar-badge d-none"
+        aria-live="polite"
+      >
+        0
+      </span>
+    </button>
+
+    <div id="navbar-user-container" class="dropdown"></div>
+  </div>
+</header>

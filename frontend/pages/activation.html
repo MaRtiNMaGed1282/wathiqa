@@ -1,0 +1,134 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>تفعيل وثيقة</title>
+
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+  </head>
+
+  <body class="bg-slate-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-lg p-8">
+      <h1 class="text-3xl font-bold text-center mb-4">تفعيل نظام وثيقة</h1>
+
+      <p class="text-gray-600 text-center mb-8">
+        اختر ملف الترخيص (.lic) الذي تم إرساله لك
+      </p>
+
+      <div
+        class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center"
+      >
+        <input
+          type="file"
+          id="licenseFile"
+          accept=".lic,.json"
+          class="hidden"
+        />
+
+        <button
+          type="button"
+          onclick="document.getElementById('licenseFile').click()"
+          class="bg-slate-200 hover:bg-slate-300 px-6 py-3 rounded-lg"
+        >
+          اختيار ملف الترخيص
+        </button>
+
+        <p id="fileName" class="mt-4 text-sm text-gray-500">
+          لم يتم اختيار ملف
+        </p>
+      </div>
+
+      <button
+        onclick="activateLicense()"
+        class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+      >
+        تفعيل النظام
+      </button>
+
+      <div id="result" class="mt-4 text-center font-bold"></div>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+
+    <script>
+      let selectedLicense = null;
+      function showToast(message, success = true, duration = 2500) {
+        Toastify({
+          text: message,
+          duration,
+          gravity: "top",
+          position: "left",
+          close: true,
+          stopOnFocus: true,
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+
+        return new Promise((resolve) => {
+          setTimeout(resolve, duration);
+        });
+      }
+      document
+        .getElementById("licenseFile")
+        .addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+
+          if (!file) return;
+
+          document.getElementById("fileName").innerText = file.name;
+
+          try {
+            const text = await file.text();
+
+            selectedLicense = JSON.parse(text);
+          } catch {
+            selectedLicense = null;
+
+            document.getElementById("result").innerText =
+              "ملف الترخيص غير صالح";
+
+            document.getElementById("result").className =
+              "mt-4 text-center font-bold text-red-600";
+          }
+        });
+
+      async function activateLicense() {
+        const result = document.getElementById("result");
+
+        if (!selectedLicense) {
+          result.innerText = "يرجى اختيار ملف ترخيص صالح";
+
+          result.className = "mt-4 text-center font-bold text-red-600";
+
+          return;
+        }
+
+        try {
+          const data = await api.post("/license/activate", {
+            payload: selectedLicense.payload,
+            signature: selectedLicense.signature,
+          });
+
+          result.innerText = data.message;
+
+          if (data) {
+            result.className = "mt-4 text-center font-bold text-green-600";
+
+            setTimeout(() => {
+              window.location.href = "login.html";
+            }, 2000);
+          } else {
+            result.className = "mt-4 text-center font-bold text-red-600";
+          }
+        } catch {
+          result.innerText = "فشل الاتصال بالخادم";
+
+          result.className = "mt-4 text-center font-bold text-red-600";
+        }
+      }
+    </script>
+  </body>
+</html>

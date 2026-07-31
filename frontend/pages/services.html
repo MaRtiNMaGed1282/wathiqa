@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>الاستشارات والخدمات القانونية</title>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <!-- Sidebar -->
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <!-- Main -->
+    <main class="flex-1 p-6 overflow-auto">
+      <h2 class="text-xl font-semibold mb-4">الاستشارات والخدمات القانونية</h2>
+
+      <!-- Stats -->
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">إجمالي الخدمات</p>
+          <h3 id="totalServices" class="text-3xl font-bold text-primary">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">الخدمات الجديدة</p>
+          <h3 id="newServices" class="text-3xl font-bold text-blue-600">0</h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">قيد التنفيذ</p>
+          <h3
+            id="inProgressServices"
+            class="text-3xl font-bold text-yellow-600"
+          >
+            0
+          </h3>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <p class="text-gray-500">المكتملة</p>
+          <h3 id="completedServices" class="text-3xl font-bold text-green-600">
+            0
+          </h3>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <input
+          id="searchInput"
+          placeholder="ابحث برقم الخدمة أو عنوان الخدمة أو الموكل أو المسؤول"
+          class="w-full border rounded p-3"
+        />
+      </div>
+
+      <!-- Add Case -->
+
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">إدارة الخدمات القانونية</h2>
+
+        <button
+          onclick="openAddServiceModal()"
+          class="bg-accent text-white px-5 py-3 rounded-lg"
+        >
+          + إضافة خدمة
+        </button>
+      </div>
+
+      <div
+        id="servicesTableContainer"
+        class="bg-white shadow rounded p-4 overflow-auto"
+      >
+        <table class="min-w-full text-right">
+          <thead>
+            <tr class="bg-secondary text-white">
+              <th class="p-2">#</th>
+
+              <th class="p-2">رقم الخدمة</th>
+              <th class="p-2">عنوان الخدمة</th>
+              <th class="p-2">نوع الخدمة</th>
+              <th class="p-2">الموكل</th>
+              <th class="p-2">المسؤول</th>
+              <th class="p-2">الحالة</th>
+              <th class="p-2">الأولوية</th>
+              <th class="p-2">الإجراءات</th>
+            </tr>
+          </thead>
+
+          <tbody id="servicesTableBody"></tbody>
+        </table>
+      </div>
+    </main>
+    <div
+      id="addServiceModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-bold">إضافة خدمة</h3>
+
+          <button
+            type="button"
+            onclick="closeAddServiceModal()"
+            class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form
+          id="addServiceForm"
+          class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3"
+        >
+          <div>
+            <label class="block mb-1 font-semibold"> الموكل </label>
+
+            <input
+              id="clientSearch"
+              type="text"
+              placeholder="ابحث بالاسم أو الرقم القومي"
+              class="w-full border p-2 rounded"
+            />
+
+            <div
+              id="clientResults"
+              class="hidden bg-white border rounded mt-1 max-h-60 overflow-auto"
+            ></div>
+          </div>
+
+          <input
+            id="service_title"
+            type="text"
+            placeholder="عنوان الخدمة"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="service_type"
+            type="text"
+            placeholder="نوع الخدمة"
+            class="border p-2 rounded"
+          />
+
+          <input
+            id="assigned_to"
+            type="text"
+            placeholder="المحامي المسؤول"
+            class="border p-2 rounded"
+          />
+
+          <div>
+            <label class="block mb-1 font-semibold"> تاريخ البدء </label>
+
+            <input
+              id="start_date"
+              type="date"
+              class="w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> تاريخ التسليم </label>
+
+            <input
+              id="due_date"
+              type="date"
+              class="w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> الأولوية </label>
+
+            <select id="priority_level" class="w-full border p-2 rounded">
+              <option value="عادية">عادية</option>
+              <option value="مهمة">مهمة</option>
+              <option value="عاجلة">عاجلة</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold"> حالة الخدمة </label>
+
+            <select id="service_status" class="w-full border p-2 rounded">
+              <option value="جديدة">جديدة</option>
+              <option value="قيد التنفيذ">قيد التنفيذ</option>
+              <option value="بانتظار العميل">بانتظار العميل</option>
+              <option value="مكتملة">مكتملة</option>
+              <option value="ملغاة">ملغاة</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1 font-semibold">
+              إجمالي الأتعاب (جنيه)
+            </label>
+
+            <input
+              id="total_fees"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="مثال: 10000"
+              class="w-full border p-2 rounded"
+            />
+          </div>
+          <textarea
+            id="description"
+            rows="4"
+            placeholder="وصف الخدمة"
+            class="border p-2 rounded"
+          ></textarea>
+
+          <textarea
+            id="notes"
+            rows="3"
+            placeholder="ملاحظات"
+            class="border p-2 rounded"
+          ></textarea>
+
+          <button
+            type="submit"
+            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+          >
+            إضافة خدمة
+          </button>
+        </form>
+      </div>
+    </div>
+    <script>
+      const SERVICES_API = "/services";
+
+      const CLIENTS_API = "/clients";
+
+      let selectedClientId = null;
+      let allClients = [];
+
+      function showToast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+      async function searchServices() {
+        const q = document.getElementById("searchInput").value.trim();
+
+        if (q === "") {
+          fetchServices();
+          return;
+        }
+
+        try {
+          const services = await api.get(SERVICES_API);
+
+          const filtered = services.filter(
+            (s) =>
+              (s.service_number || "")
+                .toLowerCase()
+                .includes(q.toLowerCase()) ||
+              (s.service_title || "").toLowerCase().includes(q.toLowerCase()) ||
+              (s.service_type || "").toLowerCase().includes(q.toLowerCase()) ||
+              (s.assigned_to || "").toLowerCase().includes(q.toLowerCase()) ||
+              (s.full_name || "").toLowerCase().includes(q.toLowerCase()),
+          );
+
+          renderServices(filtered);
+        } catch (err) {
+          console.error("Search Error:", err);
+        }
+      }
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", searchServices);
+
+      function renderServices(services) {
+        const tbody = document.getElementById("servicesTableBody");
+
+        tbody.innerHTML = "";
+
+        if (services.length === 0) {
+          tbody.innerHTML = `
+
+    <tr>
+
+      <td
+        colspan="6"
+        class="text-center py-10">
+
+        <div class="flex flex-col items-center">
+
+          <div class="text-6xl mb-4">
+            📋
+          </div>
+
+          <h3
+            class="text-xl font-bold">
+
+            لا توجد خدمات قانونية حتى الآن
+
+          </h3>
+
+          <p
+            class="text-gray-500 mt-2">
+
+            قم بإضافة أول خدمة للبدء
+
+          </p>
+
+        </div>
+
+      </td>
+
+    </tr>
+
+  `;
+
+          return;
+        }
+
+        services.forEach((c, i) => {
+          tbody.innerHTML += `
+  <tr class="border-b hover:bg-gray-50">
+
+    <td class="p-2">
+      ${i + 1}
+    </td>
+
+<td class="p-2">
+  ${c.service_number}
+</td>
+
+<td class="p-2">
+  ${c.service_title || "-"}
+</td>
+
+<td class="p-2">
+  ${c.service_type || "-"}
+</td>
+
+<td class="p-2">
+  ${c.full_name || "-"}
+</td>
+<td class="p-2">
+  ${c.assigned_to || "-"}
+</td>
+
+<td class="p-2">
+  <span class="
+    px-3 py-1 rounded-full text-xs font-bold
+    ${
+      c.service_status === "جديدة"
+        ? "bg-blue-100 text-blue-700"
+        : c.service_status === "قيد التنفيذ"
+          ? "bg-yellow-100 text-yellow-700"
+          : c.service_status === "مكتملة"
+            ? "bg-green-100 text-green-700"
+            : c.service_status === "ملغاة"
+              ? "bg-red-100 text-red-700"
+              : "bg-gray-100 text-gray-700"
+    }
+  ">
+    ${c.service_status || "-"}
+  </span>
+</td>
+
+<td class="p-2">
+  <span class="
+    px-3 py-1 rounded-full text-xs font-bold
+    ${
+      c.priority_level === "عاجلة"
+        ? "bg-red-100 text-red-700"
+        : c.priority_level === "مهمة"
+          ? "bg-orange-100 text-orange-700"
+          : "bg-green-100 text-green-700"
+    }
+  ">
+    ${c.priority_level || "-"}
+  </span>
+</td>
+    <td class="p-2">
+
+      <button
+        onclick="openServiceProfile(${c.service_id})"
+        class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+
+        عرض
+
+      </button>
+
+    </td>
+
+  </tr>
+`;
+        });
+      }
+
+      async function fetchServices() {
+        try {
+          const services = await api.get(SERVICES_API);
+
+          renderServices(services);
+
+          document.getElementById("totalServices").textContent =
+            services.length;
+
+          document.getElementById("newServices").textContent = services.filter(
+            (s) => s.service_status === "جديدة",
+          ).length;
+
+          document.getElementById("inProgressServices").textContent =
+            services.filter((s) => s.service_status === "قيد التنفيذ").length;
+
+          document.getElementById("completedServices").textContent =
+            services.filter((s) => s.service_status === "مكتملة").length;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      document
+        .getElementById("addServiceForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          try {
+            if (!selectedClientId) {
+              showToast("يرجى اختيار الموكل", false);
+              return;
+            }
+
+            const data = {
+              client_id: selectedClientId,
+
+              service_title: document.getElementById("service_title").value,
+
+              service_type: document.getElementById("service_type").value,
+
+              assigned_to: document.getElementById("assigned_to").value,
+
+              start_date: document.getElementById("start_date").value,
+
+              due_date: document.getElementById("due_date").value,
+
+              priority_level: document.getElementById("priority_level").value,
+
+              service_status: document.getElementById("service_status").value,
+
+              total_fees: document.getElementById("total_fees").value || 0,
+
+              description: document.getElementById("description").value,
+
+              notes: document.getElementById("notes").value,
+            };
+
+            if (!data.service_title.trim()) {
+              showToast("عنوان الخدمة مطلوب", false);
+              return;
+            }
+
+            if (!data.service_type.trim()) {
+              showToast("نوع الخدمة مطلوب", false);
+              return;
+            }
+
+            if (!data.assigned_to.trim()) {
+              showToast("المحامي المسؤول مطلوب", false);
+              return;
+            }
+
+            const result = await api.post(SERVICES_API, data);
+
+            if (result) {
+              showToast("تم إضافة الخدمة بنجاح", true);
+
+              closeAddServiceModal();
+
+              document.getElementById("addServiceForm").reset();
+
+              selectedClientId = null;
+
+              fetchServices();
+            } else {
+              console.log(result);
+
+              showToast(result.error || result.message, false);
+            }
+          } catch (err) {
+            console.error(err);
+
+            showToast("حدث خطأ أثناء إضافة الخدمة", false);
+          }
+        });
+      async function loadClients() {
+        try {
+          allClients = await api.get(CLIENTS_API);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function searchClientsForCase() {
+        console.log(allClients);
+        const query = document
+          .getElementById("clientSearch")
+          .value.toLowerCase()
+          .trim();
+
+        const results = document.getElementById("clientResults");
+
+        if (!query) {
+          results.classList.add("hidden");
+
+          return;
+        }
+
+        const filtered = allClients.filter(
+          (client) =>
+            client.full_name.toLowerCase().includes(query) ||
+            client.national_id.includes(query),
+        );
+
+        results.innerHTML = "";
+
+        filtered.forEach((client) => {
+          results.innerHTML += `
+      <div
+        onclick="selectClient(${client.id})"
+        class="p-2 border-b cursor-pointer hover:bg-gray-100">
+
+        <div>
+          ${client.full_name}
+        </div>
+
+        <div
+          class="text-xs text-gray-500">
+
+          ${client.national_id}
+
+        </div>
+
+      </div>
+    `;
+        });
+
+        results.classList.remove("hidden");
+      }
+
+      function selectClient(id) {
+        const client = allClients.find((c) => c.id == id);
+
+        selectedClientId = id;
+
+        document.getElementById("clientSearch").value = `${client.full_name}`;
+
+        document.getElementById("clientResults").classList.add("hidden");
+      }
+
+      document
+        .getElementById("clientSearch")
+        .addEventListener("input", searchClientsForCase);
+
+      function openServiceProfile(id) {
+        window.location.href = `service-profile.html?id=${id}`;
+      }
+      function openAddServiceModal() {
+        const modal = document.getElementById("addServiceModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeAddServiceModal() {
+        const modal = document.getElementById("addServiceModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      loadClients();
+
+      fetchServices();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+  </body>
+</html>

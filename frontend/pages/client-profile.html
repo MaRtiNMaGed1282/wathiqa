@@ -1,0 +1,855 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>بيانات الموكل</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/activityTimeline.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da] min-h-screen">
+    <div class="max-w-7xl mx-auto p-6">
+      <!-- Header -->
+
+      <div class="flex justify-between items-center mb-6">
+        <h1 id="clientNameHeader" class="text-3xl font-bold text-[#1f2a44]">
+          بيانات الموكل
+        </h1>
+
+        <button
+          onclick="history.back()"
+          class="bg-[#1f2a44] text-white px-4 py-2 rounded-lg"
+        >
+          رجوع
+        </button>
+      </div>
+
+      <!-- Client Info -->
+
+      <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-[#1f2a44] mb-4 border-b pb-2">
+          بيانات الموكل
+        </h2>
+
+        <div id="clientDetails" class="text-center text-gray-500">
+          جاري التحميل...
+        </div>
+      </div>
+
+      <!-- Financial Summary -->
+      <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-[#1f2a44] mb-4 border-b pb-2">
+          الملخص المالي
+        </h2>
+        <div class="grid md:grid-cols-3 gap-4 mb-4">
+          <div class="bg-blue-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">عدد القضايا</p>
+            <p id="totalCases" class="text-3xl font-bold text-[#1f2a44]">0</p>
+          </div>
+
+          <div class="bg-indigo-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">عدد الخدمات</p>
+            <p id="totalServices" class="text-3xl font-bold text-[#1f2a44]">
+              0
+            </p>
+          </div>
+
+          <div class="bg-green-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">نسبة التحصيل</p>
+            <p id="collectionRate" class="text-3xl font-bold text-green-600">
+              0%
+            </p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-gray-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">أتعاب القضايا</p>
+            <p id="caseFees" class="text-2xl font-bold text-[#1f2a44]">
+              0 جنيه
+            </p>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">أتعاب الخدمات</p>
+            <p id="serviceFees" class="text-2xl font-bold text-indigo-600">
+              0 جنيه
+            </p>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">إجمالي الأتعاب</p>
+            <p id="totalFees" class="text-2xl font-bold text-[#1f2a44]">
+              0 جنيه
+            </p>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">المدفوع</p>
+            <p id="paidAmount" class="text-2xl font-bold text-green-600">
+              0 جنيه
+            </p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-red-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">المتبقي</p>
+            <p id="remainingAmount" class="text-2xl font-bold text-red-600">
+              0 جنيه
+            </p>
+          </div>
+
+          <div class="bg-orange-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">المصروفات</p>
+            <p id="expensesAmount" class="text-2xl font-bold text-orange-600">
+              0 جنيه
+            </p>
+          </div>
+
+          <div class="bg-purple-50 rounded-xl p-5 text-center">
+            <p class="text-gray-500 text-sm">صافي الربح</p>
+            <p id="netProfit" class="text-2xl font-bold text-purple-600">
+              0 جنيه
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attorneys -->
+
+      <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold text-[#1f2a44]">التوكيلات</h2>
+
+          <button
+            onclick="openAttorneyModal()"
+            class="bg-[#1f2a44] text-white px-4 py-2 rounded-lg"
+          >
+            + إضافة توكيل
+          </button>
+        </div>
+
+        <div id="attorneysContainer">
+          <p class="text-gray-500">جاري تحميل التوكيلات...</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <div class="flex gap-2">
+          <button
+            id="casesTab"
+            onclick="showTab('cases')"
+            class="px-5 py-2 rounded-lg bg-[#1f2a44] text-white"
+          >
+            القضايا
+          </button>
+
+          <button
+            id="servicesTab"
+            onclick="showTab('services')"
+            class="px-5 py-2 rounded-lg bg-gray-200"
+          >
+            الخدمات
+          </button>
+        </div>
+      </div>
+      <!-- Cases -->
+
+      <div id="casesSection" class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-[#1f2a44] mb-4 border-b pb-2">
+          القضايا
+        </h2>
+
+        <div id="clientCases" class="grid md:grid-cols-2 gap-4"></div>
+      </div>
+      <!-- Services -->
+
+      <div
+        id="servicesSection"
+        class="bg-white rounded-xl shadow p-6 mt-6 hidden"
+      >
+        <h2 class="text-xl font-bold text-[#1f2a44] mb-4 border-b pb-2">
+          الخدمات
+        </h2>
+
+        <div id="clientServices" class="grid md:grid-cols-2 gap-4"></div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-6 mt-6">
+        <h2 class="text-xl font-bold text-[#1f2a44] mb-4 border-b pb-2">
+          سجل النشاط
+        </h2>
+
+        <div id="clientActivityTimeline">
+          <p class="text-gray-500">جاري تحميل النشاط...</p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="attorneyModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl p-6 w-full max-w-xl">
+        <h3 class="text-xl font-bold mb-4">إضافة توكيل</h3>
+
+        <form id="attorneyForm" class="space-y-3">
+          <input
+            id="attorney_number"
+            placeholder="رقم التوكيل"
+            class="w-full border rounded p-3"
+          />
+
+          <input
+            id="attorney_type"
+            placeholder="نوع التوكيل"
+            class="w-full border rounded p-3"
+          />
+
+          <input
+            id="issue_date"
+            type="date"
+            class="w-full border rounded p-3"
+          />
+
+          <input
+            id="issuing_office"
+            placeholder="جهة الإصدار"
+            class="w-full border rounded p-3"
+          />
+
+          <textarea
+            id="attorney_notes"
+            placeholder="ملاحظات"
+            class="w-full border rounded p-3"
+          ></textarea>
+
+          <input
+            id="attorney_file"
+            type="file"
+            class="w-full border rounded p-3"
+          />
+
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              onclick="closeAttorneyModal()"
+              class="px-4 py-2 bg-gray-200 rounded"
+            >
+              إلغاء
+            </button>
+
+            <button
+              type="submit"
+              class="px-4 py-2 bg-[#1f2a44] text-white rounded"
+            >
+              حفظ
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const CLIENTS_API = "/clients";
+
+      const ATTORNEYS_API = "/attorneys";
+
+      const params = new URLSearchParams(window.location.search);
+
+      const clientId = params.get("id");
+
+      function showToast(message, success = true, duration = 2500) {
+        Toastify({
+          text: message,
+          duration,
+          gravity: "top",
+          position: "left",
+          close: true,
+          stopOnFocus: true,
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+
+      async function loadClient() {
+        try {
+          const client = await api.get(`${CLIENTS_API}/${clientId}`);
+
+          document.getElementById("clientNameHeader").textContent =
+            client.full_name;
+
+          document.getElementById("clientDetails").innerHTML = `
+        <div class="grid md:grid-cols-2 gap-6">
+
+          <div>
+            <p class="text-gray-500">
+              الاسم
+            </p>
+
+            <p class="font-bold text-lg">
+              ${client.full_name}
+            </p>
+          </div>
+
+          <div>
+  <p class="text-gray-500">
+    كود الموكل
+  </p>
+
+  <p class="font-bold text-lg">
+    ${client.client_code || "-"}
+  </p>
+</div>
+
+          <div>
+            <p class="text-gray-500">
+              الرقم القومي
+            </p>
+
+            <p class="font-bold text-lg">
+              ${client.national_id}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-gray-500">
+              الهاتف
+            </p>
+
+            <p class="font-bold text-lg">
+              ${client.phone}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-gray-500">
+              العنوان
+            </p>
+
+            <p class="font-bold text-lg">
+              ${client.address}
+            </p>
+          </div>
+
+          <div class="md:col-span-2">
+            <p class="text-gray-500">
+              ملاحظات
+            </p>
+
+            <p class="font-bold text-lg">
+              ${client.notes || "-"}
+            </p>
+          </div>
+
+        </div>
+      `;
+        } catch (err) {
+          console.error(err);
+
+          document.getElementById("clientDetails").innerHTML = `
+        <p class="text-red-600">
+          فشل تحميل بيانات الموكل
+        </p>
+      `;
+        }
+      }
+
+      async function loadClientCases() {
+        try {
+          const cases = await api.get(
+            `${CLIENTS_API}/${clientId}/cases-financial`,
+          );
+
+          const container = document.getElementById("clientCases");
+
+          if (!cases.length) {
+            container.innerHTML = `
+        <div class="text-gray-500">
+          لا توجد قضايا لهذا الموكل
+        </div>
+      `;
+
+            return;
+          }
+
+          container.innerHTML = cases
+            .map(
+              (c) => `
+            <a
+              href="case-profile.html?id=${c.case_id}"
+              class="block bg-gray-50 border rounded-lg p-5 hover:shadow transition"
+            >
+
+              <div class="flex justify-between mb-3">
+
+                <h3 class="font-bold text-lg">
+                  ${c.case_title}
+                </h3>
+
+                <span
+                  class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm"
+                >
+                  ${c.case_status}
+                </span>
+
+              </div>
+
+              <div class="text-sm text-gray-500 mb-4">
+                رقم القضية:
+                ${c.court_case_number}
+              </div>
+
+              <div class="grid grid-cols-3 gap-4 text-center">
+
+                <div>
+                  <p class="text-xs text-gray-500">
+                    الأتعاب
+                  </p>
+
+                  <p class="font-bold">
+                    ${Number(c.total_fees).toLocaleString()}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs text-gray-500">
+                    المدفوع
+                  </p>
+
+                  <p class="font-bold text-green-600">
+                    ${Number(c.paid).toLocaleString()}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs text-gray-500">
+                    المتبقي
+                  </p>
+
+                  <p class="font-bold text-red-600">
+                    ${Number(c.remaining).toLocaleString()}
+                  </p>
+                </div>
+
+              </div>
+
+            </a>
+          `,
+            )
+            .join("");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function loadClientServices() {
+        try {
+          const services = await api.get(`/services/client/${clientId}`);
+
+          const container = document.getElementById("clientServices");
+
+          if (!services.length) {
+            container.innerHTML = `
+        <div class="text-gray-500">
+          لا توجد خدمات لهذا الموكل
+        </div>
+      `;
+
+            return;
+          }
+
+          container.innerHTML = services
+            .map(
+              (s) => `
+      <a
+        href="service-profile.html?id=${s.service_id}"
+        class="block bg-gray-50 border rounded-lg p-5 hover:shadow transition"
+      >
+
+        <div class="flex justify-between mb-3">
+
+          <h3 class="font-bold text-lg">
+            ${s.service_title}
+          </h3>
+
+          <span
+            class="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-sm"
+          >
+            ${s.service_status}
+          </span>
+
+        </div>
+
+        <div class="text-sm text-gray-500 mb-4">
+          ${s.service_type}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-center">
+
+          <div>
+            <p class="text-xs text-gray-500">
+              الأتعاب
+            </p>
+
+            <p class="font-bold">
+              ${Number(s.total_fees).toLocaleString()}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs text-gray-500">
+              تاريخ الاستحقاق
+            </p>
+
+            <p class="font-bold">
+              ${s.due_date || "-"}
+            </p>
+          </div>
+
+        </div>
+
+      </a>
+    `,
+            )
+            .join("");
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function openAttorneyModal() {
+        const modal = document.getElementById("attorneyModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeAttorneyModal() {
+        const modal = document.getElementById("attorneyModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      async function loadAttorneys() {
+        try {
+          const attorneys = await api.get(
+            `${ATTORNEYS_API}/client/${clientId}`,
+          );
+
+          renderAttorneys(attorneys);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function renderAttorneys(attorneys) {
+        const container = document.getElementById("attorneysContainer");
+
+        if (!attorneys.length) {
+          container.innerHTML = `
+      <p class="text-gray-500">
+        لا توجد توكيلات
+      </p>
+    `;
+
+          return;
+        }
+
+        container.innerHTML = attorneys
+          .map(
+            (attorney) => `
+      <div
+        class="border rounded-lg p-4 mb-3"
+      >
+
+        <div class="flex justify-between items-start">
+
+          <div>
+
+            <p class="font-bold">
+              ${attorney.attorney_number}
+            </p>
+
+            <p class="text-gray-500">
+              ${attorney.attorney_type || "-"}
+            </p>
+
+<p class="text-sm text-gray-500">
+  جهة الإصدار:
+  ${attorney.issuing_office || "-"}
+</p>
+
+          </div>
+
+          <div class="flex gap-2">
+
+            ${
+              attorney.file_path
+                ? `
+              <button
+  onclick="openPdfModal('/attorney-files/${attorney.file_path}')"
+  class="bg-blue-600 text-white px-3 py-1 rounded"
+>
+  عرض
+</button>
+            `
+                : ""
+            }
+
+            <button
+              onclick="deleteAttorney(${attorney.id})"
+              class="bg-red-600 text-white px-3 py-1 rounded"
+            >
+              حذف
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `,
+          )
+          .join("");
+      }
+
+      document
+        .getElementById("attorneyForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          try {
+            const formData = new FormData();
+
+            formData.append("client_id", clientId);
+
+            formData.append(
+              "attorney_number",
+              document.getElementById("attorney_number").value,
+            );
+
+            formData.append(
+              "attorney_type",
+              document.getElementById("attorney_type").value,
+            );
+
+            formData.append(
+              "issue_date",
+              document.getElementById("issue_date").value,
+            );
+
+            formData.append(
+              "issuing_office",
+              document.getElementById("issuing_office").value,
+            );
+
+            formData.append(
+              "notes",
+              document.getElementById("attorney_notes").value,
+            );
+
+            const file = document.getElementById("attorney_file").files[0];
+
+            if (file) {
+              formData.append("file", file);
+            }
+
+            const data = await api.upload(ATTORNEYS_API, formData);
+
+            document.getElementById("attorneyForm").reset();
+
+            closeAttorneyModal();
+
+            await loadAttorneys();
+
+            showToast("تم إضافة التوكيل بنجاح", true);
+          } catch (error) {
+            console.error(error);
+
+            showToast("فشل إضافة التوكيل", false);
+          }
+        });
+
+      async function deleteAttorney(id) {
+        const result = await Swal.fire({
+          title: "تأكيد الحذف",
+          text: "سيتم حذف التوكيل نهائياً",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "حذف",
+          cancelButtonText: "إلغاء",
+          reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) {
+          return;
+        }
+
+        try {
+          const data = await api.delete(`${ATTORNEYS_API}/${id}`);
+
+          await loadAttorneys();
+
+          showToast("تم حذف التوكيل بنجاح", true);
+        } catch (error) {
+          console.error(error);
+
+          showToast("فشل حذف التوكيل", false);
+        }
+      }
+
+      function openPdfModal(url) {
+        document.getElementById("pdfFrame").src = url;
+
+        const modal = document.getElementById("pdfModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closePdfModal() {
+        document.getElementById("pdfFrame").src = "";
+
+        const modal = document.getElementById("pdfModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function showTab(tab) {
+        const casesSection = document.getElementById("casesSection");
+
+        const servicesSection = document.getElementById("servicesSection");
+
+        const casesTab = document.getElementById("casesTab");
+
+        const servicesTab = document.getElementById("servicesTab");
+
+        if (tab === "cases") {
+          casesSection.classList.remove("hidden");
+          servicesSection.classList.add("hidden");
+
+          casesTab.classList.add("bg-[#1f2a44]", "text-white");
+
+          casesTab.classList.remove("bg-gray-200");
+
+          servicesTab.classList.remove("bg-[#1f2a44]", "text-white");
+
+          servicesTab.classList.add("bg-gray-200");
+        } else {
+          servicesSection.classList.remove("hidden");
+          casesSection.classList.add("hidden");
+
+          servicesTab.classList.add("bg-[#1f2a44]", "text-white");
+
+          servicesTab.classList.remove("bg-gray-200");
+
+          casesTab.classList.remove("bg-[#1f2a44]", "text-white");
+
+          casesTab.classList.add("bg-gray-200");
+        }
+      }
+
+      function loadClientActivityTimeline() {
+        ActivityTimeline.load("clientActivityTimeline", {
+          endpoint: `/activity/client/${clientId}`,
+          emptyMessage: "لا يوجد نشاط لهذا الموكل",
+        });
+      }
+
+      loadClient();
+      loadFinancialSummary();
+      loadClientCases();
+      loadClientServices();
+      loadAttorneys();
+      loadClientActivityTimeline();
+      async function loadFinancialSummary() {
+        try {
+          const data = await api.get(
+            `${CLIENTS_API}/${clientId}/financial-summary`,
+          );
+
+          document.getElementById("totalCases").textContent =
+            data.total_cases || 0;
+
+          document.getElementById("totalServices").textContent =
+            data.total_services || 0;
+
+          document.getElementById("caseFees").textContent =
+            `${Number(data.case_fees || 0).toLocaleString()} جنيه`;
+
+          document.getElementById("totalFees").textContent = `${Number(
+            data.total_fees || 0,
+          ).toLocaleString()} جنيه`;
+
+          document.getElementById("serviceFees").textContent =
+            `${Number(data.service_fees || 0).toLocaleString()} جنيه`;
+
+          document.getElementById("paidAmount").textContent = `${Number(
+            data.total_paid || 0,
+          ).toLocaleString()} جنيه`;
+
+          document.getElementById("remainingAmount").textContent = `${Number(
+            data.remaining || 0,
+          ).toLocaleString()} جنيه`;
+
+          document.getElementById("expensesAmount").textContent = `${Number(
+            data.total_expenses || 0,
+          ).toLocaleString()} جنيه`;
+
+          document.getElementById("netProfit").textContent = `${Number(
+            data.net_profit || 0,
+          ).toLocaleString()} جنيه`;
+
+          document.getElementById("collectionRate").textContent =
+            `${data.collection_rate || 0}%`;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    </script>
+
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+
+    <div
+      id="pdfModal"
+      class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50"
+    >
+      <div class="bg-white w-[90%] h-[90%] rounded-xl overflow-hidden">
+        <div class="flex justify-between items-center p-4 border-b">
+          <h3 class="font-bold">معاينة التوكيل</h3>
+
+          <button
+            onclick="closePdfModal()"
+            class="bg-red-600 text-white px-4 py-2 rounded"
+          >
+            إغلاق
+          </button>
+        </div>
+
+        <iframe id="pdfFrame" class="w-full h-[calc(100%-70px)]"></iframe>
+      </div>
+    </div>
+  </body>
+</html>

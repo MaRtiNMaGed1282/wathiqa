@@ -1,0 +1,69 @@
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>المكتبة القانونية</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold">المكتبة القانونية</h1>
+          <p class="text-gray-600 mt-2">
+            القوانين والمراجع القانونية والنماذج العملية
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          onclick="window.location.href = 'laws.html'"
+          class="bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer p-6 border-r-4 border-accent"
+        >
+          <div class="text-4xl mb-4">📚</div>
+
+          <h3 class="text-xl font-bold mb-2">القوانين</h3>
+
+          <p class="text-gray-600">
+            القوانين المصرية المنظمة للأعمال القانونية.
+          </p>
+        </div>
+
+        <div
+          onclick="window.location.href = 'templates.html'"
+          class="bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer p-6 border-r-4 border-green-600"
+        >
+          <div class="text-4xl mb-4">📄</div>
+
+          <h3 class="text-xl font-bold mb-2">النماذج القانونية</h3>
+
+          <p class="text-gray-600">العقود والمذكرات والصحف القانونية.</p>
+        </div>
+      </div>
+    </main>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+  </body>
+</html>

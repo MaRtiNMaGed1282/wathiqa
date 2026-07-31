@@ -1,0 +1,561 @@
+<!-- templates.html -->
+
+<!doctype html>
+
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>النماذج القانونية</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <!-- Cairo -->
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="mb-4 text-sm text-gray-600">
+        <a href="library.html" class="hover:text-primary">
+          المكتبة القانونية
+        </a>
+
+        <span class="mx-2">/</span>
+
+        <span>النماذج القانونية</span>
+      </div>
+
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-3xl font-bold">النماذج القانونية</h1>
+
+          <p class="text-gray-600 mt-2">
+            إدارة النماذج والعقود والمذكرات القانونية
+          </p>
+        </div>
+
+        <button
+          onclick="openAddModal()"
+          class="bg-accent text-white px-5 py-3 rounded-lg"
+        >
+          + إضافة نموذج
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4">
+          <p class="text-gray-500">إجمالي النماذج</p>
+
+          <h3 id="totalTemplates" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+          <p class="text-gray-500">آخر نموذج</p>
+
+          <h3 id="latestTemplate" class="text-xl font-bold mt-2">---</h3>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+          <p class="text-gray-500">التصنيفات</p>
+
+          <h3 id="totalCategories" class="text-3xl font-bold mt-2">0</h3>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-4">
+          <p class="text-gray-500">البحث</p>
+
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="ابحث..."
+            class="w-full border rounded p-2 mt-2"
+          />
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="p-4 border-b">
+          <h3 class="text-lg font-semibold">قائمة النماذج القانونية</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right">
+            <thead>
+              <tr class="bg-secondary text-white">
+                <th class="p-3">#</th>
+
+                <th class="p-3">اسم النموذج</th>
+
+                <th class="p-3">التصنيف</th>
+
+                <th class="p-3">الوصف</th>
+
+                <th class="p-3">الوسوم</th>
+
+                <th class="p-3">الملف</th>
+
+                <th class="p-3">تاريخ الإضافة</th>
+
+                <th class="p-3">الإجراءات</th>
+              </tr>
+            </thead>
+
+            <tbody id="templatesTableBody">
+              <tr>
+                <td colspan="7" class="text-center py-10 text-gray-500">
+                  جاري التحميل...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Add Modal -->
+
+    <div
+      id="addModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl p-6 w-full max-w-xl">
+        <h3 class="text-xl font-bold mb-4">إضافة نموذج قانوني</h3>
+
+        <form id="addTemplateForm" class="space-y-3">
+          <input
+            id="title"
+            placeholder="اسم النموذج"
+            class="w-full border rounded p-3"
+          />
+
+          <input
+            id="category"
+            placeholder="التصنيف"
+            class="w-full border rounded p-3"
+          />
+
+          <textarea
+            id="description"
+            placeholder="الوصف"
+            class="w-full border rounded p-3"
+          ></textarea>
+
+          <input
+            id="tags"
+            placeholder="الوسوم"
+            class="w-full border rounded p-3"
+          />
+
+          <input id="file" type="file" class="w-full border rounded p-3" />
+
+          <div class="flex gap-3">
+            <button
+              type="submit"
+              class="bg-primary text-white px-5 py-2 rounded"
+            >
+              حفظ
+            </button>
+
+            <button
+              type="button"
+              onclick="closeAddModal()"
+              class="bg-gray-300 px-5 py-2 rounded"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Edit Modal -->
+
+    <div
+      id="editModal"
+      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl p-6 w-full max-w-xl">
+        <h3 class="text-xl font-bold mb-4">تعديل النموذج القانوني</h3>
+
+        <form id="editTemplateForm" class="space-y-3">
+          <input
+            id="edit_title"
+            placeholder="اسم النموذج"
+            class="w-full border rounded p-3"
+          />
+
+          <input
+            id="edit_category"
+            placeholder="التصنيف"
+            class="w-full border rounded p-3"
+          />
+
+          <textarea
+            id="edit_description"
+            placeholder="الوصف"
+            class="w-full border rounded p-3"
+          ></textarea>
+
+          <input
+            id="edit_tags"
+            placeholder="الوسوم"
+            class="w-full border rounded p-3"
+          />
+
+          <input id="edit_file" type="file" class="w-full border rounded p-3" />
+
+          <div class="flex gap-3">
+            <button
+              type="submit"
+              class="bg-primary text-white px-5 py-2 rounded"
+            >
+              حفظ التعديلات
+            </button>
+
+            <button
+              type="button"
+              onclick="closeEditModal()"
+              class="bg-gray-300 px-5 py-2 rounded"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+    <script>
+      const API_URL = "/templates";
+
+      const FILES_URL = "/template-files";
+
+      let currentTemplates = [];
+      let currentTemplateId = null;
+
+      function toast(message, success = true) {
+        Toastify({
+          text: message,
+          duration: 3000,
+          gravity: "top",
+          position: "left",
+          style: {
+            background: success ? "#16a34a" : "#dc2626",
+          },
+        }).showToast();
+      }
+
+      async function fetchTemplates() {
+        const data = await api.get(API_URL);
+
+        currentTemplates = data;
+
+        renderTemplates(data);
+
+        document.getElementById("totalTemplates").textContent = data.length;
+
+        document.getElementById("latestTemplate").textContent = data.length
+          ? data[0].title
+          : "---";
+
+        const categories = new Set(data.map((t) => t.category));
+
+        document.getElementById("totalCategories").textContent =
+          categories.size;
+      }
+
+      function renderTemplates(data) {
+        const tbody = document.getElementById("templatesTableBody");
+
+        if (!data.length) {
+          tbody.innerHTML = `<tr>
+             <td colspan="7"
+             class="text-center py-10">
+             لا توجد بيانات
+             </td>
+           </tr>`;
+          return;
+        }
+
+        tbody.innerHTML = "";
+
+        data.forEach((template, index) => {
+          tbody.innerHTML += `
+          <tr class="border-b hover:bg-gray-50">
+
+            <td class="p-3">
+              ${index + 1}
+            </td>
+
+            <td class="p-3 font-semibold">
+              ${template.title}
+            </td>
+
+            <td class="p-3">
+              ${template.category}
+            </td>
+
+            <td class="p-3">
+              ${template.description || "-"}
+            </td>
+
+            <td class="p-3">
+              ${template.tags || "-"}
+            </td>
+
+            <td class="p-3">
+  ${template.file_path || "-"}
+</td>
+
+            <td class="p-3">
+              ${new Date(template.created_at).toLocaleDateString("ar-EG")}
+            </td>
+
+            <td class="p-3">
+
+<div class="flex gap-2">
+
+  <button
+    onclick="downloadTemplate('${template.file_path}')"
+    class="bg-green-600 text-white px-3 py-1 rounded"
+  >
+    تحميل
+  </button>
+
+  <button
+    onclick="editTemplate(${template.id})"
+    class="bg-accent text-white px-3 py-1 rounded"
+  >
+    تعديل
+  </button>
+
+  <button
+    onclick="deleteTemplate(${template.id})"
+    class="bg-red-600 text-white px-3 py-1 rounded"
+  >
+    حذف
+  </button>
+
+</div>
+
+            </td>
+
+          </tr>
+          `;
+        });
+      }
+
+      function downloadTemplate(filePath) {
+        window.open(`${FILES_URL}/${filePath}`, "_blank");
+      }
+
+      async function deleteTemplate(id) {
+        const result = await Swal.fire({
+          title: "تأكيد الحذف",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "موافق",
+          cancelButtonText: "إلغاء",
+
+          reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) return;
+
+        const data = await api.delete(`${API_URL}/${id}`);
+
+        toast(data.message);
+
+        fetchTemplates();
+      }
+
+      document
+        .getElementById("addTemplateForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData();
+
+          formData.append("title", document.getElementById("title").value);
+
+          formData.append(
+            "category",
+            document.getElementById("category").value,
+          );
+
+          formData.append(
+            "description",
+            document.getElementById("description").value,
+          );
+
+          formData.append("tags", document.getElementById("tags").value);
+
+          const file = document.getElementById("file").files[0];
+
+          if (!file) {
+            toast("يرجى اختيار ملف", false);
+
+            return;
+          }
+
+          formData.append("file", file);
+
+          const data = await api.upload(API_URL, formData);
+
+          toast(data.message);
+
+          document.getElementById("addTemplateForm").reset();
+
+          closeAddModal();
+
+          await fetchTemplates();
+        });
+
+      document
+        .getElementById("editTemplateForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          try {
+            const formData = new FormData();
+
+            formData.append(
+              "title",
+              document.getElementById("edit_title").value,
+            );
+
+            formData.append(
+              "category",
+              document.getElementById("edit_category").value,
+            );
+
+            formData.append(
+              "description",
+              document.getElementById("edit_description").value,
+            );
+
+            formData.append("tags", document.getElementById("edit_tags").value);
+
+            const fileInput = document.getElementById("edit_file");
+
+            if (fileInput.files && fileInput.files.length > 0) {
+              formData.append("file", fileInput.files[0]);
+            }
+
+            const data = await api.upload(
+              `${API_URL}/${currentTemplateId}`,
+              formData,
+              {
+                method: "PUT",
+              },
+            );
+            toast("تم تعديل النموذج بنجاح", true);
+
+            document.getElementById("editTemplateForm").reset();
+
+            closeEditModal();
+
+            await fetchTemplates();
+          } catch (error) {
+            console.error(error);
+
+            toast(error.message || "فشل تعديل النموذج", false);
+          }
+        });
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", async (e) => {
+          const q = e.target.value.trim();
+
+          if (!q) {
+            fetchTemplates();
+            return;
+          }
+
+          const data = await api.get(
+            `${API_URL}/search?q=${encodeURIComponent(q)}`,
+          );
+
+          renderTemplates(data);
+        });
+
+      async function editTemplate(id) {
+        try {
+          const template = await api.get(`${API_URL}/${id}`);
+
+          currentTemplateId = id;
+
+          document.getElementById("edit_title").value = template.title || "";
+
+          document.getElementById("edit_category").value =
+            template.category || "";
+
+          document.getElementById("edit_description").value =
+            template.description || "";
+
+          document.getElementById("edit_tags").value = template.tags || "";
+
+          document.getElementById("edit_file").value = "";
+
+          openEditModal();
+        } catch (error) {
+          console.error(error);
+
+          toast("فشل تحميل بيانات النموذج", false);
+        }
+      }
+
+      function openAddModal() {
+        const modal = document.getElementById("addModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeAddModal() {
+        const modal = document.getElementById("addModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function openEditModal() {
+        const modal = document.getElementById("editModal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeEditModal() {
+        const modal = document.getElementById("editModal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      fetchTemplates();
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+  </body>
+</html>
