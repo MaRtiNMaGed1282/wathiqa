@@ -1,15 +1,13 @@
 const express = require("express");
-
 const router = express.Router();
-
 const caseExpensesController = require("../controllers/case-expenses.controller");
-
 const auth = require("../middlewares/auth.middleware");
+const authorize = require("../middlewares/authorize.middleware");
 
-router.get("/case/:id", auth, caseExpensesController.getCaseExpenses);
+const financial = authorize("admin", "lawyer");
 
-router.post("/", auth, caseExpensesController.createExpense);
-
-router.delete("/:id", auth, caseExpensesController.deleteExpense);
+router.get("/case/:id", auth, financial, caseExpensesController.getCaseExpenses);
+router.post("/", auth, financial, caseExpensesController.createExpense);
+router.delete("/:id", auth, financial, caseExpensesController.deleteExpense);
 
 module.exports = router;
