@@ -2,6 +2,7 @@
   "use strict";
 
   function isPage(name) { return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname); }
+  const pageNames = ["activation", "calendar", "case-profile", "cases", "change-password", "client-profile", "clients", "dashboard", "law-viewer", "laws", "library", "login", "notifications", "office-profile", "reports", "revenues", "service-profile", "services", "users"];
   const isCaseProfile = () => isPage("case-profile");
   const isClientProfile = () => isPage("client-profile");
   const isChangePassword = () => isPage("change-password");
@@ -10,6 +11,7 @@
   const isServices = () => isPage("services");
   const isCalendar = () => isPage("calendar");
   const isNotifications = () => isPage("notifications");
+  const isFrozenPage = () => pageNames.some(isPage);
 
   function getUserRole() { try { return global.auth?.getUser?.()?.role || null; } catch { return null; } }
   function hideElement(id) { const element = document.getElementById(id); if (element) { element.hidden = true; element.setAttribute("aria-hidden", "true"); } }
@@ -49,8 +51,7 @@
 
   function applyClientValidation() {
     ["attorney_number", "attorney_type", "issue_date", "issuing_office"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    const file = document.getElementById("attorney_file");
-    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
+    const file = document.getElementById("attorney_file"); if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
   }
 
   function applyPasswordValidation() {
@@ -58,14 +59,12 @@
   }
 
   function applyServiceValidation() {
-    const file = document.getElementById("serviceFileInput");
-    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
+    const file = document.getElementById("serviceFileInput"); if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
   }
 
   function applyServicesValidation() {
     ["clientSearch", "service_title", "service_type", "assigned_to", "start_date", "due_date", "total_fees", "description"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    const fees = document.getElementById("total_fees");
-    if (fees) { fees.type = "number"; fees.min = "0"; fees.step = "0.01"; fees.inputMode = "decimal"; }
+    const fees = document.getElementById("total_fees"); if (fees) { fees.type = "number"; fees.min = "0"; fees.step = "0.01"; fees.inputMode = "decimal"; }
   }
 
   function applyCalendarValidation() {
@@ -76,9 +75,7 @@
 
   function applyNotificationsLoadingState() {
     const container = document.getElementById("notificationsListContainer");
-    if (container && !container.textContent.trim()) {
-      container.innerHTML = '<p class="text-gray-500 text-center py-8">جاري تحميل الإشعارات...</p>';
-    }
+    if (container && !container.textContent.trim()) container.innerHTML = '<p class="text-gray-500 text-center py-8">جاري تحميل الإشعارات...</p>';
   }
 
   function ensurePageErrorBanner() {
@@ -106,7 +103,6 @@
   function hidePageError() { const banner = document.getElementById("phase25-page-error"); if (banner) banner.classList.add("hidden"); }
 
   function init() {
-    const statePages = [isCaseProfile(), isClientProfile(), isDashboard(), isServiceProfile(), isServices(), isCalendar(), isNotifications()];
     if (isCaseProfile()) { applyCaseValidation(); if (getUserRole() === "assistant") hideCaseFinancialControls(); }
     if (isClientProfile()) { applyClientValidation(); if (getUserRole() === "assistant") hideClientFinancialControls(); }
     if (isChangePassword()) applyPasswordValidation();
@@ -115,7 +111,7 @@
     if (isServices()) applyServicesValidation();
     if (isCalendar()) applyCalendarValidation();
     if (isNotifications()) applyNotificationsLoadingState();
-    if (!statePages.some(Boolean)) return;
+    if (!isFrozenPage()) return;
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
