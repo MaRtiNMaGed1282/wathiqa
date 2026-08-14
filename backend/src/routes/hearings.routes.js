@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const auth = require("../middlewares/auth.middleware");
+const role = require("../middlewares/role.middleware");
 const {
   createHearing,
   getHearingsByCase,
@@ -25,6 +26,6 @@ router.get("/:id", auth, getHearingById);
 
 router.put("/:id", auth, updateHearing);
 
-router.delete("/:id", auth, deleteHearing);
+router.delete("/:id", auth, role("admin", "lawyer"), deleteHearing);
 
 module.exports = router;
