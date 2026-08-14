@@ -1,18 +1,39 @@
 const sqlite3 = require("sqlite3").verbose();
+const fs = require("fs");
 const path = require("path");
 
-let dbPath;
+function resolveDatabasePath() {
+  try {
+    const { app } = require("electron");
 
-try {
-  const { app } = require("electron");
+    if (app && app.isPackaged) {
+      const userDataDir = app.getPath("userData");
+      const databaseDir = path.join(userDataDir, "database");
+      const persistentDbPath = path.join(databaseDir, "wathiqa.db");
+      const bundledDbPath = path.join(process.resourcesPath, "database", "wathiqa.db");
 
-  dbPath =
-    app && app.isPackaged
-      ? path.join(process.resourcesPath, "database", "wathiqa.db")
-      : path.join(__dirname, "../../../database/wathiqa.db");
-} catch {
-  dbPath = path.join(__dirname, "../../../database/wathiqa.db");
+      fs.mkdirSync(databaseDir, { recursive: true });
+
+      if (!fs.existsSync(persistentDbPath)) {
+        if (!fs.existsSync(bundledDbPath)) {
+          throw new Error(`Bundled database not found: ${bundledDbPath}`);
+        }
+
+        fs.copyFileSync(bundledDbPath, persistentDbPath);
+      }
+
+      return persistentDbPath;
+    }
+  } catch (error) {
+    if (error?.message?.startsWith("Bundled database not found")) {
+      throw error;
+    }
+  }
+
+  return path.join(__dirname, "../../../database/wathiqa.db");
 }
+
+const dbPath = resolveDatabasePath();
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
