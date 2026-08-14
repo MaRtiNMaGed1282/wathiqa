@@ -126,9 +126,19 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [x] Numeric fee input normalized.
 - [ ] Full browser/API state test.
 
+### Calendar — IN PROGRESS
+
+- [x] Shared loading/busy/duplicate-submission foundation applies.
+- [x] Existing Arabic empty states retained for today's and upcoming hearings.
+- [x] GET API error state with Arabic retry banner added.
+- [x] Calendar hearing form required fields normalized.
+- [x] Date/time input types normalized.
+- [x] Existing success/error feedback retained.
+- [ ] Full browser/API state test.
+- [ ] Verify calendar drag/drop mutation success path; current page contains an unconditional error throw after the PUT response and must be corrected before Phase 25 completion.
+
 ### Remaining Pages
 
-- [ ] Calendar
 - [ ] Notifications
 - [ ] Legal Library
 - [ ] Law Viewer
