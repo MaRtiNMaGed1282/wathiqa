@@ -10,10 +10,11 @@ Every frozen page must have:
 - [x] Shared mutation button busy-state protection
 - [x] Shared duplicate in-flight mutation prevention
 - [x] Case Profile page-level loading/error handling foundation
-- [x] Case Profile Arabic empty states retained
-- [x] Case Profile success feedback retained
-- [x] Case Profile validation attributes and input types normalized
-- [x] Case Profile Assistant financial UI hidden
+- [x] Client Profile page-level loading/error handling foundation
+- [x] Arabic empty states retained on audited pages
+- [x] Success feedback retained on audited pages
+- [x] Validation attributes and input types normalized on audited forms
+- [x] Assistant financial UI hidden on Case Profile and Client Profile
 - [x] Change Password required/minimum-length validation normalized
 - [x] Destructive confirmations retained where already present
 - [ ] Complete remaining page-by-page audits
@@ -81,9 +82,20 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [x] Existing success feedback and redirect retained.
 - [ ] Full browser/API state test.
 
+### Client Profile — IN PROGRESS
+
+- [x] Shared loading/busy/duplicate-submission foundation applies.
+- [x] Existing Arabic loading/empty states retained for client data, cases, services, attorneys, and activity.
+- [x] GET API error state with Arabic retry banner added.
+- [x] Existing success feedback retained for attorney mutations.
+- [x] Required attorney form fields normalized.
+- [x] Attorney file accepted types normalized.
+- [x] Assistant financial summary hidden by shared page-state handler.
+- [x] Existing attorney destructive confirmation retained.
+- [ ] Full browser/API state test.
+
 ### Remaining Pages
 
-- [ ] Client Profile
 - [ ] Dashboard
 - [ ] Calendar
 - [ ] Services
