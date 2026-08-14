@@ -3,23 +3,28 @@
   <head>
     <link rel="icon" type="image/png" href="../assets/faviconw.png" />
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>ملف الخدمة القانونية</title>
+
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
-    <!-- Cairo -->
     <link rel="stylesheet" href="../assets/css/fonts.css" />
-    <!-- Tailwind -->
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
     <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
     <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
-      body {
-        font-family: "Cairo", sans-serif;
+      body { font-family: "Cairo", sans-serif; }
+      .profile-card { background: #fff; border-radius: 1rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 1.5rem; }
+      .field-label { color: #6b7280; font-size: .82rem; margin-bottom: .25rem; }
+      .field-value { font-weight: 600; word-break: break-word; }
+      .status-pill { display:inline-flex; align-items:center; border-radius:9999px; padding:.35rem .8rem; font-size:.82rem; font-weight:700; }
+      @media print {
+        body { background:#fff !important; display:block !important; }
+        #navbar-container, #sidebar-container, .no-print { display:none !important; }
+        main { padding:0 !important; width:100% !important; }
+        .profile-card { box-shadow:none !important; border:1px solid #ddd; break-inside:avoid; }
+        #activitySection, #filesSection, #paymentsSection, #expensesSection { break-inside:auto; }
       }
     </style>
   </head>
@@ -29,1415 +34,564 @@
     <div id="sidebar-container"></div>
 
     <main class="flex-1 p-6">
-      <h2 id="serviceTitle" class="text-2xl font-bold mb-6">تحميل...</h2>
-      <div class="flex gap-2 mb-6">
-        <button
-          id="editServiceBtn"
-          onclick="openEditServiceModal()"
-          class="bg-accent text-white px-4 py-2 rounded hover:opacity-90"
-        >
-          تعديل الخدمة
-        </button>
+      <div id="pageError" class="hidden profile-card border border-red-200 bg-red-50 text-red-700 mb-6"></div>
 
-        <button
-          id="deleteServiceBtn"
-          onclick="deleteService()"
-          class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          حذف الخدمة
-        </button>
-      </div>
-      <div class="space-y-6">
-        <div class="bg-white shadow rounded p-6">
-          <h3 class="text-lg font-bold mb-4 border-b pb-2">بيانات الخدمة</h3>
-
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <p class="text-gray-500 text-sm">رقم الخدمة</p>
-              <p id="serviceNumber" class="font-semibold"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">عنوان الخدمة</p>
-              <p id="serviceTitleText" class="font-semibold"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">نوع الخدمة</p>
-              <p id="serviceType"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">الموكل</p>
-              <p id="clientName"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">المسؤول</p>
-              <p id="assignedTo"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">تاريخ البدء</p>
-              <p id="startDate"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">تاريخ التسليم</p>
-              <p id="dueDate"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">تاريخ الإنجاز</p>
-              <p id="completedDate"></p>
-            </div>
+      <section class="profile-card mb-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-sm text-gray-500">ملف الخدمة القانونية</p>
+            <h1 id="serviceTitle" class="text-3xl font-bold mt-1">تحميل...</h1>
+            <p id="serviceNumber" class="text-gray-500 mt-2">-</p>
+          </div>
+          <div class="flex flex-wrap gap-2 no-print">
+            <button id="editServiceBtn" type="button" class="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">تعديل الخدمة</button>
+            <button id="printPdfBtn" type="button" class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800">PDF / طباعة</button>
+            <button id="deleteServiceBtn" type="button" class="hidden bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">حذف الخدمة</button>
           </div>
         </div>
-        <div class="bg-white shadow rounded p-6">
-          <h3 class="text-lg font-bold mb-4 border-b pb-2">وصف الخدمة</h3>
+      </section>
 
-          <p id="serviceDescription">-</p>
-        </div>
+      <div class="space-y-6">
+        <section class="profile-card">
+          <h2 class="text-lg font-bold border-b pb-3 mb-5">بيانات الخدمة</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div><p class="field-label">رقم الخدمة</p><p id="infoServiceNumber" class="field-value">-</p></div>
+            <div><p class="field-label">عنوان الخدمة</p><p id="infoServiceTitle" class="field-value">-</p></div>
+            <div><p class="field-label">نوع الخدمة</p><p id="serviceType" class="field-value">-</p></div>
+            <div><p class="field-label">الموكل</p><a id="clientLink" class="field-value text-blue-700 hover:underline" href="#">-</a></div>
+            <div><p class="field-label">المسؤول</p><p id="assignedTo" class="field-value">-</p></div>
+            <div><p class="field-label">تاريخ البدء</p><p id="startDate" class="field-value">-</p></div>
+            <div><p class="field-label">تاريخ التسليم</p><p id="dueDate" class="field-value">-</p></div>
+            <div><p class="field-label">تاريخ الإنجاز</p><p id="completedDate" class="field-value">-</p></div>
+            <div><p class="field-label">تاريخ الإنشاء</p><p id="createdAt" class="field-value">-</p></div>
+            <div><p class="field-label">القضية المرتبطة</p><a id="linkedCase" class="field-value text-blue-700 hover:underline" href="#">لا توجد</a></div>
+          </div>
+        </section>
 
-        <div class="bg-white shadow rounded p-6">
-          <h3 class="text-lg font-bold mb-4 border-b pb-2">ملاحظات الخدمة</h3>
+        <section class="profile-card">
+          <h2 class="text-lg font-bold border-b pb-3 mb-4">الوصف</h2>
+          <p id="serviceDescription" class="whitespace-pre-wrap text-gray-700">-</p>
+        </section>
 
-          <p id="serviceNotes">-</p>
-        </div>
-        <!-- Financial Information -->
+        <section class="profile-card">
+          <h2 class="text-lg font-bold border-b pb-3 mb-4">الملاحظات</h2>
+          <p id="serviceNotes" class="whitespace-pre-wrap text-gray-700">-</p>
+        </section>
 
-        <div class="bg-white shadow rounded p-6">
-          <h3 class="text-lg font-bold mb-4 border-b pb-2">البيانات المالية</h3>
+        <section class="profile-card">
+          <h2 class="text-lg font-bold border-b pb-3 mb-5">الحالة والأولوية</h2>
+          <div class="grid sm:grid-cols-2 gap-5">
+            <div><p class="field-label">الحالة</p><p id="serviceStatus" class="status-pill bg-gray-100 text-gray-700">-</p></div>
+            <div><p class="field-label">الأولوية</p><p id="priorityLevel" class="status-pill bg-gray-100 text-gray-700">-</p></div>
+          </div>
+        </section>
 
-          <div
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4"
-          >
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <p class="text-gray-500 text-sm mb-2">إجمالي الأتعاب</p>
-
-              <p id="totalFees" class="font-bold text-2xl text-primary">
-                0 جنيه
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <p class="text-gray-500 text-sm mb-2">المدفوع</p>
-
-              <p id="paidAmount" class="font-bold text-2xl text-green-600">
-                0 جنيه
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <p class="text-gray-500 text-sm mb-2">المتبقي</p>
-
-              <p id="remainingAmount" class="font-bold text-2xl text-red-600">
-                0 جنيه
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <p class="text-gray-500 text-sm mb-2">المصروفات</p>
-
-              <p id="expensesAmount" class="font-bold text-2xl text-red-500">
-                0 جنيه
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <p class="text-gray-500 text-sm mb-2">صافي الربح</p>
-
-              <p id="netProfit" class="font-bold text-2xl text-purple-600">
-                0 جنيه
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-4 text-center border">
-              <div>
-                <p class="text-gray-500 text-sm">حالة السداد</p>
-
-                <p id="paymentStatus" class="font-bold text-lg">غير مدفوعة</p>
-              </div>
-            </div>
+        <section id="financialSection" class="profile-card">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-lg font-bold">الملخص المالي</h2>
+            <span class="text-sm text-gray-500">للإدارة والمحامين فقط</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">إجمالي الأتعاب</p><p id="totalFees" class="font-bold text-2xl">0 جنيه</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">المدفوع</p><p id="paidAmount" class="font-bold text-2xl text-green-600">0 جنيه</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">المتبقي</p><p id="remainingAmount" class="font-bold text-2xl text-red-600">0 جنيه</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">المصروفات</p><p id="expensesAmount" class="font-bold text-2xl text-red-500">0 جنيه</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">صافي الربح</p><p id="netProfit" class="font-bold text-2xl text-purple-600">0 جنيه</p></div>
           </div>
           <div class="mt-4 bg-gray-50 border rounded-xl p-4">
-            <div class="flex justify-between items-center mb-2">
-              <p class="text-gray-500 text-sm">نسبة التحصيل</p>
-
-              <p id="collectionRateLabel" class="font-bold text-blue-600">0%</p>
-            </div>
-
-            <div
-              style="
-                width: 100%;
-                height: 14px;
-                background: #e5e7eb;
-                border-radius: 999px;
-                overflow: hidden;
-              "
-            >
-              <div
-                id="collectionProgress"
-                style="
-                  width: 0%;
-                  height: 100%;
-                  background: #d3ac2b;
-                  transition: all 0.4s ease;
-                "
-              ></div>
-            </div>
+            <div class="flex justify-between items-center mb-2"><span class="field-label mb-0">نسبة التحصيل</span><strong id="collectionRateLabel">0%</strong></div>
+            <div class="h-3 rounded-full bg-gray-200 overflow-hidden"><div id="collectionProgress" class="h-full rounded-full transition-all" style="width:0%;background:#d3ac2b"></div></div>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div class="bg-gray-50 border rounded-xl p-4 text-center">
-              <p class="text-sm text-gray-500">عدد الدفعات</p>
-
-              <p id="paymentsCount" class="font-bold text-xl">0</p>
-            </div>
-
-            <div class="bg-gray-50 border rounded-xl p-4 text-center">
-              <p class="text-sm text-gray-500">آخر دفعة</p>
-
-              <p id="lastPaymentDate" class="font-bold">-</p>
-            </div>
-
-            <div class="bg-gray-50 border rounded-xl p-4 text-center">
-              <p class="text-sm text-gray-500">عدد المصروفات</p>
-
-              <p id="expensesCount" class="font-bold text-xl">0</p>
-            </div>
-
-            <div class="bg-gray-50 border rounded-xl p-4 text-center">
-              <p class="text-sm text-gray-500">آخر مصروف</p>
-
-              <p id="lastExpenseDate" class="font-bold">-</p>
-            </div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">حالة السداد</p><p id="paymentStatus" class="font-bold">غير مدفوعة</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">عدد الدفعات</p><p id="paymentsCount" class="font-bold text-xl">0</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">آخر دفعة</p><p id="lastPaymentDate" class="font-bold">-</p></div>
+            <div class="bg-gray-50 border rounded-xl p-4 text-center"><p class="field-label">عدد المصروفات</p><p id="expensesCount" class="font-bold text-xl">0</p></div>
           </div>
-        </div>
+        </section>
 
-        <div class="bg-white shadow rounded p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">الدفعات</h3>
-
-            <button
-              onclick="openPaymentModal()"
-              class="bg-accent text-white px-4 py-2 rounded"
-            >
-              + إضافة دفعة
-            </button>
+        <section id="paymentsSection" class="profile-card">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <h2 class="text-lg font-bold">الدفعات</h2>
+            <button id="addPaymentBtn" type="button" class="no-print bg-accent text-white px-4 py-2 rounded-lg">+ إضافة دفعة</button>
           </div>
+          <div id="paymentsContainer"><p class="text-gray-500">جاري تحميل الدفعات...</p></div>
+        </section>
 
-          <div id="paymentsContainer" class="space-y-4">
-            <p class="text-gray-500">جاري تحميل الدفعات...</p>
+        <section id="expensesSection" class="profile-card">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <h2 class="text-lg font-bold">المصروفات</h2>
+            <button id="addExpenseBtn" type="button" class="no-print bg-accent text-white px-4 py-2 rounded-lg">+ إضافة مصروف</button>
           </div>
-        </div>
-        <div class="bg-white shadow rounded p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">المصروفات</h3>
+          <div id="expensesContainer"><p class="text-gray-500">جاري تحميل المصروفات...</p></div>
+        </section>
 
-            <button
-              onclick="openExpenseModal()"
-              class="bg-accent text-white px-4 py-2 rounded"
-            >
-              + إضافة مصروف
-            </button>
+        <section id="filesSection" class="profile-card">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <h2 class="text-lg font-bold">ملفات الخدمة</h2>
+            <button id="serviceFileUploadBtn" type="button" class="no-print bg-accent text-white px-4 py-2 rounded-lg">+ رفع ملفات</button>
           </div>
+          <p class="text-sm text-gray-500 mb-4">PDF, JPG/JPEG, PNG, DOC/DOCX, XLS/XLSX — حتى 5 MB للملف.</p>
+          <input id="serviceFileInput" type="file" multiple class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" />
+          <div id="filesContainer" class="space-y-3"><p class="text-gray-500">جاري تحميل الملفات...</p></div>
+        </section>
 
-          <div id="expensesContainer">
-            <p class="text-gray-500">جاري تحميل المصروفات...</p>
-          </div>
-        </div>
-        <!-- Status -->
-        <div
-          id="attachTemplateModal"
-          class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-        >
-          <div class="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h3 class="text-xl font-bold mb-4">إرفاق نموذج قانوني</h3>
-
-            <select id="templateSelect" class="w-full border p-3 rounded mb-4">
-              <option value="">اختر النموذج</option>
-            </select>
-
-            <div class="flex justify-end gap-2">
-              <button
-                onclick="closeAttachTemplateModal()"
-                class="px-4 py-2 bg-gray-200 rounded"
-              >
-                إلغاء
-              </button>
-
-              <button
-                onclick="attachTemplate()"
-                class="px-4 py-2 bg-accent text-white rounded"
-              >
-                إرفاق
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white shadow rounded p-6">
-          <h3 class="text-lg font-bold mb-4 border-b pb-2">حالة الخدمة</h3>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p class="text-gray-500 text-sm">الحالة</p>
-
-              <p id="serviceStatus"></p>
-            </div>
-
-            <div>
-              <p class="text-gray-500 text-sm">الأولوية</p>
-
-              <p id="priorityLevel"></p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <br />
-      <div class="bg-white shadow rounded p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-bold">المرفقات</h3>
-
-          <button
-            onclick="document.getElementById('serviceFileInput').click()"
-            class="bg-accent text-white px-4 py-2 rounded"
-          >
-            + رفع ملف
-          </button>
-        </div>
-
-        <input id="serviceFileInput" type="file" class="hidden" />
-
-        <div id="filesContainer" class="space-y-3">
-          <p class="text-gray-500">جاري تحميل الملفات...</p>
-        </div>
-      </div>
-      <div
-        id="editServiceModal"
-        class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-      >
-        <div
-          class="bg-white rounded-xl shadow-xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
-        >
-          <h3 class="text-2xl font-bold mb-6">تعديل الخدمة</h3>
-
-          <div class="space-y-6">
-            <!-- بيانات الخدمة -->
-            <div>
-              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
-                بيانات الخدمة
-              </h4>
-              <div>
-                <p class="text-gray-500 text-sm">تاريخ الإنشاء</p>
-                <p id="createdAt"></p>
-              </div>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    عنوان الخدمة
-                  </label>
-
-                  <input
-                    id="edit_service_title"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    نوع الخدمة
-                  </label>
-
-                  <input
-                    id="edit_service_type"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    الموكل
-                  </label>
-
-                  <input
-                    id="edit_client_name"
-                    readonly
-                    class="w-full border rounded-lg p-3 bg-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    المسؤول
-                  </label>
-
-                  <input
-                    id="edit_assigned_to"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    تاريخ البدء
-                  </label>
-
-                  <input
-                    id="edit_start_date"
-                    type="date"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    تاريخ التسليم
-                  </label>
-
-                  <input
-                    id="edit_due_date"
-                    type="date"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-                <div>
-                  <div>
-                    <label class="block mb-2 text-sm font-semibold">
-                      تاريخ الإنجاز
-                    </label>
-
-                    <input
-                      id="edit_completed_date"
-                      type="date"
-                      class="w-full border rounded-lg p-3"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    حالة الخدمة
-                  </label>
-
-                  <select
-                    id="edit_service_status"
-                    class="w-full border rounded-lg p-3"
-                  >
-                    <option value="جديدة">جديدة</option>
-                    <option value="قيد التنفيذ">قيد التنفيذ</option>
-                    <option value="مكتملة">مكتملة</option>
-                    <option value="ملغاة">ملغاة</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    الأولوية
-                  </label>
-
-                  <select
-                    id="edit_priority_level"
-                    class="w-full border rounded-lg p-3"
-                  >
-                    <option value="عادية">عادية</option>
-                    <option value="مهمة">مهمة</option>
-                    <option value="عاجلة">عاجلة</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block mb-2 text-sm font-semibold">
-                    إجمالي الأتعاب
-                  </label>
-
-                  <input
-                    id="edit_total_fees"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-full border rounded-lg p-3"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- وصف الخدمة -->
-            <div>
-              <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
-                وصف الخدمة
-              </h4>
-
-              <textarea
-                id="edit_description"
-                rows="4"
-                class="w-full border rounded-lg p-3"
-              ></textarea>
-              <div>
-                <h4 class="text-accent font-bold text-lg border-b pb-2 mb-4">
-                  ملاحظات الخدمة
-                </h4>
-
-                <textarea
-                  id="edit_notes"
-                  rows="4"
-                  class="w-full border rounded-lg p-3"
-                ></textarea>
-              </div>
-            </div>
-
-            <div class="border-t pt-5 flex justify-end gap-3">
-              <button
-                onclick="closeEditServiceModal()"
-                class="px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300"
-              >
-                إلغاء
-              </button>
-
-              <button
-                id="saveServiceBtn"
-                class="px-8 py-3 rounded-lg bg-accent text-white"
-              >
-                حفظ التعديلات
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        id="paymentModal"
-        class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-      >
-        <div class="bg-white rounded-xl p-6 w-full max-w-lg">
-          <h3 class="text-xl font-bold mb-4">إضافة دفعة</h3>
-
-          <div class="space-y-4">
-            <input
-              id="payment_amount"
-              type="number"
-              placeholder="المبلغ"
-              class="w-full border p-3 rounded"
-            />
-
-            <input
-              id="payment_date"
-              type="date"
-              class="w-full border p-3 rounded"
-            />
-
-            <select id="payment_method" class="w-full border p-3 rounded">
-              <option value="Cash">نقدي</option>
-              <option value="Bank Transfer">تحويل بنكي</option>
-              <option value="Instapay">Instapay</option>
-            </select>
-
-            <textarea
-              id="payment_notes"
-              placeholder="ملاحظات"
-              class="w-full border p-3 rounded"
-            ></textarea>
-
-            <div class="flex justify-end gap-2">
-              <button
-                onclick="closePaymentModal()"
-                class="px-4 py-2 bg-gray-200 rounded"
-              >
-                إلغاء
-              </button>
-
-              <button
-                onclick="savePayment()"
-                class="px-4 py-2 bg-accent text-white rounded"
-              >
-                حفظ
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        id="expenseModal"
-        class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-      >
-        <div class="bg-white rounded-xl p-6 w-full max-w-lg">
-          <h3 class="text-xl font-bold mb-4">إضافة مصروف</h3>
-
-          <div class="space-y-4">
-            <select id="expense_type" class="w-full border p-3 rounded">
-              <option value="">اختر نوع المصروف</option>
-
-              <option value="رسوم محكمة">رسوم محكمة</option>
-
-              <option value="انتقالات">انتقالات</option>
-
-              <option value="تصوير مستندات">تصوير مستندات</option>
-
-              <option value="أتعاب خبير">أتعاب خبير</option>
-
-              <option value="شحن">شحن</option>
-
-              <option value="أخرى">أخرى</option>
-            </select>
-
-            <input
-              id="expense_amount"
-              type="number"
-              placeholder="المبلغ"
-              class="w-full border p-3 rounded"
-            />
-
-            <input
-              id="expense_date"
-              type="date"
-              class="w-full border p-3 rounded"
-            />
-
-            <textarea
-              id="expense_notes"
-              placeholder="ملاحظات"
-              class="w-full border p-3 rounded"
-            ></textarea>
-
-            <div class="flex justify-end gap-2">
-              <button
-                onclick="closeExpenseModal()"
-                class="px-4 py-2 bg-gray-200 rounded"
-              >
-                إلغاء
-              </button>
-
-              <button
-                onclick="saveExpense()"
-                class="px-4 py-2 bg-accent text-white rounded"
-              >
-                حفظ
-              </button>
-            </div>
-          </div>
-        </div>
+        <section id="activitySection" class="profile-card">
+          <h2 class="text-lg font-bold border-b pb-3 mb-5">سجل النشاط</h2>
+          <div id="activityContainer"><p class="text-gray-500">جاري تحميل النشاط...</p></div>
+        </section>
       </div>
     </main>
 
-    <script>
-      const SERVICES_API = "/services";
-
-      const FILES_API = "/files";
-
-      const PAYMENTS_API = "/payments";
-
-      const EXPENSES_API = "/expenses";
-
-      const TEMPLATE_FILES_URL = "/template-files";
-
-      const params = new URLSearchParams(window.location.search);
-
-      const serviceId = params.get("id");
-
-      let currentService = null;
-
-      let totalPaid = 0;
-      let totalExpenses = 0;
-
-      async function loadService() {
-        try {
-          const data = await api.get(`${SERVICES_API}/${serviceId}`);
-
-          if (!data || !data.service_id) {
-            showToast("الخدمة غير موجودة", false);
-
-            setTimeout(() => {
-              window.location.href = "services.html";
-            }, 1500);
-
-            return;
-          }
-
-          currentService = data;
-
-          renderService(data);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      function renderService(c) {
-        // Store current service globally
-        currentService = c;
-
-        document.getElementById("serviceTitle").textContent =
-          c.service_title || "-";
-
-        document.getElementById("serviceNumber").textContent =
-          c.service_number || "-";
-
-        document.getElementById("serviceTitleText").textContent =
-          c.service_title || "-";
-
-        document.getElementById("serviceType").textContent =
-          c.service_type || "-";
-
-        document.getElementById("clientName").textContent = c.full_name || "-";
-
-        document.getElementById("assignedTo").textContent =
-          c.assigned_to || "-";
-
-        document.getElementById("startDate").textContent = c.start_date || "-";
-
-        document.getElementById("dueDate").textContent = c.due_date || "-";
-
-        document.getElementById("completedDate").textContent =
-          c.completed_date || "-";
-
-        document.getElementById("createdAt").textContent = c.created_at || "-";
-
-        document.getElementById("serviceDescription").textContent =
-          c.description || "لا يوجد وصف";
-
-        document.getElementById("serviceNotes").textContent =
-          c.notes || "لا توجد ملاحظات";
-
-        document.getElementById("serviceStatus").textContent =
-          c.service_status || "-";
-
-        document.getElementById("priorityLevel").textContent =
-          c.priority_level || "-";
-
-        document.getElementById("totalFees").textContent =
-          `${Number(c.total_fees || 0).toLocaleString()} جنيه`;
-
-        document.getElementById("edit_service_title").value =
-          c.service_title || "";
-
-        document.getElementById("edit_service_type").value =
-          c.service_type || "";
-
-        document.getElementById("edit_client_name").value = c.full_name || "";
-
-        document.getElementById("edit_assigned_to").value = c.assigned_to || "";
-
-        document.getElementById("edit_start_date").value = c.start_date || "";
-
-        document.getElementById("edit_due_date").value = c.due_date || "";
-
-        document.getElementById("edit_completed_date").value =
-          c.completed_date || "";
-
-        document.getElementById("edit_service_status").value =
-          c.service_status || "";
-
-        document.getElementById("edit_priority_level").value =
-          c.priority_level || "";
-
-        document.getElementById("edit_total_fees").value = c.total_fees || 0;
-
-        document.getElementById("edit_description").value = c.description || "";
-
-        document.getElementById("edit_notes").value = c.notes || "";
-      }
-
-      function openEditServiceModal() {
-        const modal = document.getElementById("editServiceModal");
-
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-      }
-
-      function closeEditServiceModal() {
-        const modal = document.getElementById("editServiceModal");
-
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-      }
-
-      async function saveService() {
-        try {
-          const serviceData = {
-            client_id: currentService.client_id,
-
-            service_title: document.getElementById("edit_service_title").value,
-
-            service_type: document.getElementById("edit_service_type").value,
-
-            assigned_to: document.getElementById("edit_assigned_to").value,
-
-            start_date: document.getElementById("edit_start_date").value,
-
-            due_date: document.getElementById("edit_due_date").value,
-
-            service_status: document.getElementById("edit_service_status")
-              .value,
-
-            priority_level: document.getElementById("edit_priority_level")
-              .value,
-
-            total_fees: document.getElementById("edit_total_fees").value || 0,
-
-            description: document.getElementById("edit_description").value,
-
-            notes: document.getElementById("edit_notes").value,
-
-            completed_date: document.getElementById("edit_completed_date")
-              .value,
-          };
-          if (!serviceData.service_title.trim()) {
-            showToast("عنوان الخدمة مطلوب", false);
-            return;
-          }
-
-          if (!serviceData.service_type.trim()) {
-            showToast("نوع الخدمة مطلوب", false);
-            return;
-          }
-          const data = await api.put(
-            `${SERVICES_API}/${serviceId}`,
-            serviceData,
-          );
-
-          if (data) {
-            showToast("تم تعديل الخدمة بنجاح", true);
-
-            closeEditServiceModal();
-
-            await loadService();
-          } else {
-            showToast(data.message || "فشل تعديل الخدمة", false);
-          }
-        } catch (err) {
-          console.error(err);
-
-          showToast("حدث خطأ أثناء حفظ البيانات", false);
-        }
-      }
-
-      document
-        .getElementById("saveServiceBtn")
-        .addEventListener("click", saveService);
-
-      async function deleteService() {
-        const result = await Swal.fire({
-          title: "حذف الخدمة؟",
-
-          text: "لا يمكن التراجع بعد الحذف",
-
-          icon: "warning",
-
-          showCancelButton: true,
-
-          confirmButtonText: "نعم، حذف",
-
-          cancelButtonText: "إلغاء",
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-          const data = await api.delete(`${SERVICES_API}/${serviceId}`);
-
-          if (data) {
-            showToast("تم حذف الخدمة بنجاح", true);
-
-            setTimeout(() => {
-              window.location.href = "services.html";
-            }, 1000);
-          } else {
-            showToast(data.message, false);
-          }
-        } catch (err) {
-          console.error(err);
-
-          showToast("فشل حذف الخدمة", false);
-        }
-      }
-
-      async function loadPayments() {
-        try {
-          const payments = await api.get(
-            `${PAYMENTS_API}/service/${serviceId}`,
-          );
-
-          renderPayments(payments);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      async function loadExpenses() {
-        try {
-          const expenses = await api.get(
-            `${EXPENSES_API}/service/${serviceId}`,
-          );
-
-          renderExpenses(expenses);
-        } catch (error) {
-          console.error(error);
-
-          document.getElementById("expensesContainer").innerHTML = `
-      <p class="text-red-500">
-        فشل تحميل المصروفات
-      </p>
-    `;
-        }
-      }
-
-      function renderExpenses(expenses) {
-        const container = document.getElementById("expensesContainer");
-
-        totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-
-        document.getElementById("expensesCount").textContent = expenses.length;
-
-        document.getElementById("lastExpenseDate").textContent = expenses.length
-          ? expenses[0].expense_date
-          : "-";
-
-        updateFinancialSummary();
-
-        if (!expenses.length) {
-          container.innerHTML = `
-      <p class="text-gray-500">
-        لا توجد مصروفات مسجلة
-      </p>
-    `;
-
-          document.getElementById("expensesCount").textContent = "0";
-
-          document.getElementById("lastExpenseDate").textContent = "-";
-
-          return;
-        }
-
-        container.innerHTML = expenses
-          .map(
-            (e) => `
-      <div class="border rounded-xl p-4 mb-3 bg-gray-50">
-        <div class="flex justify-between items-start">
-
-          <div>
-<span
-  class="inline-block bg-red-100 text-red-700 text-sm px-3 py-1 rounded-full font-semibold"
->
-  ${e.expense_type}
-</span>
-            <p class="text-gray-500 text-sm">
-              ${e.expense_date}
-            </p>
-
-            <p class="mt-2">
-              ${e.notes || ""}
-            </p>
-          </div>
-
-<div class="text-left flex flex-col items-end gap-2">
-  <div class="text-red-600 font-bold mb-2">
-    ${Number(e.amount).toLocaleString()} EGP
-  </div>
-
-  <button
-    onclick="deleteExpense(${e.expense_id})"
-    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-  >
-    حذف
-  </button>
-</div>
-
+    <!-- Edit -->
+    <div id="editServiceModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6"><h2 class="text-2xl font-bold">تعديل الخدمة</h2><button type="button" data-close="editServiceModal" class="text-gray-500 text-2xl">×</button></div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div><label class="block mb-2 font-semibold">عنوان الخدمة</label><input id="edit_service_title" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">نوع الخدمة</label><input id="edit_service_type" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">الموكل</label><input id="edit_client_name" readonly class="w-full border rounded-lg p-3 bg-gray-100" /></div>
+          <div><label class="block mb-2 font-semibold">المسؤول</label><input id="edit_assigned_to" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">تاريخ البدء</label><input id="edit_start_date" type="date" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">تاريخ التسليم</label><input id="edit_due_date" type="date" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">تاريخ الإنجاز</label><input id="edit_completed_date" type="date" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">الحالة</label><select id="edit_service_status" class="w-full border rounded-lg p-3"><option value="جديدة">جديدة</option><option value="قيد التنفيذ">قيد التنفيذ</option><option value="بانتظار العميل">بانتظار العميل</option><option value="مكتملة">مكتملة</option><option value="ملغاة">ملغاة</option></select></div>
+          <div><label class="block mb-2 font-semibold">الأولوية</label><select id="edit_priority_level" class="w-full border rounded-lg p-3"><option value="عادية">عادية</option><option value="منخفضة">منخفضة</option><option value="عالية">عالية</option><option value="عاجلة">عاجلة</option></select></div>
+          <div id="editFeesField"><label class="block mb-2 font-semibold">إجمالي الأتعاب</label><input id="edit_total_fees" type="number" min="0" step="0.01" class="w-full border rounded-lg p-3" /></div>
+          <div class="md:col-span-2"><label class="block mb-2 font-semibold">الوصف</label><textarea id="edit_description" rows="4" class="w-full border rounded-lg p-3"></textarea></div>
+          <div class="md:col-span-2"><label class="block mb-2 font-semibold">الملاحظات</label><textarea id="edit_notes" rows="4" class="w-full border rounded-lg p-3"></textarea></div>
         </div>
+        <div class="flex justify-end gap-2 mt-6"><button type="button" data-close="editServiceModal" class="px-4 py-2 bg-gray-200 rounded-lg">إلغاء</button><button id="saveServiceBtn" type="button" class="px-5 py-2 bg-accent text-white rounded-lg">حفظ</button></div>
       </div>
-    `,
-          )
-          .join("");
-      }
+    </div>
 
-      function updateFinancialSummary() {
-        const totalFees = Number(currentService?.total_fees || 0);
-
-        const remaining = Math.max(totalFees - totalPaid, 0);
-
-        const netProfit = totalPaid - totalExpenses;
-
-        const collectionRate =
-          totalFees > 0 ? ((totalPaid / totalFees) * 100).toFixed(1) : 0;
-        let paymentStatus = "غير مدفوعة";
-        let statusClass = "text-red-600";
-
-        if (totalPaid > 0 && totalPaid < totalFees) {
-          paymentStatus = "مدفوعة جزئياً";
-          statusClass = "text-yellow-600";
-        }
-
-        if (totalPaid >= totalFees && totalFees > 0) {
-          paymentStatus = "مدفوعة بالكامل";
-          statusClass = "text-green-600";
-        }
-        document.getElementById("paidAmount").textContent =
-          `${totalPaid.toLocaleString()} جنيه`;
-
-        document.getElementById("remainingAmount").textContent =
-          `${remaining.toLocaleString()} جنيه`;
-
-        document.getElementById("expensesAmount").textContent =
-          `${totalExpenses.toLocaleString()} جنيه`;
-
-        document.getElementById("netProfit").textContent =
-          `${netProfit.toLocaleString()} جنيه`;
-
-        document.getElementById("collectionRateLabel").textContent =
-          `${collectionRate}%`;
-
-        document.getElementById("collectionProgress").style.width =
-          `${Math.min(collectionRate, 100)}%`;
-
-        const statusElement = document.getElementById("paymentStatus");
-
-        statusElement.textContent = paymentStatus;
-
-        statusElement.className = `font-bold text-lg ${statusClass}`;
-      }
-
-      async function saveExpense() {
-        const expenseData = {
-          service_id: serviceId,
-          expense_type: document.getElementById("expense_type").value,
-          amount: document.getElementById("expense_amount").value,
-          expense_date: document.getElementById("expense_date").value,
-          notes: document.getElementById("expense_notes").value,
-        };
-
-        if (!expenseData.expense_type.trim()) {
-          showToast("نوع المصروف مطلوب", false);
-          return;
-        }
-
-        if (!expenseData.amount) {
-          showToast("المبلغ مطلوب", false);
-          return;
-        }
-
-        try {
-          await api.post(EXPENSES_API, expenseData);
-
-          closeExpenseModal();
-
-          document.getElementById("expense_type").value = "";
-          document.getElementById("expense_amount").value = "";
-          document.getElementById("expense_notes").value = "";
-
-          await loadExpenses();
-
-          showToast("تم إضافة المصروف بنجاح");
-        } catch (error) {
-          console.error(error);
-
-          showToast("فشل حفظ المصروف", false);
-        }
-      }
-
-      function renderPayments(payments) {
-        const container = document.getElementById("paymentsContainer");
-
-        const total = Number(currentService.total_fees) || 0;
-
-        if (!payments.length) {
-          container.innerHTML = `
-      <p class="text-gray-500">
-        لا توجد دفعات
-      </p>
-    `;
-
-          document.getElementById("paidAmount").textContent = "0 جنيه";
-
-          document.getElementById("remainingAmount").textContent =
-            `${total.toLocaleString()} جنيه`;
-
-          document.getElementById("paymentsCount").textContent = "0";
-
-          document.getElementById("lastPaymentDate").textContent = "-";
-
-          return;
-        }
-
-        const paid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-
-        document.getElementById("paymentsCount").textContent = payments.length;
-
-        document.getElementById("lastPaymentDate").textContent = payments.length
-          ? payments[0].payment_date?.split("T")[0] || payments[0].payment_date
-          : "-";
-
-        totalPaid = paid;
-        updateFinancialSummary();
-
-        const remaining = total - paid;
-
-        document.getElementById("paidAmount").textContent =
-          `${paid.toLocaleString()} جنيه`;
-
-        document.getElementById("remainingAmount").textContent =
-          `${remaining.toLocaleString()} جنيه`;
-
-        container.innerHTML = payments
-          .map(
-            (p) => `
-        <div
-          class="border rounded-lg p-4 flex justify-between items-center"
-        >
-
-          <div>
-            <div class="font-bold text-lg">
-              ${Number(p.amount).toLocaleString()} جنيه
-            </div>
-
-            <div class="text-sm text-gray-500">
-              ${p.payment_date?.split("T")[0] || p.payment_date}
-            </div>
-
-            <div class="text-sm text-gray-500">
-              ${p.payment_method || "-"}
-            </div>
-
-            ${
-              p.notes
-                ? `
-                <div class="text-sm mt-1">
-                  ${p.notes}
-                </div>
-              `
-                : ""
-            }
-          </div>
-
-          <button
-            onclick="deletePayment(${p.payment_id})"
-            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded"
-          >
-            حذف
-          </button>
-
+    <!-- Payment -->
+    <div id="paymentModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+        <h2 class="text-xl font-bold mb-5">إضافة دفعة</h2>
+        <div class="space-y-4">
+          <div><label class="block mb-2 font-semibold">المبلغ</label><input id="payment_amount" type="number" min="0.01" step="0.01" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">تاريخ الدفع</label><input id="payment_date" type="date" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">طريقة الدفع</label><input id="payment_method" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">ملاحظات</label><textarea id="payment_notes" rows="3" class="w-full border rounded-lg p-3"></textarea></div>
         </div>
-      `,
-          )
-          .join("");
-      }
-      async function deletePayment(id) {
-        const result = await Swal.fire({
-          title: "حذف الدفعة؟",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "نعم",
-          cancelButtonText: "إلغاء",
-        });
+        <div class="flex justify-end gap-2 mt-6"><button type="button" data-close="paymentModal" class="px-4 py-2 bg-gray-200 rounded-lg">إلغاء</button><button id="savePaymentBtn" type="button" class="px-5 py-2 bg-accent text-white rounded-lg">حفظ</button></div>
+      </div>
+    </div>
+
+    <!-- Expense -->
+    <div id="expenseModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+        <h2 class="text-xl font-bold mb-5">إضافة مصروف</h2>
+        <div class="space-y-4">
+          <div><label class="block mb-2 font-semibold">نوع المصروف</label><input id="expense_type" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">المبلغ</label><input id="expense_amount" type="number" min="0.01" step="0.01" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">التاريخ</label><input id="expense_date" type="date" class="w-full border rounded-lg p-3" /></div>
+          <div><label class="block mb-2 font-semibold">ملاحظات</label><textarea id="expense_notes" rows="3" class="w-full border rounded-lg p-3"></textarea></div>
+        </div>
+        <div class="flex justify-end gap-2 mt-6"><button type="button" data-close="expenseModal" class="px-4 py-2 bg-gray-200 rounded-lg">إلغاء</button><button id="saveExpenseBtn" type="button" class="px-5 py-2 bg-accent text-white rounded-lg">حفظ</button></div>
+      </div>
+    </div>
 
-        if (!result.isConfirmed) return;
-
-        const data = await api.delete(`${PAYMENTS_API}/${id}`);
-
-        if (data) {
-          showToast(data.message, true);
-
-          loadPayments();
-        } else {
-          showToast(data.message, false);
-        }
-      }
-
-      async function deleteExpense(id) {
-        const result = await Swal.fire({
-          title: "حذف المصروف؟",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "نعم",
-          cancelButtonText: "إلغاء",
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-          const data = await api.delete(`${EXPENSES_API}/${id}`);
-
-          if (data) {
-            showToast(data.message, true);
-
-            loadExpenses();
-          } else {
-            showToast(data.message, false);
-          }
-        } catch (error) {
-          console.error(error);
-
-          showToast("فشل حذف المصروف", false);
-        }
-      }
-
-      function showToast(message, success = true) {
-        Toastify({
-          text: message,
-          duration: 3000,
-          gravity: "top",
-          position: "left",
-          style: {
-            background: success ? "#16a34a" : "#dc2626",
-          },
-        }).showToast();
-      }
-
-      async function loadFiles() {
-        try {
-          const files = await api.get(`${FILES_API}/case/${serviceId}`);
-
-          renderFiles(files);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      function renderFiles(files) {
-        const container = document.getElementById("filesContainer");
-
-        if (files.length === 0) {
-          container.innerHTML = `
-                  <p class="text-gray-500">
-
-                    لا توجد مرفقات
-
-                  </p>
-                `;
-
-          return;
-        }
-
-        container.innerHTML = files
-          .map(
-            (file) => `
-
-                  <div
-                    class="flex justify-between items-center border rounded p-3">
-
-<div>
-  📄
-  <a
-    href="/${file.file_path.replace(/\\/g, "/")}"
-    target="_blank"
-    class="text-blue-700 hover:underline font-medium"
-  >
-    ${file.original_name}
-  </a>
-</div>
-                    <div class="flex gap-2">
-<button
-  onclick="openPdfModal('/${file.file_path.replace(/\\/g, "/")}')"
-  class="bg-blue-600 text-white px-3 py-1 rounded"
->
-  عرض
-</button>
-
-<a
-  href="/${file.file_path.replace(/\\/g, "/")}"
-  download
-  class="bg-green-600 text-white px-3 py-1 rounded">
-
-  تحميل
-
-</a>
-                        <button onclick="deleteFile(${file.file_id})" 
-                        class="bg-red-600 text-white px-3 py-1 rounded">
-
-                       حذف           
-
-                        </button>
-
-                    </div>
-                   
-
-                  </div>
-
-                `,
-          )
-          .join("");
-      }
-
-      async function deleteFile(id) {
-        const result = await Swal.fire({
-          title: "حذف الملف؟",
-
-          icon: "warning",
-
-          showCancelButton: true,
-
-          confirmButtonText: "نعم",
-
-          cancelButtonText: "إلغاء",
-        });
-
-        if (!result.isConfirmed) return;
-
-        await api.delete(`${FILES_API}/${id}`);
-
-        if (true) {
-          showToast("تم حذف الملف", true);
-
-          loadFiles();
-        }
-      }
-
-      document
-        .getElementById("serviceFileInput")
-        .addEventListener("change", uploadFile);
-
-      async function uploadFile(e) {
-        const file = e.target.files[0];
-
-        if (!file) return;
-
-        const formData = new FormData();
-
-        formData.append("file", file);
-
-        formData.append("case_id", serviceId);
-
-        try {
-          const data = await api.upload(`${FILES_API}/upload`, formData);
-
-          if (data) {
-            showToast("File uploaded successfully", true);
-
-            loadFiles();
-          } else {
-            showToast(data.message, false);
-          }
-        } catch (err) {
-          console.error(err);
-
-          showToast("Upload failed", false);
-        }
-      }
-
-      function openPaymentModal() {
-        const modal = document.getElementById("paymentModal");
-
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-
-        document.getElementById("payment_date").value = new Date()
-          .toISOString()
-          .split("T")[0];
-      }
-
-      function closePaymentModal() {
-        const modal = document.getElementById("paymentModal");
-
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-      }
-      function openExpenseModal() {
-        const modal = document.getElementById("expenseModal");
-
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-
-        document.getElementById("expense_date").value = new Date()
-          .toISOString()
-          .split("T")[0];
-      }
-
-      function closeExpenseModal() {
-        const modal = document.getElementById("expenseModal");
-
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-      }
-      async function savePayment() {
-        const payment = {
-          case_id: null,
-          service_id: serviceId,
-
-          amount: document.getElementById("payment_amount").value,
-
-          payment_date: document.getElementById("payment_date").value,
-
-          payment_method: document.getElementById("payment_method").value,
-
-          notes: document.getElementById("payment_notes").value,
-        };
-        const currentFees = Number(currentService.total_fees || 0);
-
-        const newPaymentAmount = Number(payment.amount || 0);
-
-        if (totalPaid + newPaymentAmount > currentFees) {
-          showToast("المبلغ يتجاوز إجمالي الأتعاب", false);
-
-          return;
-        }
-
-        if (newPaymentAmount <= 0) {
-          showToast("أدخل مبلغ صحيح", false);
-
-          return;
-        }
-
-        if (!payment.payment_date) {
-          showToast("تاريخ الدفع مطلوب", false);
-
-          return;
-        }
-        const data = await api.post(PAYMENTS_API, payment);
-
-        if (data) {
-          showToast(data.message, true);
-
-          closePaymentModal();
-
-          loadPayments();
-        }
-      }
-      function openPdfModal(url) {
-        document.getElementById("pdfFrame").src = url;
-
-        const modal = document.getElementById("pdfModal");
-
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-      }
-
-      function closePdfModal() {
-        document.getElementById("pdfFrame").src = "";
-
-        const modal = document.getElementById("pdfModal");
-
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-      }
-      (async () => {
-        await loadService();
-
-        loadFiles();
-
-        loadPayments();
-
-        loadExpenses();
-      })();
-    </script>
     <script src="../assets/js/loadSidebar.js"></script>
     <script src="../assets/js/loadNavbar.js"></script>
     <script src="../assets/vendor/toastify/toastify.js"></script>
+    <script>
+      (() => {
+        "use strict";
 
-    <div
-      id="pdfModal"
-      class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50"
-    >
-      <div class="bg-white w-[90%] h-[90%] rounded-xl overflow-hidden">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="font-bold">معاينة الملف</h3>
+        const serviceId = new URLSearchParams(location.search).get("id");
+        const SERVICES_API = "/services";
+        const PAYMENTS_API = "/payments";
+        const EXPENSES_API = "/expenses";
+        const ACTIVITY_API = "/activity/service";
+        let currentService = null;
+        let totalPaid = 0;
+        let totalExpenses = 0;
+        let saving = false;
 
-          <button
-            onclick="closePdfModal()"
-            class="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            إغلاق
-          </button>
-        </div>
+        const role = () => window.auth?.getCurrentRole?.() || null;
+        const canFinancial = () => role() === "admin" || role() === "lawyer";
+        const canDeleteService = () => role() === "admin";
 
-        <iframe id="pdfFrame" class="w-full h-[calc(100%-70px)]"></iframe>
-      </div>
-    </div>
+        const $ = (id) => document.getElementById(id);
+        const escapeHtml = (value) => String(value ?? "")
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+        const money = (value) => `${Number(value || 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 })} جنيه`;
+
+        function toast(message, success = true) {
+          if (window.Toastify) {
+            Toastify({ text: message, duration: 3200, gravity: "top", position: "center", style: { background: success ? "#16a34a" : "#dc2626" } }).showToast();
+          } else if (success) {
+            alert(message);
+          } else {
+            alert(message);
+          }
+        }
+
+        function setError(message) {
+          const box = $("pageError");
+          box.textContent = message;
+          box.classList.remove("hidden");
+        }
+
+        function clearError() {
+          $("pageError").classList.add("hidden");
+        }
+
+        function openModal(id) { $(id).classList.remove("hidden"); $(id).classList.add("flex"); }
+        function closeModal(id) { $(id).classList.add("hidden"); $(id).classList.remove("flex"); }
+
+        function renderService(service) {
+          currentService = service;
+          $("serviceTitle").textContent = service.service_title || "خدمة قانونية";
+          $("serviceNumber").textContent = service.service_number || "بدون رقم";
+          $("infoServiceNumber").textContent = service.service_number || "-";
+          $("infoServiceTitle").textContent = service.service_title || "-";
+          $("serviceType").textContent = service.service_type || "-";
+          $("assignedTo").textContent = service.assigned_to || "غير محدد";
+          $("startDate").textContent = service.start_date || "-";
+          $("dueDate").textContent = service.due_date || "-";
+          $("completedDate").textContent = service.completed_date || "-";
+          $("createdAt").textContent = service.created_at || "-";
+          $("serviceDescription").textContent = service.description || "لا يوجد وصف.";
+          $("serviceNotes").textContent = service.notes || "لا توجد ملاحظات.";
+          $("serviceStatus").textContent = service.service_status || "-";
+          $("priorityLevel").textContent = service.priority_level || "-";
+
+          const clientLink = $("clientLink");
+          clientLink.textContent = service.full_name || "-";
+          if (service.client_id) clientLink.href = `client-profile.html?id=${encodeURIComponent(service.client_id)}`;
+          else clientLink.removeAttribute("href");
+
+          const linkedCase = $("linkedCase");
+          if (service.linked_case_id) {
+            linkedCase.textContent = `قضية #${service.linked_case_id}`;
+            linkedCase.href = `case-profile.html?id=${encodeURIComponent(service.linked_case_id)}`;
+          } else {
+            linkedCase.textContent = "لا توجد";
+            linkedCase.removeAttribute("href");
+          }
+
+          $("edit_client_name").value = service.full_name || "";
+          $("edit_service_title").value = service.service_title || "";
+          $("edit_service_type").value = service.service_type || "";
+          $("edit_assigned_to").value = service.assigned_to || "";
+          $("edit_start_date").value = service.start_date || "";
+          $("edit_due_date").value = service.due_date || "";
+          $("edit_completed_date").value = service.completed_date || "";
+          $("edit_service_status").value = service.service_status || "جديدة";
+          $("edit_priority_level").value = service.priority_level || "عادية";
+          $("edit_total_fees").value = Number(service.total_fees || 0);
+          $("edit_description").value = service.description || "";
+          $("edit_notes").value = service.notes || "";
+        }
+
+        function updateFinancialSummary() {
+          const fees = Number(currentService?.total_fees || 0);
+          const remaining = Math.max(fees - totalPaid, 0);
+          const netProfit = totalPaid - totalExpenses;
+          const collectionRate = fees > 0 ? Math.min((totalPaid / fees) * 100, 100) : 0;
+
+          $("totalFees").textContent = money(fees);
+          $("paidAmount").textContent = money(totalPaid);
+          $("remainingAmount").textContent = money(remaining);
+          $("expensesAmount").textContent = money(totalExpenses);
+          $("netProfit").textContent = money(netProfit);
+          $("collectionRateLabel").textContent = `${collectionRate.toFixed(1)}%`;
+          $("collectionProgress").style.width = `${collectionRate}%`;
+
+          $("paymentStatus").textContent = fees <= 0
+            ? (totalPaid > 0 ? "مدفوعة" : "غير مدفوعة")
+            : totalPaid >= fees ? "مدفوعة بالكامل" : totalPaid > 0 ? "مدفوعة جزئياً" : "غير مدفوعة";
+        }
+
+        function renderPayments(payments) {
+          const rows = Array.isArray(payments) ? payments : [];
+          totalPaid = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+          $("paymentsCount").textContent = rows.length;
+          $("lastPaymentDate").textContent = rows[0]?.payment_date || "-";
+          updateFinancialSummary();
+
+          if (!rows.length) {
+            $("paymentsContainer").innerHTML = `<p class="text-gray-500">لا توجد دفعات مسجلة.</p>`;
+            return;
+          }
+
+          $("paymentsContainer").innerHTML = rows.map((item) => `
+            <div class="border rounded-xl p-4 bg-gray-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p class="font-semibold">${escapeHtml(item.payment_method || "دفعة")}</p>
+                <p class="text-sm text-gray-500">${escapeHtml(item.payment_date || "-")}</p>
+                ${item.notes ? `<p class="text-sm mt-2">${escapeHtml(item.notes)}</p>` : ""}
+              </div>
+              <div class="flex items-center gap-3">
+                <strong class="text-green-700">${money(item.amount)}</strong>
+                <button class="no-print bg-red-600 text-white px-3 py-1 rounded" data-payment-delete="${item.payment_id}">حذف</button>
+              </div>
+            </div>
+          `).join("");
+        }
+
+        function renderExpenses(expenses) {
+          const rows = Array.isArray(expenses) ? expenses : [];
+          totalExpenses = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+          $("expensesCount").textContent = rows.length;
+          updateFinancialSummary();
+
+          if (!rows.length) {
+            $("expensesContainer").innerHTML = `<p class="text-gray-500">لا توجد مصروفات مسجلة.</p>`;
+            return;
+          }
+
+          $("expensesContainer").innerHTML = rows.map((item) => `
+            <div class="border rounded-xl p-4 bg-gray-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p class="font-semibold">${escapeHtml(item.expense_type || "مصروف")}</p>
+                <p class="text-sm text-gray-500">${escapeHtml(item.expense_date || "-")}</p>
+                ${item.notes ? `<p class="text-sm mt-2">${escapeHtml(item.notes)}</p>` : ""}
+              </div>
+              <div class="flex items-center gap-3">
+                <strong class="text-red-700">${money(item.amount)}</strong>
+                <button class="no-print bg-red-600 text-white px-3 py-1 rounded" data-expense-delete="${item.expense_id}">حذف</button>
+              </div>
+            </div>
+          `).join("");
+        }
+
+        function renderActivity(rows) {
+          const data = Array.isArray(rows) ? rows : [];
+          if (!data.length) {
+            $("activityContainer").innerHTML = `<p class="text-gray-500">لا يوجد نشاط مسجل لهذه الخدمة.</p>`;
+            return;
+          }
+
+          $("activityContainer").innerHTML = data.map((item) => `
+            <div class="border-r-4 border-accent bg-gray-50 rounded-lg p-4 mb-3">
+              <div class="flex flex-col md:flex-row md:justify-between gap-1">
+                <strong>${escapeHtml(item.description || item.action || "نشاط")}</strong>
+                <span class="text-sm text-gray-500">${escapeHtml(item.created_at || "")}</span>
+              </div>
+              <p class="text-sm text-gray-500 mt-1">${escapeHtml(item.user_name || "مستخدم")}</p>
+            </div>
+          `).join("");
+        }
+
+        async function loadService() {
+          if (!serviceId) {
+            setError("رقم الخدمة غير موجود في الرابط.");
+            return false;
+          }
+          try {
+            clearError();
+            const service = await api.get(`${SERVICES_API}/${encodeURIComponent(serviceId)}`);
+            renderService(service);
+            return true;
+          } catch (error) {
+            console.error(error);
+            setError(error?.message || "تعذر تحميل الخدمة.");
+            return false;
+          }
+        }
+
+        async function loadFinancials() {
+          if (!canFinancial()) return;
+          try {
+            const [payments, expenses] = await Promise.all([
+              api.get(`${PAYMENTS_API}/service/${encodeURIComponent(serviceId)}`),
+              api.get(`${EXPENSES_API}/service/${encodeURIComponent(serviceId)}`),
+            ]);
+            renderPayments(payments);
+            renderExpenses(expenses);
+          } catch (error) {
+            console.error(error);
+            $("paymentsContainer").innerHTML = `<p class="text-red-600">تعذر تحميل الدفعات.</p>`;
+            $("expensesContainer").innerHTML = `<p class="text-red-600">تعذر تحميل المصروفات.</p>`;
+          }
+        }
+
+        async function loadActivity() {
+          try {
+            const rows = await api.get(`${ACTIVITY_API}/${encodeURIComponent(serviceId)}?limit=50`);
+            renderActivity(rows);
+          } catch (error) {
+            console.error(error);
+            $("activityContainer").innerHTML = `<p class="text-red-600">تعذر تحميل سجل النشاط.</p>`;
+          }
+        }
+
+        function applyRoleUI() {
+          const financial = canFinancial();
+          if (!financial) {
+            $("financialSection").remove();
+            $("paymentsSection").remove();
+            $("expensesSection").remove();
+            $("editFeesField").remove();
+          }
+          if (canDeleteService()) $("deleteServiceBtn").classList.remove("hidden");
+          else $("deleteServiceBtn").remove();
+        }
+
+        async function saveService() {
+          if (saving || !currentService) return;
+          const title = $("edit_service_title").value.trim();
+          const type = $("edit_service_type").value.trim();
+          const startDate = $("edit_start_date").value;
+          const dueDate = $("edit_due_date").value;
+          const status = $("edit_service_status").value;
+          const completedDate = $("edit_completed_date").value;
+
+          if (!title || !type) return toast("عنوان ونوع الخدمة مطلوبان", false);
+          if (!startDate || !dueDate || dueDate < startDate) return toast("تأكد من صحة تاريخ البدء والتسليم", false);
+          if (status === "مكتملة" && !completedDate) return toast("تاريخ الإنجاز مطلوب للخدمة المكتملة", false);
+          if (status !== "مكتملة" && completedDate) return toast("لا يمكن إدخال تاريخ إنجاز إلا للخدمة المكتملة", false);
+
+          const payload = {
+            client_id: currentService.client_id,
+            service_title: title,
+            service_type: type,
+            assigned_to: $("edit_assigned_to").value.trim(),
+            start_date: startDate,
+            due_date: dueDate,
+            service_status: status,
+            priority_level: $("edit_priority_level").value,
+            description: $("edit_description").value,
+            notes: $("edit_notes").value,
+            completed_date: completedDate,
+          };
+          if (canFinancial()) payload.total_fees = Number($("edit_total_fees").value || 0);
+
+          saving = true;
+          $("saveServiceBtn").disabled = true;
+          try {
+            await api.put(`${SERVICES_API}/${encodeURIComponent(serviceId)}`, payload);
+            toast("تم تعديل الخدمة بنجاح", true);
+            closeModal("editServiceModal");
+            await loadService();
+            await loadActivity();
+            if (canFinancial()) await loadFinancials();
+          } catch (error) {
+            console.error(error);
+            toast(error?.message || "فشل تعديل الخدمة", false);
+          } finally {
+            saving = false;
+            $("saveServiceBtn").disabled = false;
+          }
+        }
+
+        async function deleteService() {
+          if (!canDeleteService()) return toast("ليس لديك صلاحية لحذف الخدمة", false);
+          const result = await Swal.fire({ title: "حذف الخدمة؟", text: "لا يمكن التراجع بعد الحذف", icon: "warning", showCancelButton: true, confirmButtonText: "نعم، حذف", cancelButtonText: "إلغاء" });
+          if (!result.isConfirmed) return;
+          try {
+            await api.delete(`${SERVICES_API}/${encodeURIComponent(serviceId)}`);
+            toast("تم حذف الخدمة بنجاح", true);
+            setTimeout(() => { location.href = "services.html"; }, 700);
+          } catch (error) {
+            console.error(error);
+            toast(error?.message || "فشل حذف الخدمة", false);
+          }
+        }
+
+        async function savePayment() {
+          const amount = Number($("payment_amount").value || 0);
+          if (amount <= 0 || !$("payment_date").value || !$("payment_method").value.trim()) return toast("المبلغ والتاريخ وطريقة الدفع مطلوبة", false);
+          const fees = Number(currentService?.total_fees || 0);
+          if (totalPaid + amount > fees) return toast("المبلغ يتجاوز إجمالي الأتعاب", false);
+          try {
+            await api.post(PAYMENTS_API, { case_id: null, service_id: Number(serviceId), amount, payment_date: $("payment_date").value, payment_method: $("payment_method").value.trim(), notes: $("payment_notes").value.trim() });
+            toast("تم تسجيل الدفعة بنجاح", true);
+            closeModal("paymentModal");
+            $("payment_amount").value = "";
+            $("payment_notes").value = "";
+            await loadFinancials();
+            await loadActivity();
+          } catch (error) {
+            console.error(error);
+            toast(error?.message || "فشل تسجيل الدفعة", false);
+          }
+        }
+
+        async function saveExpense() {
+          const amount = Number($("expense_amount").value || 0);
+          const type = $("expense_type").value.trim();
+          const date = $("expense_date").value;
+          if (amount <= 0 || !type || !date) return toast("نوع المصروف والمبلغ والتاريخ مطلوبة", false);
+          try {
+            await api.post(EXPENSES_API, { service_id: Number(serviceId), expense_type: type, amount, expense_date: date, notes: $("expense_notes").value.trim() });
+            toast("تم إضافة المصروف بنجاح", true);
+            closeModal("expenseModal");
+            $("expense_amount").value = "";
+            $("expense_type").value = "";
+            $("expense_notes").value = "";
+            await loadFinancials();
+            await loadActivity();
+          } catch (error) {
+            console.error(error);
+            toast(error?.message || "فشل إضافة المصروف", false);
+          }
+        }
+
+        async function deletePayment(id) {
+          const result = await Swal.fire({ title: "حذف الدفعة؟", icon: "warning", showCancelButton: true, confirmButtonText: "نعم، حذف", cancelButtonText: "إلغاء" });
+          if (!result.isConfirmed) return;
+          try { await api.delete(`${PAYMENTS_API}/${id}`); toast("تم حذف الدفعة", true); await loadFinancials(); await loadActivity(); }
+          catch (error) { toast(error?.message || "فشل حذف الدفعة", false); }
+        }
+
+        async function deleteExpense(id) {
+          const result = await Swal.fire({ title: "حذف المصروف؟", icon: "warning", showCancelButton: true, confirmButtonText: "نعم، حذف", cancelButtonText: "إلغاء" });
+          if (!result.isConfirmed) return;
+          try { await api.delete(`${EXPENSES_API}/${id}`); toast("تم حذف المصروف", true); await loadFinancials(); await loadActivity(); }
+          catch (error) { toast(error?.message || "فشل حذف المصروف", false); }
+        }
+
+        function bind() {
+          applyRoleUI();
+          $("editServiceBtn").addEventListener("click", () => openModal("editServiceModal"));
+          $("printPdfBtn").addEventListener("click", () => window.print());
+          $("saveServiceBtn").addEventListener("click", saveService);
+          if ($("deleteServiceBtn")) $("deleteServiceBtn").addEventListener("click", deleteService);
+
+          document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => closeModal(button.dataset.close)));
+
+          if (canFinancial()) {
+            $("addPaymentBtn").addEventListener("click", () => { $("payment_date").value = new Date().toISOString().slice(0,10); openModal("paymentModal"); });
+            $("addExpenseBtn").addEventListener("click", () => { $("expense_date").value = new Date().toISOString().slice(0,10); openModal("expenseModal"); });
+            $("savePaymentBtn").addEventListener("click", savePayment);
+            $("saveExpenseBtn").addEventListener("click", saveExpense);
+            $("paymentsContainer").addEventListener("click", (event) => { const btn = event.target.closest("[data-payment-delete]"); if (btn) deletePayment(btn.dataset.paymentDelete); });
+            $("expensesContainer").addEventListener("click", (event) => { const btn = event.target.closest("[data-expense-delete]"); if (btn) deleteExpense(btn.dataset.expenseDelete); });
+          }
+
+          // service-files.js owns the actual upload/list/open/download/delete implementation.
+          const input = $("serviceFileInput");
+          const uploadButton = $("serviceFileUploadBtn");
+          if (uploadButton && input) uploadButton.addEventListener("click", () => input.click());
+        }
+
+        async function start() {
+          if (!serviceId) return setError("رقم الخدمة غير موجود في الرابط.");
+          bind();
+          const loaded = await loadService();
+          if (!loaded) return;
+          await Promise.all([loadActivity(), loadFinancials()]);
+          updateFinancialSummary();
+        }
+
+        window.openEditServiceModal = () => openModal("editServiceModal");
+        window.closeEditServiceModal = () => closeModal("editServiceModal");
+        window.openPaymentModal = () => { if (canFinancial()) { $("payment_date").value = new Date().toISOString().slice(0,10); openModal("paymentModal"); } };
+        window.closePaymentModal = () => closeModal("paymentModal");
+        window.openExpenseModal = () => { if (canFinancial()) { $("expense_date").value = new Date().toISOString().slice(0,10); openModal("expenseModal"); } };
+        window.closeExpenseModal = () => closeModal("expenseModal");
+        window.deleteService = deleteService;
+
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+        else start();
+      })();
+    </script>
   </body>
 </html>
