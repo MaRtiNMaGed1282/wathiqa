@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>النسخ الاحتياطي</title>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <link rel="stylesheet" href="../assets/css/fonts.css" />
+  <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+  <style>body { font-family: Cairo, sans-serif; }</style>
+</head>
+<body class="bg-light text-primary min-h-screen font-cairo">
+  <div id="navbar-container"></div>
+  <div id="sidebar-container"></div>
+  <main class="flex-1 p-6 overflow-auto">
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold">النسخ الاحتياطي والاستعادة</h1>
+        <p class="text-gray-600 mt-2">حفظ قاعدة البيانات والملفات واستعادتها بأمان.</p>
+      </div>
+
+      <div id="accessDenied" class="hidden bg-white rounded-2xl shadow-sm border p-8 text-center">
+        <h2 class="text-xl font-bold mb-2">غير مصرح</h2>
+        <p class="text-gray-600">هذه الصفحة متاحة لمدير النظام فقط.</p>
+      </div>
+
+      <div id="backupPage" class="hidden">
+        <section class="bg-white rounded-2xl shadow-sm border p-6 mb-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold">إنشاء نسخة احتياطية</h2>
+              <p class="text-sm text-gray-500 mt-1">تشمل قاعدة البيانات وملفات القضايا والخدمات وملفات التوكيلات.</p>
+            </div>
+            <button id="createBackupBtn" class="bg-primary text-white px-6 py-3 rounded-xl hover:bg-secondary">إنشاء نسخة احتياطية</button>
+          </div>
+          <div id="status" class="hidden mt-4 rounded-xl p-4 text-sm"></div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xl font-bold">النسخ المحفوظة</h2>
+            <button id="refreshBtn" class="border px-4 py-2 rounded-xl">تحديث</button>
+          </div>
+          <div id="empty" class="text-center text-gray-500 py-10">جاري التحميل...</div>
+          <div id="backupList" class="space-y-3"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="../assets/js/loadSidebar.js"></script>
+  <script>
+    "use strict";
+    const user = auth.getUser() || {};
+    const isAdmin = user.role === "admin";
+    const page = document.getElementById("backupPage");
+    const denied = document.getElementById("accessDenied");
+    const status = document.getElementById("status");
+    const list = document.getElementById("backupList");
+    const empty = document.getElementById("empty");
+
+    function showStatus(message, success = true) {
+      status.textContent = message;
+      status.className = `mt-4 rounded-xl p-4 text-sm ${success ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`;
+      status.classList.remove("hidden");
+    }
+
+    function formatSize(bytes) {
+      if (!bytes) return "0 KB";
+      const units = ["B", "KB", "MB", "GB"];
+      const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${units[i]}`;
+    }
+
+    async function loadBackups() {
+      empty.textContent = "جاري التحميل...";
+      empty.classList.remove("hidden");
+      list.innerHTML = "";
+      try {
+        const data = await api.get("/backup");
+        const backups = data.backups || [];
+        empty.classList.toggle("hidden", backups.length > 0);
+        if (!backups.length) { empty.textContent = "لا توجد نسخ احتياطية محفوظة."; return; }
+        backups.forEach((backup) => {
+          const row = document.createElement("div");
+          row.className = "border rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4";
+          row.innerHTML = `<div><div class="font-semibold">${backup.name}</div><div class="text-sm text-gray-500 mt-1">${formatSize(backup.size)} — ${new Date(backup.createdAt).toLocaleString("ar-EG")}</div></div><div class="flex gap-2"><button class="download border px-4 py-2 rounded-xl" data-name="${backup.name}">تحميل</button><button class="restore bg-primary text-white px-4 py-2 rounded-xl" data-name="${backup.name}">استعادة</button></div>`;
+          row.querySelector(".download").addEventListener("click", () => downloadBackup(backup.name));
+          row.querySelector(".restore").addEventListener("click", () => restoreBackup(backup.name));
+          list.appendChild(row);
+        });
+      } catch (error) { showStatus(error?.message || "تعذر تحميل النسخ الاحتياطية", false); }
+    }
+
+    async function downloadBackup(name) {
+      try {
+        const blob = await api.download(`/backup/${encodeURIComponent(name)}/download`);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = name; a.click();
+        URL.revokeObjectURL(url);
+      } catch (error) { showStatus(error?.message || "تعذر تحميل النسخة الاحتياطية", false); }
+    }
+
+    async function restoreBackup(name) {
+      if (!confirm(`سيتم إنشاء نسخة أمان تلقائية ثم تجهيز استعادة "${name}". يجب إعادة تشغيل النظام بعد ذلك. هل تريد المتابعة؟`)) return;
+      try {
+        const result = await api.post("/backup/restore", { name });
+        showStatus(result?.message || "تم تجهيز الاستعادة");
+      } catch (error) { showStatus(error?.message || "تعذر تجهيز الاستعادة", false); }
+    }
+
+    document.getElementById("createBackupBtn").addEventListener("click", async () => {
+      const button = document.getElementById("createBackupBtn");
+      button.disabled = true;
+      try {
+        const result = await api.post("/backup");
+        showStatus(result?.message || "تم إنشاء النسخة الاحتياطية بنجاح");
+        await loadBackups();
+      } catch (error) { showStatus(error?.message || "تعذر إنشاء النسخة الاحتياطية", false); }
+      finally { button.disabled = false; }
+    });
+    document.getElementById("refreshBtn").addEventListener("click", loadBackups);
+
+    if (!isAdmin) {
+      denied.classList.remove("hidden");
+    } else {
+      page.classList.remove("hidden");
+      loadBackups();
+    }
+  </script>
+</body>
+</html>
