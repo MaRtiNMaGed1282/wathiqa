@@ -5,6 +5,10 @@
     return /(^|\/)case-profile\.html$/i.test(global.location.pathname);
   }
 
+  function isClientProfile() {
+    return /(^|\/)client-profile\.html$/i.test(global.location.pathname);
+  }
+
   function isChangePassword() {
     return /(^|\/)change-password\.html$/i.test(global.location.pathname);
   }
@@ -14,6 +18,17 @@
       return global.auth?.getUser?.()?.role || null;
     } catch {
       return null;
+    }
+  }
+
+  function hideSectionByHeading(headingText) {
+    const headings = Array.from(document.querySelectorAll("h2, h3"));
+    const heading = headings.find((node) => node.textContent.trim() === headingText);
+    if (!heading) return;
+    const section = heading.closest(".bg-white.rounded-xl.shadow") || heading.parentElement;
+    if (section) {
+      section.hidden = true;
+      section.setAttribute("aria-hidden", "true");
     }
   }
 
@@ -28,7 +43,7 @@
     }
   }
 
-  function hideFinancialControls() {
+  function hideCaseFinancialControls() {
     hideFinancialSectionByHeading("البيانات المالية");
     hideFinancialSectionByHeading("الدفعات");
     hideFinancialSectionByHeading("المصروفات");
@@ -54,6 +69,10 @@
         element.hidden = true;
         element.setAttribute("aria-hidden", "true");
       });
+  }
+
+  function hideClientFinancialControls() {
+    hideSectionByHeading("الملخص المالي");
   }
 
   function applyCaseValidation() {
@@ -88,6 +107,16 @@
     });
   }
 
+  function applyClientValidation() {
+    ["attorney_number", "attorney_type", "issue_date", "issuing_office"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+
+    const file = document.getElementById("attorney_file");
+    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
+  }
+
   function applyPasswordValidation() {
     ["newPassword", "confirmPassword"].forEach((id) => {
       const element = document.getElementById(id);
@@ -112,8 +141,8 @@
       <button id="phase25-page-error-retry" type="button" class="mt-3 bg-red-600 text-white px-4 py-2 rounded">إعادة المحاولة</button>
     `;
 
-    const main = document.querySelector("main");
-    if (main) main.prepend(banner);
+    const main = document.querySelector("main") || document.body;
+    main.prepend(banner);
     return banner;
   }
 
@@ -137,14 +166,22 @@
   }
 
   function init() {
-    if (isCaseProfile()) {
+    const caseProfile = isCaseProfile();
+    const clientProfile = isClientProfile();
+
+    if (caseProfile) {
       applyCaseValidation();
-      if (getUserRole() === "assistant") hideFinancialControls();
+      if (getUserRole() === "assistant") hideCaseFinancialControls();
+    }
+
+    if (clientProfile) {
+      applyClientValidation();
+      if (getUserRole() === "assistant") hideClientFinancialControls();
     }
 
     if (isChangePassword()) applyPasswordValidation();
 
-    if (!isCaseProfile()) return;
+    if (!caseProfile && !clientProfile) return;
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
