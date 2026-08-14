@@ -4,6 +4,36 @@ const fs = require("fs");
 const logActivity = require("../utils/activityLogger");
 const attorneyUpload = require("../config/attorneyUpload");
 
+function getAttorneyFilePath(filePath) {
+  if (!filePath) return null;
+
+  const filename = path.basename(String(filePath));
+  if (!filename || filename === "." || filename === "..") return null;
+
+  const uploadDir = path.resolve(attorneyUpload.getUploadDir());
+  const absolutePath = path.resolve(uploadDir, filename);
+
+  if (
+    absolutePath !== uploadDir &&
+    !absolutePath.startsWith(`${uploadDir}${path.sep}`)
+  ) {
+    return null;
+  }
+
+  return absolutePath;
+}
+
+function removeAttorneyFile(filePath) {
+  const absolutePath = getAttorneyFilePath(filePath);
+  if (!absolutePath || !fs.existsSync(absolutePath)) return;
+
+  try {
+    fs.unlinkSync(absolutePath);
+  } catch (error) {
+    console.error("Attorney file deletion error:", error.message);
+  }
+}
+
 exports.createAttorney = (req, res) => {
   const client_id = req.body.client_id;
   const attorney_number = req.body.attorney_number;
@@ -14,6 +44,7 @@ exports.createAttorney = (req, res) => {
     req.body.issuing_office || req.body["issuing_office"] || "";
 
   const notes = req.body.notes;
+  const storedFileName = req.file ? req.file.filename : null;
 
   db.run(
     `
@@ -34,11 +65,12 @@ exports.createAttorney = (req, res) => {
       attorney_type,
       issue_date,
       issuing_office,
-      req.file ? req.file.filename : null,
+      storedFileName,
       notes,
     ],
     function (err) {
       if (err) {
+        removeAttorneyFile(storedFileName);
         return res.status(500).json({
           message: err.message,
         });
@@ -104,11 +136,9 @@ exports.downloadAttorneyFile = (req, res) => {
         return res.status(404).json({ message: "ملف التوكيل غير موجود" });
       }
 
-      const uploadDir = attorneyUpload.getUploadDir();
-      const filename = path.basename(attorney.file_path);
-      const absolutePath = path.join(uploadDir, filename);
+      const absolutePath = getAttorneyFilePath(attorney.file_path);
 
-      if (!fs.existsSync(absolutePath)) {
+      if (!absolutePath || !fs.existsSync(absolutePath)) {
         return res.status(404).json({ message: "ملف التخزين غير موجود" });
       }
 
@@ -120,36 +150,56 @@ exports.downloadAttorneyFile = (req, res) => {
 exports.deleteAttorney = (req, res) => {
   const { id } = req.params;
 
-  db.run(
+  db.get(
     `
-    DELETE FROM client_attorneys
+    SELECT file_path
+    FROM client_attorneys
     WHERE id = ?
     `,
     [id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
+    (selectErr, attorney) => {
+      if (selectErr) {
+        return res.status(500).json({ message: selectErr.message });
       }
 
-      if (this.changes === 0) {
-        return res.status(404).json({
-          message: "Attorney not found",
-        });
+      if (!attorney) {
+        return res.status(404).json({ message: "Attorney not found" });
       }
 
-      logActivity({
-        module: "attorney",
-        record_id: Number(id),
-        action: "deleted",
-        description: "تم حذف التوكيل",
-        user_id: req.user.id,
-      });
+      db.run(
+        `
+        DELETE FROM client_attorneys
+        WHERE id = ?
+        `,
+        [id],
+        function (err) {
+          if (err) {
+            return res.status(500).json({
+              message: err.message,
+            });
+          }
 
-      return res.json({
-        message: "Attorney deleted successfully",
-      });
+          if (this.changes === 0) {
+            return res.status(404).json({
+              message: "Attorney not found",
+            });
+          }
+
+          removeAttorneyFile(attorney.file_path);
+
+          logActivity({
+            module: "attorney",
+            record_id: Number(id),
+            action: "deleted",
+            description: "تم حذف التوكيل",
+            user_id: req.user.id,
+          });
+
+          return res.json({
+            message: "Attorney deleted successfully",
+          });
+        },
+      );
     },
   );
 };
