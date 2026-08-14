@@ -4,6 +4,7 @@ const upload = require("../config/attorneyUpload");
 const auth = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/authorize.middleware");
 const redactFinancial = require("../middlewares/redactFinancial.middleware");
+const { listClients } = require("../controllers/client-list.controller");
 
 const {
   createClient,
@@ -27,6 +28,7 @@ const {
 const allRoles = authorize("admin", "lawyer", "assistant");
 
 router.get("/search", auth, allRoles, searchClients);
+router.get("/list", auth, allRoles, listClients);
 router.get("/", auth, allRoles, getAllClients);
 
 router.get("/:id/financial-summary", auth, authorize("admin", "lawyer"), getClientFinancialSummary);
