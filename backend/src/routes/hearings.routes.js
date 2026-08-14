@@ -13,12 +13,14 @@ const {
   getUpcomingHearings,
 } = require("../controllers/hearings.controller");
 
-router.post("/", auth, createHearing);
-router.get("/case/:caseId", auth, getHearingsByCase);
-router.get("/", auth, getAllHearings);
-router.get("/upcoming", auth, getUpcomingHearings);
-router.get("/:id", auth, getHearingById);
-router.put("/:id", auth, updateHearing);
+const allRoles = authorize("admin", "lawyer", "assistant");
+
+router.post("/", auth, allRoles, createHearing);
+router.get("/case/:caseId", auth, allRoles, getHearingsByCase);
+router.get("/", auth, allRoles, getAllHearings);
+router.get("/upcoming", auth, allRoles, getUpcomingHearings);
+router.get("/:id", auth, allRoles, getHearingById);
+router.put("/:id", auth, allRoles, updateHearing);
 router.delete("/:id", auth, authorize("admin", "lawyer"), deleteHearing);
 
 module.exports = router;
