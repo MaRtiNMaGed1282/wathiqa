@@ -362,9 +362,9 @@
         }
 
         try {
-          const res = await api(`/cases/search?q=${encodeURIComponent(q)}`);
-
-          const data = await res.json();
+          const data = await api.get("/cases/search", {
+            params: { q },
+          });
 
           renderCases(data);
         } catch (err) {
@@ -465,13 +465,7 @@
       async function fetchCases() {
         console.log("fetchCases called");
         try {
-          const res = await api("/cases");
-
-          const cases = await res.json();
-
-          if (!res.ok) {
-            throw new Error(cases.message);
-          }
+          const cases = await api.get("/cases");
 
           renderCases(cases);
 
@@ -574,40 +568,29 @@
               formData.append("files", file);
             }
 
-            const res = await api("/cases", {
-              method: "POST",
+            await api.upload("/cases", formData);
 
-              body: formData,
-            });
+            showToast("تم إضافة القضية بنجاح", true);
 
-            const result = await res.json();
+            closeAddCaseModal();
 
-            if (res.ok) {
-              showToast("تم إضافة القضية بنجاح", true);
+            document.getElementById("addCaseForm").reset();
 
-              closeAddCaseModal();
+            selectedClientId = null;
 
-              document.getElementById("addCaseForm").reset();
+            document.getElementById("selectedFiles").textContent =
+              "لم يتم اختيار ملفات";
 
-              selectedClientId = null;
-
-              fetchCases();
-            } else {
-              console.log(result);
-
-              showToast(result.error || result.message, false);
-            }
+            fetchCases();
           } catch (err) {
             console.error(err);
 
-            showToast("حدث خطأ أثناء إضافة القضية", false);
+            showToast(err.message || "حدث خطأ أثناء إضافة القضية", false);
           }
         });
       async function loadClients() {
         try {
-          const res = await api("/clients");
-
-          allClients = await res.json();
+          allClients = await api.get("/clients");
         } catch (err) {
           console.error(err);
         }
@@ -714,9 +697,9 @@
 
         if (chamber) params.append("chamber", chamber);
 
-        const res = await api(`/cases/filter?${params}`);
-
-        const data = await res.json();
+        const data = await api.get("/cases/filter", {
+          params: Object.fromEntries(params.entries()),
+        });
 
         renderCases(data);
       }
