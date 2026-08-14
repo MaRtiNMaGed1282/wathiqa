@@ -3,6 +3,7 @@ const router = express.Router();
 const upload = require("../config/attorneyUpload");
 const auth = require("../middlewares/auth.middleware");
 const financial = require("../middlewares/financial.middleware");
+const role = require("../middlewares/role.middleware");
 const { idParam, validateClient } = require("../middlewares/validation.middleware");
 
 const {
@@ -42,6 +43,6 @@ router.get("/dashboard/notifications", auth, getDashboardNotifications);
 router.get("/:id", auth, idParam(), getClientById);
 router.post("/", auth, validateClient, upload.single("attorney_file"), createClient);
 router.put("/:id", auth, idParam(), validateClient, updateClient);
-router.delete("/:id", auth, idParam(), deleteClient);
+router.delete("/:id", auth, role("admin"), idParam(), deleteClient);
 
 module.exports = router;
