@@ -624,6 +624,8 @@
 
       const FILES_API = "/files";
 
+      const SERVICE_FILES_API = "/files/service";
+
       const PAYMENTS_API = "/payments";
 
       const EXPENSES_API = "/expenses";
@@ -1182,11 +1184,14 @@
 
       async function loadFiles() {
         try {
-          const files = await api.get(`${FILES_API}/case/${serviceId}`);
+          const files = await api.get(`${SERVICE_FILES_API}/${serviceId}`);
 
           renderFiles(files);
         } catch (err) {
           console.error(err);
+          document.getElementById("filesContainer").innerHTML = `
+            <p class="text-red-500">فشل تحميل الملفات</p>
+          `;
         }
       }
 
@@ -1196,63 +1201,87 @@
         if (files.length === 0) {
           container.innerHTML = `
                   <p class="text-gray-500">
-
                     لا توجد مرفقات
-
                   </p>
                 `;
-
           return;
         }
 
         container.innerHTML = files
           .map(
             (file) => `
-
                   <div
                     class="flex justify-between items-center border rounded p-3">
 
-<div>
-  📄
-  <a
-    href="/${file.file_path.replace(/\\/g, "/")}"
-    target="_blank"
-    class="text-blue-700 hover:underline font-medium"
-  >
-    ${file.original_name}
-  </a>
-</div>
-                    <div class="flex gap-2">
-<button
-  onclick="openPdfModal('/${file.file_path.replace(/\\/g, "/")}')"
-  class="bg-blue-600 text-white px-3 py-1 rounded"
->
-  عرض
-</button>
-
-<a
-  href="/${file.file_path.replace(/\\/g, "/")}"
-  download
-  class="bg-green-600 text-white px-3 py-1 rounded">
-
-  تحميل
-
-</a>
-                        <button onclick="deleteFile(${file.file_id})" 
-                        class="bg-red-600 text-white px-3 py-1 rounded">
-
-                       حذف           
-
-                        </button>
-
+                    <div>
+                      📄
+                      <button
+                        type="button"
+                        onclick="openServiceFile(${file.file_id})"
+                        class="text-blue-700 hover:underline font-medium"
+                      >
+                        ${file.original_name}
+                      </button>
                     </div>
-                   
 
+                    <div class="flex gap-2">
+                      <button
+                        type="button"
+                        onclick="openServiceFile(${file.file_id})"
+                        class="bg-blue-600 text-white px-3 py-1 rounded"
+                      >
+                        عرض
+                      </button>
+
+                      <button
+                        type="button"
+                        onclick="downloadServiceFile(${file.file_id}, '${String(file.original_name || "").replace(/'/g, "\\'")}')"
+                        class="bg-green-600 text-white px-3 py-1 rounded"
+                      >
+                        تحميل
+                      </button>
+
+                      <button
+                        type="button"
+                        onclick="deleteFile(${file.file_id})"
+                        class="bg-red-600 text-white px-3 py-1 rounded"
+                      >
+                        حذف
+                      </button>
+                    </div>
                   </div>
-
                 `,
           )
           .join("");
+      }
+
+      async function openServiceFile(id) {
+        try {
+          const blob = await api.download(`${SERVICE_FILES_API}/${id}/download`);
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank", "noopener,noreferrer");
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+          console.error(error);
+          showToast(error.message || "فشل فتح الملف", false);
+        }
+      }
+
+      async function downloadServiceFile(id, originalName) {
+        try {
+          const blob = await api.download(`${SERVICE_FILES_API}/${id}/download`);
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = originalName || "service-file";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+          console.error(error);
+          showToast(error.message || "فشل تحميل الملف", false);
+        }
       }
 
       async function deleteFile(id) {
@@ -1270,12 +1299,16 @@
 
         if (!result.isConfirmed) return;
 
-        await api.delete(`${FILES_API}/${id}`);
+        try {
+          await api.delete(`${SERVICE_FILES_API}/${id}`);
 
-        if (true) {
           showToast("تم حذف الملف", true);
 
           loadFiles();
+        } catch (error) {
+          console.error(error);
+
+          showToast(error.message || "فشل حذف الملف", false);
         }
       }
 
@@ -1292,13 +1325,15 @@
 
         formData.append("file", file);
 
-        formData.append("case_id", serviceId);
+        formData.append("service_id", serviceId);
 
         try {
-          const data = await api.upload(`${FILES_API}/upload`, formData);
+          const data = await api.upload(`${SERVICE_FILES_API}/upload`, formData);
 
           if (data) {
             showToast("File uploaded successfully", true);
+
+            e.target.value = "";
 
             loadFiles();
           } else {
