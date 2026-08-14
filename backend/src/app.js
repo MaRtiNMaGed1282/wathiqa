@@ -24,6 +24,7 @@ app.use("/api/office", require("./routes/office.routes"));
 app.use("/api/license", require("./routes/license.routes"));
 app.use("/api/library", require("./routes/library.routes"));
 app.use("/api/templates", require("./routes/templates.routes"));
+app.use("/api/revenues", require("./routes/revenues.routes"));
 app.use("/api/clients", require("./routes/clients.routes"));
 app.use("/api/cases", require("./routes/cases.routes"));
 app.use("/api/case-expenses", caseExpensesRoutes);
