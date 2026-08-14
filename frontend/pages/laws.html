@@ -1,27 +1,15 @@
 <!doctype html>
-
 <html lang="ar" dir="rtl">
   <head>
     <link rel="icon" type="image/png" href="../assets/faviconw.png" />
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>القوانين المصرية</title>
-
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
-
-    <!-- Cairo -->
     <link rel="stylesheet" href="../assets/css/fonts.css" />
-    <!-- Tailwind -->
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
-    <style>
-      body {
-        font-family: "Cairo", sans-serif;
-      }
-    </style>
+    <style>body { font-family: "Cairo", sans-serif; }</style>
   </head>
 
   <body class="bg-light text-primary min-h-screen flex font-cairo">
@@ -29,220 +17,85 @@
     <div id="sidebar-container"></div>
 
     <main class="flex-1 p-6 overflow-auto">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h1 class="text-3xl font-bold">القوانين المصرية</h1>
-
-          <p class="text-gray-600 mt-2">مكتبة القوانين والتشريعات المصرية</p>
-        </div>
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold">القوانين المصرية</h1>
+        <p class="text-gray-600 mt-2">مكتبة القوانين والتشريعات المصرية — قراءة وعرض وتحميل فقط.</p>
       </div>
 
-      <!-- Statistics -->
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-gray-500">إجمالي القوانين</p>
-
-          <h3 id="totalLaws" class="text-3xl font-bold mt-2">0</h3>
-        </div>
-
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-gray-500">آخر قانون</p>
-
-          <h3 id="latestLaw" class="text-xl font-bold mt-2">---</h3>
-        </div>
-
-        <div class="bg-white rounded-xl shadow p-4">
-          <p class="text-gray-500">البحث</p>
-
-          <input
-            id="searchLaw"
-            type="text"
-            placeholder="ابحث باسم القانون..."
-            class="w-full border rounded p-2 mt-2"
-          />
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"><p class="text-gray-500">إجمالي القوانين</p><h3 id="totalLaws" class="text-3xl font-bold mt-2">0</h3></div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"><p class="text-gray-500">نتائج البحث</p><h3 id="visibleLaws" class="text-3xl font-bold mt-2">0</h3></div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"><label for="searchLaw" class="text-gray-500">البحث</label><input id="searchLaw" type="search" placeholder="ابحث باسم القانون أو التصنيف..." class="w-full border rounded p-2 mt-2" /></div>
       </div>
 
-      <!-- Laws Table -->
-
-      <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="p-4 border-b">
-          <h3 class="text-lg font-semibold">قائمة القوانين</h3>
-        </div>
-
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div id="lawsState" class="hidden p-8 text-center text-gray-500"></div>
         <div class="overflow-x-auto">
           <table class="w-full text-right">
-            <thead>
-              <tr class="bg-secondary text-white">
-                <th class="p-3">#</th>
-                <th class="p-3">اسم القانون</th>
-                <th class="p-3">التصنيف</th>
-                <th class="p-3">الإجراءات</th>
-              </tr>
-            </thead>
-
-            <tbody id="lawsTableBody">
-              <tr>
-                <td colspan="4" class="text-center py-10 text-gray-500">
-                  جاري تحميل البيانات...
-                </td>
-              </tr>
-            </tbody>
+            <thead><tr class="bg-secondary text-white"><th class="p-3">#</th><th class="p-3">اسم القانون</th><th class="p-3">التصنيف</th><th class="p-3">الإجراءات</th></tr></thead>
+            <tbody id="lawsTableBody"></tbody>
           </table>
         </div>
       </div>
     </main>
 
     <script>
-      const API_URL = "/library/laws";
+      "use strict";
+      let searchTimer = null;
+      const tbody = document.getElementById("lawsTableBody");
+      const stateBox = document.getElementById("lawsState");
 
-      let currentLaws = [];
-
-      async function fetchLaws() {
-        try {
-          const laws = await api.get(API_URL);
-
-          currentLaws = laws;
-
-          renderLaws(laws);
-
-          document.getElementById("totalLaws").textContent = laws.length;
-
-          document.getElementById("latestLaw").textContent =
-            laws.length > 0 ? laws[0].title : "---";
-        } catch (error) {
-          console.error(error);
-
-          document.getElementById("lawsTableBody").innerHTML = `
-        <tr>
-          <td
-            colspan="4"
-            class="text-center py-10 text-red-600"
-          >
-            فشل تحميل القوانين
-          </td>
-        </tr>
-      `;
-        }
-      }
+      function escapeHtml(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;"); }
+      function setState(message, visible = true) { stateBox.textContent = message || ""; stateBox.classList.toggle("hidden", !visible); }
 
       function renderLaws(laws) {
-        const tbody = document.getElementById("lawsTableBody");
-
-        if (!laws.length) {
-          tbody.innerHTML = `
-        <tr>
-          <td
-            colspan="4"
-            class="text-center py-10 text-gray-500"
-          >
-            لا توجد قوانين
-          </td>
-        </tr>
-      `;
-
-          return;
-        }
-
-        tbody.innerHTML = "";
-
+        tbody.replaceChildren();
+        document.getElementById("visibleLaws").textContent = laws.length.toLocaleString("ar-EG");
+        if (!laws.length) { setState("لا توجد قوانين مطابقة."); return; }
+        setState("", false);
         laws.forEach((law, index) => {
-          tbody.innerHTML += `
-        <tr class="border-b hover:bg-gray-50">
-
-          <td class="p-3">
-            ${index + 1}
-          </td>
-
-<td class="p-3">
-
-  <div class="flex items-center gap-2">
-
-    <span class="text-xl">
-      ⚖️
-    </span>
-
-    <span class="font-semibold">
-      ${law.title}
-    </span>
-
-  </div>
-
-</td>
-
-<td class="p-3">
-
-  <span class="
-    inline-block
-    px-3
-    py-1
-    rounded-full
-    text-sm
-    bg-blue-100
-    text-blue-800
-  ">
-    ${law.category}
-  </span>
-
-</td>
-
-          <td class="p-3">
-            <div class="flex gap-2">
-
-              <button
-                onclick="viewLaw(${law.id})"
-                class="bg-primary text-white px-3 py-1 rounded hover:bg-secondary"
-              >
-                عرض
-              </button>
-
-              <button
-                onclick="downloadLaw(${law.id})"
-                class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-              >
-                تحميل
-              </button>
-
-            </div>
-          </td>
-
-        </tr>
-      `;
+          const row = document.createElement("tr");
+          row.className = "border-b hover:bg-gray-50";
+          row.innerHTML = `<td class="p-3">${index + 1}</td><td class="p-3"><div class="flex items-center gap-2"><span class="text-xl" aria-hidden="true">⚖️</span><span class="font-semibold">${escapeHtml(law.title)}</span></div></td><td class="p-3"><span class="inline-block px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">${escapeHtml(law.category || "غير مصنف")}</span></td><td class="p-3"><div class="flex gap-2"><button type="button" data-view="${escapeHtml(law.id)}" class="bg-primary text-white px-3 py-1 rounded hover:bg-secondary">عرض</button><button type="button" data-download="${escapeHtml(law.id)}" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">تحميل</button></div></td>`;
+          tbody.appendChild(row);
         });
       }
 
-      async function viewLaw(id) {
-        window.location.href = `law-viewer.html?id=${id}`;
-      }
-
-      async function downloadLaw(id) {
+      async function downloadLaw(id, title) {
         try {
-          const law = await api.get(`${API_URL}/${id}`);
-
-          window.open(`/laws-files/${law.pdf_path}`, "_blank");
-        } catch (error) {
-          console.error(error);
-        }
+          const blob = await api.download(`/library/laws/${encodeURIComponent(id)}/file?download=1`);
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `${title || "law"}.pdf`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (error) { console.error(error); setState(error?.message || "تعذر تحميل القانون."); }
       }
 
-      document.getElementById("searchLaw").addEventListener("input", (e) => {
-        const value = e.target.value.trim().toLowerCase();
+      async function fetchLaws() {
+        setState("جاري تحميل البيانات...", true);
+        try {
+          const search = document.getElementById("searchLaw").value.trim();
+          const laws = await api.get("/library/laws", { params: search ? { search } : {} });
+          document.getElementById("totalLaws").textContent = laws.length.toLocaleString("ar-EG");
+          renderLaws(laws);
+        } catch (error) { console.error(error); tbody.replaceChildren(); setState(error?.message || "فشل تحميل القوانين."); }
+      }
 
-        if (!value) {
-          renderLaws(currentLaws);
-          return;
+      tbody.addEventListener("click", async (event) => {
+        const view = event.target.closest("[data-view]");
+        if (view) { window.location.href = `law-viewer.html?id=${encodeURIComponent(view.dataset.view)}`; return; }
+        const download = event.target.closest("[data-download]");
+        if (download) {
+          const law = await api.get(`/library/laws/${encodeURIComponent(download.dataset.download)}`);
+          downloadLaw(download.dataset.download, law.title);
         }
-
-        const filtered = currentLaws.filter(
-          (law) =>
-            law.title?.toLowerCase().includes(value) ||
-            law.category?.toLowerCase().includes(value),
-        );
-
-        renderLaws(filtered);
       });
 
+      document.getElementById("searchLaw").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(fetchLaws, 250); });
       fetchLaws();
     </script>
 
