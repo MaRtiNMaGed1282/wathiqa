@@ -11,7 +11,6 @@
   "keywords": [
     "lawyer",
     "case-management",
-    "express",
     "nodejs"
   ],
   "author": "",
@@ -19,12 +18,15 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "bidi-js": "^1.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "git": "^0.1.5",
+    "harfbuzzjs": "^1.4.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "pdfkit": "^0.17.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
