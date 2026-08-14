@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="إدارة الموكلين في نظام وثيقة" />
     <title>الموكلين | وثيقة</title>
@@ -55,13 +55,15 @@
 
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-2xl font-bold">إدارة الموكلين</h2>
-              <button
-                id="openAddClientButton"
-                type="button"
-                class="bg-accent text-white px-5 py-3 rounded-lg"
-              >
-                + إضافة موكل
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  id="openAddClientButton"
+                  type="button"
+                  class="bg-accent text-white px-5 py-3 rounded-lg"
+                >
+                  + إضافة موكل
+                </button>
+              </div>
             </div>
 
             <div id="clientsTableContainer" class="bg-white shadow rounded p-4 overflow-auto" aria-live="polite">
@@ -129,6 +131,7 @@
     </div>
 
     <script src="../assets/js/pages/clients.js"></script>
+    <script src="../assets/js/pages/client-bulk-import.js"></script>
 
     <div id="editModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl">
