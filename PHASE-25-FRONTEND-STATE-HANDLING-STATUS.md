@@ -78,8 +78,8 @@
 - [x] Hearing-form required validation.
 - [x] Date/time input types.
 - [x] Existing success/error feedback.
+- [x] Calendar drag/drop mutation success path fixed.
 - [ ] Browser/API regression.
-- [ ] **Known functional defect:** `eventDrop` currently throws unconditionally after a successful PUT and therefore reverts drag/drop changes. Must be corrected before Phase 25 completion.
 
 ### Services
 - [x] Loading foundation.
@@ -170,14 +170,13 @@
 
 ## Remaining Before Phase 25 Completion
 
-1. Fix Calendar `eventDrop` unconditional error throw.
-2. Run browser/API regression across all 19 frozen pages.
-3. Verify loading → empty → error → success transitions.
-4. Verify duplicate mutation prevention.
-5. Verify destructive confirmations.
-6. Verify Assistant financial invisibility.
-7. Verify backend-offline/error recovery.
-8. Freeze Phase 25 only after all regression checks pass.
+1. Run browser/API regression across all 19 frozen pages.
+2. Verify loading → empty → error → success transitions.
+3. Verify duplicate mutation prevention.
+4. Verify destructive confirmations.
+5. Verify Assistant financial invisibility.
+6. Verify backend-offline/error recovery.
+7. Freeze Phase 25 only after all regression checks pass.
 
 ## Frozen Pages
 
@@ -201,4 +200,4 @@
 18. `services.html`
 19. `users.html`
 
-**Phase 25 is not complete until the known Calendar defect is fixed and the final regression is passed.**
+**Phase 25 remains open only for final browser/API regression.**
