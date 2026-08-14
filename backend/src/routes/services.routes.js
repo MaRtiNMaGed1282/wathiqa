@@ -4,6 +4,9 @@ const router = express.Router();
 
 const {
   getAllServices,
+  getServiceStats,
+  searchServices,
+  filterServices,
   createService,
   getServiceById,
   updateService,
@@ -19,6 +22,9 @@ const allRoles = authorize("admin", "lawyer", "assistant");
 
 router.post("/", auth, allRoles, rejectAssistantFinancialInput, createService);
 router.get("/", auth, allRoles, redactFinancial, getAllServices);
+router.get("/stats", auth, allRoles, getServiceStats);
+router.get("/search", auth, allRoles, redactFinancial, searchServices);
+router.get("/filter", auth, allRoles, redactFinancial, filterServices);
 router.get("/client/:id", auth, allRoles, redactFinancial, getClientServices);
 router.get("/:id", auth, allRoles, redactFinancial, getServiceById);
 router.put("/:id", auth, allRoles, rejectAssistantFinancialInput, updateService);
