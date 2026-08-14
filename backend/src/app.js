@@ -20,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 // Register before route handlers so the finish listener can observe req.user after
-// authentication/authorization middleware has executed inside each route.
+authentication/authorization middleware has executed inside each route.
 app.use(activityAuditMiddleware);
 
 app.use("/api/auth", authRoutes);
@@ -28,7 +28,6 @@ app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/office", require("./routes/office.routes"));
 app.use("/api/license", require("./routes/license.routes"));
 app.use("/api/library", require("./routes/library.routes"));
-app.use("/api/templates", require("./routes/templates.routes"));
 app.use("/api/revenues", require("./routes/revenues.routes"));
 app.use("/api/reports", require("./routes/reports.routes"));
 app.use("/api/pdfs", require("./routes/pdf.routes"));
@@ -52,11 +51,6 @@ app.use("/api/attorneys", attorneyRoutes);
 
 // Legal-library PDFs are served only through authenticated /api/library/laws/:id/file.
 // Do not expose database/laws as a public static directory.
-
-app.use(
-  "/template-files",
-  express.static(path.join(__dirname, "../../database/templates")),
-);
 
 app.use(
   "/attorney-files",
