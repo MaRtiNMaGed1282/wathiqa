@@ -1,6 +1,10 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const {
+  sanitizeFilename,
+  createFileValidationOptions,
+} = require("../utils/fileValidation");
 
 function getUploadDir() {
   try {
@@ -30,12 +34,13 @@ const storage = multer.diskStorage({
       "utf8",
     );
 
-    cb(null, Date.now() + "-" + originalName);
+    cb(null, Date.now() + "-" + sanitizeFilename(originalName));
   },
 });
 
 const upload = multer({
   storage,
+  ...createFileValidationOptions(),
 });
 
 upload.getUploadDir = getUploadDir;
