@@ -9,9 +9,7 @@
     REPORTS: "reports.html",
   });
 
-  const CONFIG = Object.freeze({
-    dashboardEndpoint: "/dashboard",
-  });
+  const CONFIG = Object.freeze({ dashboardEndpoint: "/dashboard" });
 
   const state = {
     clockTimer: null,
@@ -53,7 +51,9 @@
     };
   }
 
-  function setLoading(value) { state.loading = value; }
+  function setLoading(value) {
+    state.loading = value;
+  }
 
   function createAbortController() {
     if (state.abortController) state.abortController.abort();
@@ -63,7 +63,9 @@
 
   async function fetchDashboard() {
     const controller = createAbortController();
-    const response = await api.get(CONFIG.dashboardEndpoint, { signal: controller.signal });
+    const response = await api.get(CONFIG.dashboardEndpoint, {
+      signal: controller.signal,
+    });
     state.data = response;
     return response;
   }
@@ -84,18 +86,30 @@
   }
 
   function updateClock() {
-    state.elements.time.textContent = new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
-    state.elements.date.textContent = new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const now = new Date();
+    state.elements.time.textContent = now.toLocaleTimeString("ar-EG", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    state.elements.date.textContent = now.toLocaleDateString("ar-EG", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   }
 
   function renderHero(data) {
     const office = data.office || {};
     const dashboard = data.dashboard || {};
     const summary = dashboard.summary || {};
+
     state.elements.greeting.textContent = getGreeting();
     state.elements.officeName.textContent = office.officeName || "مكتب المحاماة";
-    state.elements.summary.textContent = `لديك اليوم ${summary.hearingsToday ?? 0} جلسات، ${summary.urgentTasks ?? 0} مهام عاجلة، ${summary.notifications ?? 0} إشعارات جديدة.`;
+    state.elements.summary.textContent = `لديك اليوم ${summary.hearingsToday ?? 0} جلسات، ${summary.urgentTasks ?? 0} مهام عاجلة و${summary.notifications ?? 0} إشعارات جديدة.`;
     state.elements.backup.textContent = office.lastBackup || "غير متوفر";
+    state.elements.dbStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span> متصلة';
     updateClock();
   }
 
@@ -112,9 +126,9 @@
   function renderNotifications(data) {
     const container = $("notifications-list");
     container.replaceChildren();
-    const notifications = data.notifications || [];
+    const notifications = data.notifications || data.dashboard?.notifications || [];
     if (!notifications.length) {
-      container.innerHTML = `<div class="p-8 text-center text-gray-500">لا توجد إشعارات جديدة.</div>`;
+      container.innerHTML = '<div class="p-8 text-center text-gray-500">لا توجد إشعارات جديدة.</div>';
       return;
     }
     notifications.forEach((item) => {
@@ -134,17 +148,24 @@
 
   function renderKPIs(data) {
     const dashboard = data.dashboard || {};
-    setKPI("kpi-total-clients", dashboard.totalClients ?? 0);
-    setKPI("kpi-active-cases", dashboard.activeCases ?? 0);
-    setKPI("kpi-hearings", dashboard.hearingsToday ?? 0);
-    setKPI("kpi-tasks", dashboard.urgentTasks ?? 0);
-    setKPI("kpi-revenue", (dashboard.monthRevenue ?? 0).toLocaleString("ar-EG"));
-    setKPI("kpi-outstanding", (dashboard.outstandingPayments ?? 0).toLocaleString("ar-EG"));
-    setKPI("kpi-notifications", dashboard.notifications ?? 0);
-    setKPI("kpi-success-rate", `${dashboard.successRate ?? 0}%`);
+    const statistics = dashboard.statistics || dashboard;
+    const financial = dashboard.financial || {};
+
+    setKPI("kpi-total-clients", statistics.totalClients ?? statistics.clients ?? 0);
+    setKPI("kpi-active-cases", statistics.activeCases ?? 0);
+    setKPI("kpi-hearings", statistics.hearingsToday ?? dashboard.hearingsToday ?? 0);
+    setKPI("kpi-tasks", dashboard.summary?.urgentTasks ?? dashboard.urgentTasks ?? 0);
+    setKPI("kpi-revenue", (financial.monthlyRevenue ?? dashboard.monthRevenue ?? 0).toLocaleString("ar-EG"));
+    setKPI("kpi-outstanding", (financial.outstandingAmount ?? dashboard.outstandingPayments ?? 0).toLocaleString("ar-EG"));
+    setKPI("kpi-notifications", dashboard.summary?.notifications ?? dashboard.notifications?.length ?? 0);
+
+    const successRate = dashboard.successRate ?? statistics.successRate ?? 0;
+    setKPI("kpi-success-rate", `${successRate}%`);
   }
 
-  function navigate(route) { global.location.href = route; }
+  function navigate(route) {
+    global.location.href = route;
+  }
 
   function initializeQuickActions() {
     const actions = [
@@ -170,6 +191,7 @@
       const data = await fetchDashboard();
       renderDashboard(data);
       updateClock();
+      if (state.clockTimer) clearInterval(state.clockTimer);
       state.clockTimer = setInterval(updateClock, 1000);
       state.initialized = true;
     } finally {
@@ -189,11 +211,12 @@
 
   function renderHearings(data) {
     const tbody = document.getElementById("today-hearings-body");
+    if (!tbody) return;
     tbody.replaceChildren();
     const hearings = data.dashboard?.todayHearings || [];
     if (!hearings.length) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td colspan="7" class="py-12 text-center text-gray-500">لا توجد جلسات اليوم.</td>`;
+      row.innerHTML = '<td colspan="7" class="py-12 text-center text-gray-500">لا توجد جلسات اليوم.</td>';
       tbody.appendChild(row);
       return;
     }
