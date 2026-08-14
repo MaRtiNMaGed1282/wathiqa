@@ -3,6 +3,7 @@
 const assert = require("assert");
 
 const BASE_URL = (process.env.SECURITY_TEST_BASE_URL || "http://localhost:5000/api").replace(/\/$/, "");
+const ORIGIN = BASE_URL.replace(/\/api$/, "");
 
 const credentials = {
   admin: {
@@ -41,6 +42,19 @@ async function request(path, options = {}) {
   }
 
   return { status: response.status, headers: response.headers, body };
+}
+
+async function requestOrigin(path, options = {}) {
+  const response = await fetch(`${ORIGIN}${path}`, {
+    redirect: "manual",
+    ...options,
+  });
+
+  return {
+    status: response.status,
+    headers: response.headers,
+    body: await response.text(),
+  };
 }
 
 async function login(role) {
@@ -103,6 +117,16 @@ async function main() {
       body: JSON.stringify({ email: known.email, password: "definitely-wrong-password" }),
     });
     assert.strictEqual(result.status, 401);
+  });
+
+  await test("Public uploads path is not exposed", async () => {
+    const result = await requestOrigin("/uploads/../package.json");
+    assert.notStrictEqual(result.status, 200);
+  });
+
+  await test("Public attorney-files path is not exposed", async () => {
+    const result = await requestOrigin("/attorney-files/../package.json");
+    assert.notStrictEqual(result.status, 200);
   });
 
   const tokens = {};
