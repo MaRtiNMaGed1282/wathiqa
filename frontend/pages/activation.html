@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>تفعيل وثيقة</title>
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
   </head>
 
   <body class="bg-slate-100 min-h-screen flex items-center justify-center">
@@ -32,7 +33,15 @@
       const result = document.getElementById("result");
 
       function showToast(message, success = true, duration = 2500) {
-        Toastify({ text: message, duration, gravity: "top", position: "left", close: true, stopOnFocus: true, style: { background: success ? "#16a34a" : "#dc2626" } }).showToast();
+        Toastify({
+          text: message,
+          duration,
+          gravity: "top",
+          position: "center",
+          close: true,
+          stopOnFocus: true,
+          style: { background: success ? "#16a34a" : "#dc2626" },
+        }).showToast();
       }
 
       fileInput.addEventListener("change", async (e) => {
