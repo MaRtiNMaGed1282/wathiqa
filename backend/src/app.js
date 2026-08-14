@@ -19,6 +19,10 @@ const activityAuditMiddleware = require("./middlewares/activityAudit.middleware"
 app.use(cors());
 app.use(express.json());
 
+// Register before route handlers so the finish listener can observe req.user after
+// authentication/authorization middleware has executed inside each route.
+app.use(activityAuditMiddleware);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/office", require("./routes/office.routes"));
@@ -40,11 +44,6 @@ app.use("/api/activity", require("./routes/activity.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
-
-// Audit successful mutating API requests after route handlers have populated req.user.
-// Existing explicit activity logs remain intact; this middleware provides a centralized
-// safety net for mutation coverage without recording request bodies or secrets.
-app.use(activityAuditMiddleware);
 
 console.log("STATIC UPLOADS =", path.join(process.cwd(), "../uploads"));
 app.use("/uploads", express.static(path.join(process.cwd(), "../uploads")));
