@@ -1,15 +1,13 @@
 const express = require("express");
-
 const router = express.Router();
-
 const activityController = require("../controllers/activity.controller");
-
 const auth = require("../middlewares/auth.middleware");
+const authorize = require("../middlewares/authorize.middleware");
 
-router.get("/", auth, activityController.getActivity);
+const allRoles = authorize("admin", "lawyer", "assistant");
 
-router.get("/case/:id", auth, activityController.getCaseActivity);
-
-router.get("/client/:id", auth, activityController.getClientActivity);
+router.get("/", auth, allRoles, activityController.getActivity);
+router.get("/case/:id", auth, allRoles, activityController.getCaseActivity);
+router.get("/client/:id", auth, allRoles, activityController.getClientActivity);
 
 module.exports = router;
