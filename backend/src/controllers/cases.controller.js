@@ -14,14 +14,10 @@ const REQUIRED_CASE_FIELDS = [
 
 function validateCasePayload(body) {
   for (const field of REQUIRED_CASE_FIELDS) {
-    if (isEmpty(body[field])) {
-      return `Missing required field: ${field}`;
-    }
+    if (isEmpty(body[field])) return `Missing required field: ${field}`;
   }
 
-  if (!isValidMoney(body.total_fees ?? 0)) {
-    return "Invalid total_fees";
-  }
+  if (!isValidMoney(body.total_fees ?? 0)) return "Invalid total_fees";
 
   if (body.closed_at && new Date(body.closed_at) < new Date(body.opened_at)) {
     return "closed_at cannot be earlier than opened_at";
@@ -32,20 +28,15 @@ function validateCasePayload(body) {
 
 function caseSelect() {
   return `
-    SELECT
-      legal_cases.*,
-      clients.full_name
+    SELECT legal_cases.*, clients.full_name
     FROM legal_cases
-    LEFT JOIN clients
-      ON legal_cases.client_id = clients.id
+    LEFT JOIN clients ON legal_cases.client_id = clients.id
   `;
 }
 
 exports.createCase = (req, res) => {
   const validationError = validateCasePayload(req.body);
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
-  }
+  if (validationError) return res.status(400).json({ message: validationError });
 
   const {
     court_case_number,
@@ -66,34 +57,17 @@ exports.createCase = (req, res) => {
   } = req.body;
 
   db.get("SELECT id FROM clients WHERE id = ?", [client_id], (clientErr, client) => {
-    if (clientErr) {
-      return res.status(500).json({ message: clientErr.message });
-    }
-
-    if (!client) {
-      return res.status(400).json({ message: "Client not found" });
-    }
+    if (clientErr) return res.status(500).json({ message: clientErr.message });
+    if (!client) return res.status(400).json({ message: "Client not found" });
 
     db.run(
       `
       INSERT INTO legal_cases (
-        court_case_number,
-        client_id,
-        total_fees,
-        case_title,
-        case_type,
-        court_name,
-        court_chamber,
-        opponent_name,
-        opponent_lawyer,
-        opened_at,
-        closed_at,
-        case_status,
-        priority_level,
-        case_description,
-        final_result
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        court_case_number, client_id, total_fees, case_title, case_type,
+        court_name, court_chamber, opponent_name, opponent_lawyer,
+        opened_at, closed_at, case_status, priority_level,
+        case_description, final_result
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         court_case_number,
@@ -137,9 +111,7 @@ exports.createCase = (req, res) => {
           module: "case",
           record_id: caseId,
           user_id: req.user.id,
-        }).catch((err) => {
-          console.error("Notification error:", err.message);
-        });
+        }).catch((err) => console.error("Notification error:", err.message));
 
         if (!req.files || req.files.length === 0) {
           return res.status(201).json({
@@ -154,20 +126,10 @@ exports.createCase = (req, res) => {
         req.files.forEach((file) => {
           db.run(
             `
-            INSERT INTO case_files (
-              case_id,
-              file_name,
-              original_name,
-              file_path
-            )
+            INSERT INTO case_files (case_id, file_name, original_name, file_path)
             VALUES (?, ?, ?, ?)
             `,
-            [
-              caseId,
-              file.filename,
-              file.originalname,
-              `uploads/${file.filename}`,
-            ],
+            [caseId, file.filename, file.originalname, `uploads/${file.filename}`],
             (fileErr) => {
               if (fileErr) {
                 fileErrors += 1;
@@ -175,7 +137,6 @@ exports.createCase = (req, res) => {
               }
 
               remaining -= 1;
-
               if (remaining === 0) {
                 res.status(201).json({
                   message:
@@ -195,58 +156,35 @@ exports.createCase = (req, res) => {
 };
 
 exports.getAllCases = (req, res) => {
-  db.all(
-    `${caseSelect()} ORDER BY legal_cases.created_at DESC`,
-    [],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to fetch cases",
-          error: err.message,
-        });
-      }
-
-      res.json(rows);
-    },
-  );
+  db.all(`${caseSelect()} ORDER BY legal_cases.created_at DESC`, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to fetch cases",
+        error: err.message,
+      });
+    }
+    res.json(rows);
+  });
 };
 
 exports.getCaseById = (req, res) => {
-  const { id } = req.params;
-
-  db.get(
-    `${caseSelect()} WHERE legal_cases.case_id = ?`,
-    [id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to fetch case",
-          error: err.message,
-        });
-      }
-
-      if (!row) {
-        return res.status(404).json({
-          message: "Case not found",
-        });
-      }
-
-      res.json(row);
-    },
-  );
+  db.get(`${caseSelect()} WHERE legal_cases.case_id = ?`, [req.params.id], (err, row) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to fetch case",
+        error: err.message,
+      });
+    }
+    if (!row) return res.status(404).json({ message: "Case not found" });
+    res.json(row);
+  });
 };
 
-// Search is intentionally broader than the old court-number-only search.
-// Financial fields remain protected by redactFinancial middleware at the route.
-exports.searchCases = (req, res) => {
+function performCaseSearch(req, res) {
   const q = String(req.query.q || "").trim();
-
-  if (!q) {
-    return exports.getAllCases(req, res);
-  }
+  if (!q) return exports.getAllCases(req, res);
 
   const search = `%${q}%`;
-
   db.all(
     `
     ${caseSelect()}
@@ -270,19 +208,17 @@ exports.searchCases = (req, res) => {
           error: err.message,
         });
       }
-
       res.json(rows);
     },
   );
-};
+}
+
+exports.searchCases = performCaseSearch;
+exports.advancedSearch = performCaseSearch;
 
 exports.updateCase = (req, res) => {
-  const { id } = req.params;
   const validationError = validateCasePayload(req.body);
-
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
-  }
+  if (validationError) return res.status(400).json({ message: validationError });
 
   const {
     court_case_number,
@@ -303,33 +239,16 @@ exports.updateCase = (req, res) => {
   } = req.body;
 
   db.get("SELECT id FROM clients WHERE id = ?", [client_id], (clientErr, client) => {
-    if (clientErr) {
-      return res.status(500).json({ message: clientErr.message });
-    }
-
-    if (!client) {
-      return res.status(400).json({ message: "Client not found" });
-    }
+    if (clientErr) return res.status(500).json({ message: clientErr.message });
+    if (!client) return res.status(400).json({ message: "Client not found" });
 
     db.run(
       `
-      UPDATE legal_cases
-      SET
-        court_case_number = ?,
-        client_id = ?,
-        total_fees = ?,
-        case_title = ?,
-        case_type = ?,
-        court_name = ?,
-        court_chamber = ?,
-        opponent_name = ?,
-        opponent_lawyer = ?,
-        opened_at = ?,
-        closed_at = ?,
-        case_status = ?,
-        priority_level = ?,
-        case_description = ?,
-        final_result = ?,
+      UPDATE legal_cases SET
+        court_case_number = ?, client_id = ?, total_fees = ?, case_title = ?,
+        case_type = ?, court_name = ?, court_chamber = ?, opponent_name = ?,
+        opponent_lawyer = ?, opened_at = ?, closed_at = ?, case_status = ?,
+        priority_level = ?, case_description = ?, final_result = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE case_id = ?
       `,
@@ -349,7 +268,7 @@ exports.updateCase = (req, res) => {
         priority_level || null,
         case_description || null,
         final_result || null,
-        id,
+        req.params.id,
       ],
       function (err) {
         if (err) {
@@ -358,62 +277,42 @@ exports.updateCase = (req, res) => {
             error: err.message,
           });
         }
-
-        if (this.changes === 0) {
-          return res.status(404).json({
-            message: "Case not found",
-          });
-        }
+        if (this.changes === 0) return res.status(404).json({ message: "Case not found" });
 
         logActivity({
           module: "case",
-          record_id: Number(id),
+          record_id: Number(req.params.id),
           action: "updated",
           description: "تم تعديل بيانات القضية",
           user_id: req.user.id,
         });
 
-        res.json({
-          message: "Case updated successfully",
-        });
+        res.json({ message: "Case updated successfully" });
       },
     );
   });
 };
 
 exports.deleteCase = (req, res) => {
-  const { id } = req.params;
-
-  db.run(
-    `DELETE FROM legal_cases WHERE case_id = ?`,
-    [id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to delete case",
-          error: err.message,
-        });
-      }
-
-      if (this.changes === 0) {
-        return res.status(404).json({
-          message: "Case not found",
-        });
-      }
-
-      logActivity({
-        module: "case",
-        record_id: Number(id),
-        action: "deleted",
-        description: "تم حذف القضية",
-        user_id: req.user.id,
+  db.run("DELETE FROM legal_cases WHERE case_id = ?", [req.params.id], function (err) {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to delete case",
+        error: err.message,
       });
+    }
+    if (this.changes === 0) return res.status(404).json({ message: "Case not found" });
 
-      res.json({
-        message: "Case deleted successfully",
-      });
-    },
-  );
+    logActivity({
+      module: "case",
+      record_id: Number(req.params.id),
+      action: "deleted",
+      description: "تم حذف القضية",
+      user_id: req.user.id,
+    });
+
+    res.json({ message: "Case deleted successfully" });
+  });
 };
 
 exports.filterCases = (req, res) => {
@@ -423,33 +322,25 @@ exports.filterCases = (req, res) => {
     return res.status(400).json({ message: "fromDate cannot be later than toDate" });
   }
 
-  let query = `
-    ${caseSelect()}
-    WHERE 1 = 1
-  `;
-
+  let query = `${caseSelect()} WHERE 1 = 1`;
   const params = [];
 
   if (fromDate) {
     query += " AND legal_cases.opened_at >= ?";
     params.push(fromDate);
   }
-
   if (toDate) {
     query += " AND legal_cases.opened_at <= ?";
     params.push(toDate);
   }
-
   if (caseType) {
     query += " AND legal_cases.case_type = ?";
     params.push(caseType);
   }
-
   if (court) {
     query += " AND legal_cases.court_name = ?";
     params.push(court);
   }
-
   if (chamber) {
     query += " AND legal_cases.court_chamber = ?";
     params.push(chamber);
@@ -458,12 +349,7 @@ exports.filterCases = (req, res) => {
   query += " ORDER BY legal_cases.created_at DESC";
 
   db.all(query, params, (err, rows) => {
-    if (err) {
-      return res.status(500).json({
-        message: err.message,
-      });
-    }
-
+    if (err) return res.status(500).json({ message: err.message });
     res.json(rows);
   });
 };
@@ -471,24 +357,14 @@ exports.filterCases = (req, res) => {
 exports.getRecentCases = (req, res) => {
   db.all(
     `
-    SELECT
-      case_id,
-      case_title,
-      court_case_number,
-      case_status,
-      created_at
+    SELECT case_id, case_title, court_case_number, case_status, created_at
     FROM legal_cases
     ORDER BY created_at DESC
     LIMIT 5
     `,
     [],
     (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
+      if (err) return res.status(500).json({ message: err.message });
       res.json(rows);
     },
   );
@@ -499,37 +375,19 @@ exports.globalSearch = (req, res) => {
 
   db.all(
     `
-    SELECT
-      'case' AS type,
-      case_id AS id,
-      case_title AS title,
-      court_case_number AS subtitle
+    SELECT 'case' AS type, case_id AS id, case_title AS title, court_case_number AS subtitle
     FROM legal_cases
-    WHERE
-      case_title LIKE ?
-      OR court_case_number LIKE ?
+    WHERE case_title LIKE ? OR court_case_number LIKE ?
 
     UNION
 
-    SELECT
-      'client' AS type,
-      id,
-      full_name AS title,
-      phone AS subtitle
+    SELECT 'client' AS type, id, full_name AS title, phone AS subtitle
     FROM clients
-    WHERE
-      full_name LIKE ?
-      OR phone LIKE ?
-      OR national_id LIKE ?
+    WHERE full_name LIKE ? OR phone LIKE ? OR national_id LIKE ?
     `,
     [search, search, search, search, search],
     (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
+      if (err) return res.status(500).json({ message: err.message });
       res.json(rows);
     },
   );
