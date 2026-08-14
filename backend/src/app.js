@@ -54,6 +54,7 @@ app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
 app.use("/api/attorneys", attorneyRoutes);
+app.use("/api/backup", require("./routes/backup.routes"));
 
 // Stored case/service/attorney files are intentionally NOT exposed through
 // express.static. They must be served through authenticated API endpoints.
