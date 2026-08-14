@@ -1,5 +1,4 @@
 console.log(process.cwd());
-const path = require("path");
 require("./config/env");
 const express = require("express");
 const cors = require("cors");
@@ -20,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // Register before route handlers so the finish listener can observe req.user after
-// authentication/authorization middleware has executed inside each route.
+authentication/authorization middleware has executed inside each route.
 app.use(activityAuditMiddleware);
 
 app.use("/api/auth", authRoutes);
@@ -43,19 +42,13 @@ app.use("/api/activity", require("./routes/activity.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
-
-console.log("STATIC UPLOADS =", path.join(process.cwd(), "../uploads"));
-app.use("/uploads", express.static(path.join(process.cwd(), "../uploads")));
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 app.use("/api/attorneys", attorneyRoutes);
+
+// Stored case/service/attorney files are intentionally NOT exposed through
+// express.static. They must be served through authenticated API endpoints.
 
 // Legal-library PDFs are served only through authenticated /api/library/laws/:id/file.
 // Do not expose database/laws as a public static directory.
-
-app.use(
-  "/attorney-files",
-  express.static(path.join(__dirname, "../../database/attorneys")),
-);
 
 /* Test Route */
 app.get("/", (req, res) => {
