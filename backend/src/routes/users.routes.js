@@ -5,10 +5,9 @@ const router = express.Router();
 const usersController = require("../controllers/users.controller");
 
 const auth = require("../middlewares/auth.middleware");
-
 const admin = require("../middlewares/admin.middleware");
 
-router.get("/", auth, usersController.getUsers);
+router.get("/", auth, admin, usersController.getUsers);
 
 router.post("/", auth, admin, usersController.createUser);
 
