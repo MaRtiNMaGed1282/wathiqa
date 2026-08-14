@@ -1,8 +1,8 @@
-console.log(process.cwd());
 require("./config/env");
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const { CORS_ORIGINS } = require("./config/env");
 
 require("./config/sqlite");
 
@@ -15,9 +15,19 @@ const expensesRoutes = require("./routes/expenses.routes");
 const caseExpensesRoutes = require("./routes/case-expenses.routes");
 const activityAuditMiddleware = require("./middlewares/activityAudit.middleware");
 
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || origin === "null") return callback(null, true);
+    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS origin not allowed"));
+  },
+};
+
 /* Middlewares */
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: "2mb" }));
 
 // Register before route handlers so the finish listener can observe req.user after
 authentication/authorization middleware has executed inside each route.
@@ -84,6 +94,12 @@ app.use((err, req, res, next) => {
     });
   }
 
+  if (err?.message === "CORS origin not allowed") {
+    return res.status(403).json({
+      message: "مصدر الطلب غير مسموح",
+    });
+  }
+
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       message: "صيغة الطلب غير صالحة",
@@ -93,9 +109,10 @@ app.use((err, req, res, next) => {
   console.error("Unhandled API error:", err?.message || err);
 
   return res.status(err?.status || 500).json({
-    message: err?.status && err.status < 500
-      ? err.message || "حدث خطأ في الطلب"
-      : "حدث خطأ داخلي في الخادم",
+    message:
+      err?.status && err.status < 500
+        ? err.message || "حدث خطأ في الطلب"
+        : "حدث خطأ داخلي في الخادم",
   });
 });
 
