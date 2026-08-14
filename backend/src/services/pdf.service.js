@@ -76,7 +76,6 @@ function shapeRun(text, font, direction) {
   buffer.addText(text);
   buffer.setDirection(direction);
   buffer.guessSegmentProperties();
-  // Direction is explicitly set after guessing so RTL/LTR is deterministic.
   buffer.setDirection(direction);
   hbModule.shape(font, buffer);
   const glyphs = buffer.getGlyphInfosAndPositions();
@@ -223,11 +222,8 @@ function addHeader(doc, office, title) {
   }
 
   doc.fontSize(10).fillColor("#6b7280").text(new Date().toLocaleString("ar-EG"), margin, 38, { width: pageWidth - margin * 2, align: "left" });
-
   doc.fontSize(20).fillColor("#111827").text(title || "Wathiqa", margin, 64, { width: pageWidth - margin * 2, align: "right" });
-  if (office?.office_name) {
-    doc.fontSize(11).fillColor("#4b5563").text(office.office_name, margin, 92, { width: pageWidth - margin * 2, align: "right" });
-  }
+  if (office?.office_name) doc.fontSize(11).fillColor("#4b5563").text(office.office_name, margin, 92, { width: pageWidth - margin * 2, align: "right" });
 
   doc.moveTo(margin, 116).lineTo(pageWidth - margin, 116).strokeColor("#d1d5db").stroke();
   doc.y = 132;
@@ -304,17 +300,23 @@ async function createClientPdf(db, clientId, user) {
     all(db, "SELECT module,action,description,created_at FROM activity_logs WHERE module='client' AND record_id=? ORDER BY datetime(created_at) DESC LIMIT 50", [clientId]),
   ]);
 
+  const financial = ["admin", "lawyer"].includes(user.role);
+
   return buildPdf(`بيانات الموكل — ${client.full_name}`, async (doc) => {
     addHeader(doc, office, "بيانات الموكل");
     let y = await addKeyValueRows(doc, [["الاسم", client.full_name], ["كود الموكل", client.client_code], ["الرقم القومي", client.national_id], ["الهاتف", client.phone], ["العنوان", client.address], ["ملاحظات", client.notes]], 145);
     y = section(doc, "القضايا", y + 8);
     for (const item of cases) {
-      y = await addKeyValueRows(doc, [["رقم القضية", item.court_case_number], ["القضية", item.case_title], ["النوع", item.case_type], ["الحالة", item.case_status], ["المحكمة", item.court_name], ["الأتعاب", ["admin", "lawyer"].includes(user.role) ? item.total_fees : "—"]], y);
+      const rows = [["رقم القضية", item.court_case_number], ["القضية", item.case_title], ["النوع", item.case_type], ["الحالة", item.case_status], ["المحكمة", item.court_name]];
+      if (financial) rows.push(["الأتعاب", item.total_fees]);
+      y = await addKeyValueRows(doc, rows, y);
       y += 6;
     }
     y = section(doc, "الخدمات", y + 8);
     for (const item of services) {
-      y = await addKeyValueRows(doc, [["رقم الخدمة", item.service_number], ["الخدمة", item.service_title], ["النوع", item.service_type], ["الحالة", item.service_status], ["الأتعاب", ["admin", "lawyer"].includes(user.role) ? item.total_fees : "—"]], y);
+      const rows = [["رقم الخدمة", item.service_number], ["الخدمة", item.service_title], ["النوع", item.service_type], ["الحالة", item.service_status]];
+      if (financial) rows.push(["الأتعاب", item.total_fees]);
+      y = await addKeyValueRows(doc, rows, y);
     }
     if (activity.length) {
       y = section(doc, "النشاط الأخير", y + 8);
@@ -361,11 +363,13 @@ async function createServicePdf(db, serviceId, user) {
   return buildPdf(`ملف الخدمة — ${item.service_number}`, async (doc) => {
     addHeader(doc, office, "ملف الخدمة");
     let y = await addKeyValueRows(doc, [["رقم الخدمة", item.service_number], ["الخدمة", item.service_title], ["النوع", item.service_type], ["الموكل", item.client_name], ["الوصف", item.description], ["الحالة", item.service_status], ["الأولوية", item.priority_level], ["تاريخ البداية", item.start_date], ["تاريخ الاستحقاق", item.due_date], ["تاريخ الإتمام", item.completed_date], ["المسؤول", item.assigned_to], ["ملاحظات", item.notes]], 145);
-    if (financial) y = await addKeyValueRows(doc, [["إجمالي الأتعاب", item.total_fees], ["إجمالي المدفوع", payments.reduce((s, p) => s + Number(p.amount || 0), 0)], ["إجمالي المصروفات", expenses.reduce((s, e) => s + Number(e.amount || 0), 0)]], y + 6);
-    y = section(doc, "المدفوعات", y + 8);
-    if (financial) y = await addKeyValueRows(doc, payments.map((p) => [p.payment_date, `${p.amount} — ${p.payment_method || ""}`]), y);
-    y = section(doc, "المصروفات", y + 8);
-    if (financial) y = await addKeyValueRows(doc, expenses.map((e) => [e.expense_date, `${e.amount} — ${e.expense_type || ""} — ${e.description || ""}`]), y);
+    if (financial) {
+      y = await addKeyValueRows(doc, [["إجمالي الأتعاب", item.total_fees], ["إجمالي المدفوع", payments.reduce((s, p) => s + Number(p.amount || 0), 0)], ["إجمالي المصروفات", expenses.reduce((s, e) => s + Number(e.amount || 0), 0)]], y + 6);
+      y = section(doc, "المدفوعات", y + 8);
+      y = await addKeyValueRows(doc, payments.map((p) => [p.payment_date, `${p.amount} — ${p.payment_method || ""}`]), y);
+      y = section(doc, "المصروفات", y + 8);
+      y = await addKeyValueRows(doc, expenses.map((e) => [e.expense_date, `${e.amount} — ${e.expense_type || ""} — ${e.description || ""}`]), y);
+    }
     addFooter(doc, office);
   });
 }
@@ -379,7 +383,6 @@ async function createFinancialPdf(db, query = {}) {
   if (filter === "month") { range = [new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10), new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)]; }
   if (filter === "year") { range = [new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10), new Date(now.getFullYear(), 11, 31).toISOString().slice(0, 10)]; }
   if (filter === "custom") range = [query.startDate, query.endDate];
-  const dateClause = (column) => range ? ` WHERE date(${column}) BETWEEN ? AND ?` : "";
   const dateParams = range || [];
   const summary = await get(db, `SELECT
     (SELECT COALESCE(SUM(total_fees),0) FROM legal_cases${range ? " WHERE date(created_at) BETWEEN ? AND ?" : ""}) case_fees,
