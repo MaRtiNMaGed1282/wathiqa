@@ -11,6 +11,7 @@ const {
   getAllCases,
   getCaseById,
   searchCases,
+  advancedSearch,
   updateCase,
   deleteCase,
   filterCases,
@@ -22,6 +23,7 @@ const allRoles = authorize("admin", "lawyer", "assistant");
 
 router.post("/", auth, allRoles, rejectAssistantFinancialInput, upload.array("files", 20), createCase);
 router.get("/", auth, allRoles, redactFinancial, getAllCases);
+router.get("/search/advanced", auth, allRoles, redactFinancial, advancedSearch);
 router.get("/search", auth, allRoles, redactFinancial, searchCases);
 router.get("/filter", auth, allRoles, redactFinancial, filterCases);
 router.get("/recent", auth, allRoles, getRecentCases);
