@@ -7,6 +7,7 @@
     CALENDAR: "calendar.html",
     REVENUES: "revenues.html",
     REPORTS: "reports.html",
+    BACKUP: "backup.html",
   });
 
   const CONFIG = Object.freeze({ dashboardEndpoint: "/dashboard" });
@@ -68,6 +69,44 @@
     });
     state.data = response;
     return response;
+  }
+
+  async function fetchBackupStatus() {
+    const user = global.auth?.getUser?.() || {};
+    if (user.role !== "admin") {
+      state.elements.backup.textContent = "غير متاح";
+      return null;
+    }
+
+    try {
+      const response = await api.get("/backup");
+      const backups = Array.isArray(response?.backups) ? response.backups : [];
+      if (!backups.length) {
+        state.elements.backup.textContent = "لم يتم إنشاء نسخة";
+        return null;
+      }
+
+      const latest = backups[0];
+      const createdAt = latest.createdAt || latest.created_at;
+      if (!createdAt) {
+        state.elements.backup.textContent = "متوفرة";
+        return latest;
+      }
+
+      const date = new Date(createdAt);
+      state.elements.backup.textContent = Number.isNaN(date.getTime())
+        ? "متوفرة"
+        : date.toLocaleString("ar-EG", {
+            dateStyle: "short",
+            timeStyle: "short",
+          });
+
+      state.elements.backup.title = latest.name || "آخر نسخة احتياطية";
+      return latest;
+    } catch (error) {
+      state.elements.backup.textContent = "تعذر التحقق";
+      return null;
+    }
   }
 
   function renderDashboard(data) {
@@ -190,6 +229,7 @@
       initializeQuickActions();
       const data = await fetchDashboard();
       renderDashboard(data);
+      await fetchBackupStatus();
       updateClock();
       if (state.clockTimer) clearInterval(state.clockTimer);
       state.clockTimer = setInterval(updateClock, 1000);
