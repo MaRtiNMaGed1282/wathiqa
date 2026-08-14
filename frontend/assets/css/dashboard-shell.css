@@ -14,7 +14,7 @@
   background: var(--color-page) !important;
 }
 #app-shell > #app { grid-area: app !important; direction: rtl !important; min-width: 0 !important; min-height: 100vh !important; width: 100% !important; }
-#app-shell > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+#app-shell > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; align-self: start !important; }
 #app-shell > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
 #app-shell #navbar-container, #app-shell #app > main { direction: rtl !important; width: 100% !important; min-width: 0 !important; }
 
@@ -34,7 +34,7 @@ body:has(> #sidebar-container) {
   background: var(--color-page) !important;
 }
 body:has(> #sidebar-container) > #navbar-container { grid-area: navbar !important; direction: rtl !important; width: 100% !important; height: var(--navbar-height) !important; position: sticky !important; top: 0 !important; z-index: var(--z-navbar) !important; }
-body:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+body:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; align-self: start !important; }
 body:has(> #sidebar-container) > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
 body:has(> #sidebar-container) > main { grid-area: main !important; direction: rtl !important; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: calc(100vh - var(--navbar-height)) !important; margin: 0 !important; padding: var(--space-8) !important; overflow: visible !important; text-align: right !important; background: var(--color-page) !important; }
 
@@ -53,7 +53,7 @@ body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) {
   background: var(--color-page) !important;
 }
 body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #navbar-container { grid-area: navbar !important; direction: rtl !important; width: 100% !important; height: var(--navbar-height) !important; position: sticky !important; top: 0 !important; z-index: var(--z-navbar) !important; }
-body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; align-self: start !important; }
 body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
 body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > main { grid-area: main !important; direction: rtl !important; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: calc(100vh - var(--navbar-height)) !important; margin: 0 !important; padding: var(--space-8) !important; overflow: visible !important; text-align: right !important; background: var(--color-page) !important; }
 
@@ -89,6 +89,24 @@ body:has(#sidebar-container) main button.bg-accent:hover, body:has(#sidebar-cont
 body:has(#sidebar-container) .fixed.inset-0 { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; overflow-y: auto !important; padding: 24px !important; z-index: var(--z-modal) !important; }
 body:has(#sidebar-container) .fixed.inset-0 > div { width: min(100%, 1200px) !important; max-width: 1200px !important; max-height: calc(100vh - 48px) !important; overflow-y: auto !important; margin: auto !important; }
 body:has(#sidebar-container) [id*="Modal"], body:has(#sidebar-container) [id*="modal" i] { z-index: var(--z-modal) !important; }
+
+/* Client action buttons: keep profile/notes controls separated and aligned. */
+#clientsTableBody td:nth-child(6) > div { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
+#clientsTableBody td:nth-child(6) > div > button { margin: 0 !important; flex: 0 0 auto !important; white-space: nowrap !important; }
+
+/* Revenues: use the dashboard visual hierarchy instead of a cramped side filter. */
+#revenues-page .page-content { padding: var(--space-8) !important; }
+#revenuesPage > div:first-child { display: grid !important; grid-template-columns: 1fr !important; gap: var(--space-6) !important; align-items: start !important; }
+#revenuesPage > div:first-child > div:last-child { width: 100% !important; min-width: 0 !important; }
+#revenuesPage #contentState > section:first-child { background: var(--color-primary) !important; color: #fff !important; }
+#revenuesPage #contentState > section:first-child p,
+#revenuesPage #contentState > section:first-child span { color: #fff !important; }
+#revenuesPage #contentState > section:first-child .opacity-70 { opacity: .78 !important; }
+
+/* Dashboard workspace cards should use the available page width. */
+#dashboard-page .page-content > section.grid.grid-cols-12 { grid-template-columns: minmax(0, 1fr) !important; }
+#dashboard-page .page-content > section.grid.grid-cols-12 > .col-span-12,
+#dashboard-page .page-content > section.grid.grid-cols-12 > [class*="xl:col-span"] { grid-column: 1 / -1 !important; }
 
 @media (max-width: 768px) {
   #app-shell, body:has(> #sidebar-container), body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) { display: block !important; min-height: 100vh !important; }
