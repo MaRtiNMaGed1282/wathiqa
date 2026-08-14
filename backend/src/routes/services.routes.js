@@ -12,12 +12,16 @@ const {
 } = require("../controllers/services.controller");
 const auth = require("../middlewares/auth.middleware");
 const authorize = require("../middlewares/authorize.middleware");
+const redactFinancial = require("../middlewares/redactFinancial.middleware");
+const rejectAssistantFinancialInput = require("../middlewares/rejectAssistantFinancialInput.middleware");
 
-router.post("/", auth, createService);
-router.get("/", auth, getAllServices);
-router.get("/client/:id", auth, getClientServices);
-router.get("/:id", auth, getServiceById);
-router.put("/:id", auth, updateService);
+const allRoles = authorize("admin", "lawyer", "assistant");
+
+router.post("/", auth, allRoles, rejectAssistantFinancialInput, createService);
+router.get("/", auth, allRoles, redactFinancial, getAllServices);
+router.get("/client/:id", auth, allRoles, redactFinancial, getClientServices);
+router.get("/:id", auth, allRoles, redactFinancial, getServiceById);
+router.put("/:id", auth, allRoles, rejectAssistantFinancialInput, updateService);
 router.delete("/:id", auth, authorize("admin"), deleteService);
 
 module.exports = router;
