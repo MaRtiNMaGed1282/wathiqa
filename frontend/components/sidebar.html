@@ -4,163 +4,102 @@
   role="navigation"
   aria-label="القائمة الرئيسية"
 >
-  <!-- Sidebar Header -->
   <header class="sidebar-header">
     <div id="sidebar-brand" class="sidebar-logo">
       <img src="../assets/logow.png" alt="شعار نظام وثيقة" />
-
       <div class="sidebar-logo-text">
         <h1 class="sidebar-logo-title">وثيقة</h1>
-
         <p class="sidebar-logo-subtitle">نظام إدارة مكاتب المحاماة</p>
       </div>
     </div>
   </header>
 
-  <!-- Sidebar Navigation -->
   <nav class="sidebar-nav" aria-label="التنقل الرئيسي">
     <div id="sidebar-navigation">
-      <!-- الرئيسية -->
       <section class="sidebar-group" aria-labelledby="sidebar-group-home">
         <h2 id="sidebar-group-home" class="sidebar-group-title">الرئيسية</h2>
-
         <div id="sidebar-group-home-links">
-          <a
-            href="dashboard.html"
-            class="sidebar-link"
-            aria-label="لوحة التحكم"
-            data-page="dashboard"
-          >
+          <a href="dashboard.html" class="sidebar-link" aria-label="لوحة التحكم" data-page="dashboard">
             <i data-lucide="home" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> لوحة التحكم </span>
           </a>
         </div>
       </section>
 
-      <!-- إدارة القضايا -->
       <section class="sidebar-group" aria-labelledby="sidebar-group-cases">
-        <h2 id="sidebar-group-cases" class="sidebar-group-title">
-          إدارة القضايا
-        </h2>
-
+        <h2 id="sidebar-group-cases" class="sidebar-group-title">إدارة القضايا</h2>
         <div id="sidebar-group-case-links">
           <a href="clients.html" class="sidebar-link" data-page="clients">
             <i data-lucide="users" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> الموكلين </span>
           </a>
-
           <a href="cases.html" class="sidebar-link" data-page="cases">
             <i data-lucide="file-text" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> القضايا </span>
           </a>
-
           <a href="calendar.html" class="sidebar-link" data-page="calendar">
             <i data-lucide="calendar" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> المواعيد والجلسات </span>
           </a>
-
           <a href="services.html" class="sidebar-link" data-page="services">
             <i data-lucide="layers" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> الخدمات </span>
           </a>
-
           <a href="revenues.html" class="sidebar-link" data-page="revenues">
             <i data-lucide="credit-card" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> الدفعات </span>
-          </a>
-
-          <a href="documents.html" class="sidebar-link" data-page="documents">
-            <i data-lucide="file" aria-hidden="true"></i>
-
-            <span class="sidebar-link-text"> المستندات </span>
           </a>
         </div>
       </section>
 
-      <!-- الأدوات -->
       <section class="sidebar-group" aria-labelledby="sidebar-group-tools">
         <h2 id="sidebar-group-tools" class="sidebar-group-title">الأدوات</h2>
-
         <div id="sidebar-group-tool-links">
           <a href="library.html" class="sidebar-link" data-page="library">
             <i data-lucide="book-open" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> المكتبة </span>
           </a>
-
           <a href="reports.html" class="sidebar-link" data-page="reports">
             <i data-lucide="bar-chart-3" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> التقارير </span>
           </a>
-
-          <a
-            id="sidebar-notifications-link"
-            href="notifications.html"
-            class="sidebar-link"
-            data-page="notifications"
-          >
+          <a id="sidebar-notifications-link" href="notifications.html" class="sidebar-link" data-page="notifications">
             <i data-lucide="bell" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> الإشعارات </span>
-
-            <span id="sidebar-notifications-badge" class="sidebar-badge d-none">
-              0
-            </span>
+            <span id="sidebar-notifications-badge" class="sidebar-badge d-none">0</span>
           </a>
         </div>
       </section>
 
-      <!-- الإعدادات -->
       <section class="sidebar-group" aria-labelledby="sidebar-group-settings">
-        <h2 id="sidebar-group-settings" class="sidebar-group-title">
-          الإعدادات
-        </h2>
-
+        <h2 id="sidebar-group-settings" class="sidebar-group-title">الإعدادات</h2>
         <div id="sidebar-group-settings-links">
-          <a
-            href="office-profile.html"
-            class="sidebar-link"
-            data-page="office-profile"
-          >
+          <a href="office-profile.html" class="sidebar-link" data-page="office-profile">
             <i data-lucide="settings" aria-hidden="true"></i>
-
             <span class="sidebar-link-text"> إعدادات المكتب </span>
+          </a>
+          <a href="users.html" class="sidebar-link" data-page="users" data-role="admin">
+            <i data-lucide="user-cog" aria-hidden="true"></i>
+            <span class="sidebar-link-text"> المستخدمون </span>
           </a>
         </div>
       </section>
     </div>
   </nav>
 
-  <!-- Sidebar Footer -->
   <footer class="sidebar-footer">
     <div id="sidebar-office" class="sidebar-office" aria-label="معلومات المكتب">
       <div class="sidebar-office-avatar" aria-hidden="true">
         <i data-lucide="building-2" aria-hidden="true"></i>
       </div>
-
       <div class="sidebar-office-info">
         <div id="sidebar-office-name" class="sidebar-office-name">...</div>
-
         <div id="sidebar-office-role" class="sidebar-office-role">...</div>
       </div>
     </div>
-
     <div id="sidebar-actions">
-      <button
-        type="button"
-        class="sidebar-logout"
-        data-action="logout"
-        aria-label="تسجيل الخروج"
-      >
-        <i data-lucide="log-out" aria-hidden="true"> </i>
-
+      <button type="button" class="sidebar-logout" data-action="logout" aria-label="تسجيل الخروج">
+        <i data-lucide="log-out" aria-hidden="true"></i>
         <span> تسجيل الخروج </span>
       </button>
     </div>
