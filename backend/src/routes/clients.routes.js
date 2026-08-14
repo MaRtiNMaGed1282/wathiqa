@@ -24,6 +24,7 @@ const {
   getRecentPayments,
   getTopRevenueItems,
 } = require("../controllers/clients.controller");
+const { importClients } = require("../controllers/clients-import.controller");
 
 router.get("/search", auth, searchClients);
 router.get("/", auth, getAllClients);
@@ -40,6 +41,7 @@ router.get("/dashboard/stats", auth, getDashboardStats);
 router.get("/dashboard/monthly-revenue", auth, financial, getMonthlyRevenue);
 router.get("/dashboard/notifications", auth, getDashboardNotifications);
 
+router.post("/import", auth, importClients);
 router.get("/:id", auth, idParam(), getClientById);
 router.post("/", auth, validateClient, upload.single("attorney_file"), createClient);
 router.put("/:id", auth, idParam(), validateClient, updateClient);
