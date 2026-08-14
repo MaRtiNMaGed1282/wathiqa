@@ -50,12 +50,16 @@ const configuredOrigins = String(process.env.CORS_ORIGIN || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const CORS_ORIGINS = configuredOrigins.length
+  ? configuredOrigins
+  : ["http://localhost:5500", "http://127.0.0.1:5500"];
+
 module.exports = {
   NODE_ENV: nodeEnv,
   IS_PRODUCTION: nodeEnv === "production",
   PORT: port,
   JWT_SECRET: process.env.JWT_SECRET,
   LICENSE_SECRET: process.env.LICENSE_SECRET,
-  CORS_ORIGINS: configuredOrigins,
+  CORS_ORIGINS,
   ENV_FILE: envFile || null,
 };
