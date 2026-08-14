@@ -18,7 +18,6 @@
       "electron/**/*",
       "frontend/**/*",
       "backend/**/*",
-      "database/**/*",
       "node_modules/**/*"
     ],
     "extraResources": [
@@ -27,13 +26,31 @@
         "to": "database"
       },
       {
+        "from": "assets/wathiqa.ico",
+        "to": "assets/wathiqa.ico"
+      },
+      {
         "from": ".env",
         "to": ".env"
       }
     ],
+    "asar": true,
+    "npmRebuild": true,
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "assets/wathiqa.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Wathiqa"
     }
   },
   "dependencies": {
