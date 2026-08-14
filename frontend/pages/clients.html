@@ -30,97 +30,25 @@
           </div>
           <button id="addClientButton" type="button" class="bg-accent text-white px-5 py-3 rounded-lg">+ إضافة موكل</button>
         </div>
-
         <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-white rounded-xl shadow p-5">
-            <p class="text-gray-500">إجمالي النتائج</p>
-            <p id="totalClients" class="text-3xl font-bold mt-1">0</p>
-          </div>
-          <div class="bg-white rounded-xl shadow p-5 md:col-span-2">
-            <label for="searchInput" class="block text-gray-500 mb-2">البحث</label>
-            <input id="searchInput" type="search" class="w-full border rounded-lg p-3" placeholder="الاسم أو كود الموكل أو الرقم القومي أو الهاتف">
-          </div>
+          <div class="bg-white rounded-xl shadow p-5"><p class="text-gray-500">إجمالي النتائج</p><p id="totalClients" class="text-3xl font-bold mt-1">0</p></div>
+          <div class="bg-white rounded-xl shadow p-5 md:col-span-2"><label for="searchInput" class="block text-gray-500 mb-2">البحث</label><input id="searchInput" type="search" class="w-full border rounded-lg p-3" placeholder="الاسم أو كود الموكل أو الرقم القومي أو الهاتف"></div>
         </section>
-
         <section class="bg-white rounded-xl shadow p-5 mb-6">
           <div class="flex flex-col lg:flex-row lg:items-end gap-3">
-            <div>
-              <label for="dateFilter" class="block text-gray-600 mb-1">فلتر التاريخ</label>
-              <select id="dateFilter" class="border rounded-lg p-3 min-w-48">
-                <option value="all">الكل</option>
-                <option value="today">اليوم</option>
-                <option value="week">هذا الأسبوع</option>
-                <option value="month">هذا الشهر</option>
-                <option value="year">هذا العام</option>
-                <option value="custom">مخصص</option>
-              </select>
-            </div>
-            <div id="customDates" class="hidden flex flex-col md:flex-row gap-3">
-              <div><label for="startDate" class="block text-gray-600 mb-1">من</label><input id="startDate" type="date" class="border rounded-lg p-3"></div>
-              <div><label for="endDate" class="block text-gray-600 mb-1">إلى</label><input id="endDate" type="date" class="border rounded-lg p-3"></div>
-            </div>
-            <button id="applyFilter" type="button" class="bg-primary text-white px-5 py-3 rounded-lg">تطبيق</button>
-            <button id="clearFilter" type="button" class="bg-gray-200 text-primary px-5 py-3 rounded-lg">مسح</button>
-            <button id="exportClients" type="button" class="bg-green-600 text-white px-5 py-3 rounded-lg mr-auto">تصدير Excel</button>
+            <div><label for="dateFilter" class="block text-gray-600 mb-1">فلتر التاريخ</label><select id="dateFilter" class="border rounded-lg p-3 min-w-48"><option value="all">الكل</option><option value="today">اليوم</option><option value="week">هذا الأسبوع</option><option value="month">هذا الشهر</option><option value="year">هذا العام</option><option value="custom">مخصص</option></select></div>
+            <div id="customDates" class="hidden flex flex-col md:flex-row gap-3"><div><label for="startDate" class="block text-gray-600 mb-1">من</label><input id="startDate" type="date" class="border rounded-lg p-3"></div><div><label for="endDate" class="block text-gray-600 mb-1">إلى</label><input id="endDate" type="date" class="border rounded-lg p-3"></div></div>
+            <button id="applyFilter" type="button" class="bg-primary text-white px-5 py-3 rounded-lg">تطبيق</button><button id="clearFilter" type="button" class="bg-gray-200 text-primary px-5 py-3 rounded-lg">مسح</button><button id="exportClients" type="button" class="bg-green-600 text-white px-5 py-3 rounded-lg mr-auto">تصدير Excel</button>
           </div>
         </section>
-
         <section class="bg-white rounded-xl shadow overflow-hidden">
-          <div id="loadingState" class="p-8 text-center text-gray-500">جاري التحميل...</div>
-          <div id="errorState" class="hidden p-8 text-center text-red-600"></div>
-          <div id="emptyState" class="hidden p-8 text-center text-gray-500">لا يوجد موكلون</div>
-          <div id="tableWrap" class="hidden overflow-x-auto">
-            <table class="min-w-full text-right">
-              <thead class="bg-secondary text-white">
-                <tr>
-                  <th class="p-3">#</th>
-                  <th class="p-3">الاسم</th>
-                  <th class="p-3">كود الموكل</th>
-                  <th class="p-3">الرقم القومي</th>
-                  <th class="p-3">الهاتف</th>
-                  <th class="p-3">العنوان</th>
-                  <th class="p-3">تاريخ الإضافة</th>
-                  <th class="p-3">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody id="clientsTableBody"></tbody>
-            </table>
-          </div>
+          <div id="loadingState" class="p-8 text-center text-gray-500">جاري التحميل...</div><div id="errorState" class="hidden p-8 text-center text-red-600"></div><div id="emptyState" class="hidden p-8 text-center text-gray-500">لا يوجد موكلون</div>
+          <div id="tableWrap" class="hidden overflow-x-auto"><table class="min-w-full text-right"><thead class="bg-secondary text-white"><tr><th class="p-3">#</th><th class="p-3">الاسم</th><th class="p-3">كود الموكل</th><th class="p-3">الرقم القومي</th><th class="p-3">الهاتف</th><th class="p-3">العنوان</th><th class="p-3">تاريخ الإضافة</th><th class="p-3">الإجراءات</th></tr></thead><tbody id="clientsTableBody"></tbody></table></div>
         </section>
       </main>
     </div>
   </div>
-
-  <div id="clientModal" class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
-      <div class="flex justify-between items-center mb-5">
-        <h2 id="modalTitle" class="text-xl font-bold">إضافة موكل</h2>
-        <button id="closeModal" type="button" class="text-xl">✕</button>
-      </div>
-      <form id="clientForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input id="full_name" required class="border rounded-lg p-3" placeholder="الاسم الكامل">
-        <input id="client_code" class="border rounded-lg p-3" placeholder="كود الموكل">
-        <input id="national_id" required maxlength="14" class="border rounded-lg p-3" placeholder="الرقم القومي">
-        <input id="phone" required class="border rounded-lg p-3" placeholder="رقم الهاتف">
-        <input id="address" required class="border rounded-lg p-3 md:col-span-2" placeholder="العنوان">
-        <textarea id="notes" class="border rounded-lg p-3 md:col-span-2" placeholder="ملاحظات"></textarea>
-        <div class="md:col-span-2 border-t pt-4">
-          <h3 class="font-bold mb-3">بيانات التوكيل</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input id="attorney_number" class="border rounded-lg p-3" placeholder="رقم التوكيل">
-            <input id="attorney_type" class="border rounded-lg p-3" placeholder="نوع التوكيل">
-            <input id="issuing_office" class="border rounded-lg p-3" placeholder="جهة الإصدار">
-          </div>
-          <input id="attorney_file" type="file" class="border rounded-lg p-3 mt-3 w-full">
-        </div>
-        <div class="md:col-span-2 flex justify-end gap-3">
-          <button id="cancelModal" type="button" class="bg-gray-200 px-5 py-2 rounded-lg">إلغاء</button>
-          <button id="saveClient" type="submit" class="bg-primary text-white px-5 py-2 rounded-lg">حفظ</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="../assets/js/pages/clients.js"></script>
+  <div id="clientModal" class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center p-4"><div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6"><div class="flex justify-between items-center mb-5"><h2 id="modalTitle" class="text-xl font-bold">إضافة موكل</h2><button id="closeModal" type="button" class="text-xl">✕</button></div><form id="clientForm" class="grid grid-cols-1 md:grid-cols-2 gap-4"><input id="full_name" required class="border rounded-lg p-3" placeholder="الاسم الكامل"><input id="client_code" class="border rounded-lg p-3" placeholder="كود الموكل"><input id="national_id" required maxlength="14" class="border rounded-lg p-3" placeholder="الرقم القومي"><input id="phone" required class="border rounded-lg p-3" placeholder="رقم الهاتف"><input id="address" required class="border rounded-lg p-3 md:col-span-2" placeholder="العنوان"><textarea id="notes" class="border rounded-lg p-3 md:col-span-2" placeholder="ملاحظات"></textarea><div class="md:col-span-2 border-t pt-4"><h3 class="font-bold mb-3">بيانات التوكيل</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input id="attorney_number" class="border rounded-lg p-3" placeholder="رقم التوكيل"><input id="attorney_type" class="border rounded-lg p-3" placeholder="نوع التوكيل"><input id="issuing_office" class="border rounded-lg p-3" placeholder="جهة الإصدار"></div><input id="attorney_file" type="file" class="border rounded-lg p-3 mt-3 w-full"></div><div class="md:col-span-2 flex justify-end gap-3"><button id="cancelModal" type="button" class="bg-gray-200 px-5 py-2 rounded-lg">إلغاء</button><button id="saveClient" type="submit" class="bg-primary text-white px-5 py-2 rounded-lg">حفظ</button></div></form></div></div>
+  <script src="../assets/js/pages/clients-v2.js"></script>
 </body>
 </html>
