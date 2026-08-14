@@ -24,7 +24,7 @@ router.get("/upcoming", auth, getUpcomingHearings);
 
 router.get("/:id", auth, getHearingById);
 
-router.put("/:id", auth, updateHearing);
+router.put("/:id", auth, role("admin", "lawyer"), updateHearing);
 
 router.delete("/:id", auth, role("admin", "lawyer"), deleteHearing);
 
