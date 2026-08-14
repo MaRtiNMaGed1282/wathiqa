@@ -5,7 +5,6 @@
     CLIENTS: "clients.html",
     CASES: "cases.html",
     CALENDAR: "calendar.html",
-    DOCUMENTS: "documents.html",
     REVENUES: "revenues.html",
     REPORTS: "reports.html",
   });
@@ -111,6 +110,7 @@
       lucide.createIcons();
     }
   }
+
   function getGreeting() {
     const hour = new Date().getHours();
 
@@ -158,16 +158,12 @@
     switch (type) {
       case "hearing":
         return "bg-blue-500";
-
       case "financial":
         return "bg-green-500";
-
       case "document":
         return "bg-orange-500";
-
       case "system":
         return "bg-purple-500";
-
       default:
         return "bg-gray-400";
     }
@@ -197,21 +193,10 @@
 
       element.innerHTML = `
       <div class="w-3 h-3 rounded-full mt-2 ${notificationColor(item.type)}"></div>
-
       <div class="flex-1">
-
-        <h3 class="font-semibold">
-          ${item.title}
-        </h3>
-
-        <p class="mt-1 text-sm text-gray-500">
-          ${item.message}
-        </p>
-
-        <p class="mt-2 text-xs text-gray-400">
-          ${item.time}
-        </p>
-
+        <h3 class="font-semibold">${item.title}</h3>
+        <p class="mt-1 text-sm text-gray-500">${item.message}</p>
+        <p class="mt-2 text-xs text-gray-400">${item.time}</p>
       </div>
     `;
 
@@ -235,25 +220,18 @@
     const dashboard = data.dashboard || {};
 
     setKPI("kpi-total-clients", dashboard.totalClients ?? 0);
-
     setKPI("kpi-active-cases", dashboard.activeCases ?? 0);
-
     setKPI("kpi-hearings", dashboard.hearingsToday ?? 0);
-
     setKPI("kpi-tasks", dashboard.urgentTasks ?? 0);
-
     setKPI(
       "kpi-revenue",
       (dashboard.monthRevenue ?? 0).toLocaleString("ar-EG"),
     );
-
     setKPI(
       "kpi-outstanding",
       (dashboard.outstandingPayments ?? 0).toLocaleString("ar-EG"),
     );
-
     setKPI("kpi-notifications", dashboard.notifications ?? 0);
-
     setKPI("kpi-success-rate", `${dashboard.successRate ?? 0}%`);
   }
 
@@ -262,11 +240,14 @@
   }
 
   function initializeQuickActions() {
+    // Documents are cancelled. Remove any stale button left by an older
+    // dashboard HTML version instead of exposing a dead navigation target.
+    document.getElementById("action-upload-document")?.remove();
+
     const actions = [
       ["action-new-client", ROUTES.CLIENTS],
       ["action-new-case", ROUTES.CASES],
       ["action-new-hearing", ROUTES.CALENDAR],
-      ["action-upload-document", ROUTES.DOCUMENTS],
       ["action-payment", ROUTES.REVENUES],
       ["action-search", ROUTES.REPORTS],
     ];
@@ -345,28 +326,17 @@
 
       row.innerHTML = `
       <td class="px-6 py-4">${hearing.time}</td>
-
       <td class="px-6 py-4">${hearing.caseNumber}</td>
-
       <td class="px-6 py-4">${hearing.clientName}</td>
-
       <td class="px-6 py-4">${hearing.courtName}</td>
-
       <td class="px-6 py-4">${hearing.caseType}</td>
-
       <td class="px-6 py-4 text-center">
         <span class="rounded-full px-3 py-1 text-xs font-medium ${hearingStatusBadge(hearing.status)}">
           ${hearing.statusText}
         </span>
       </td>
-
       <td class="px-6 py-4 text-center">
-        <a
-          href="case-profile.html?id=${hearing.caseId}"
-          class="text-primary font-semibold hover:underline"
-        >
-          فتح
-        </a>
+        <a href="case-profile.html?id=${hearing.caseId}" class="text-primary font-semibold hover:underline">فتح</a>
       </td>
     `;
 
