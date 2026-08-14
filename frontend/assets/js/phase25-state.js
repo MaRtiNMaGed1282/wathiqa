@@ -5,6 +5,10 @@
     return /(^|\/)case-profile\.html$/i.test(global.location.pathname);
   }
 
+  function isChangePassword() {
+    return /(^|\/)change-password\.html$/i.test(global.location.pathname);
+  }
+
   function getUserRole() {
     try {
       return global.auth?.getUser?.()?.role || null;
@@ -84,6 +88,16 @@
     });
   }
 
+  function applyPasswordValidation() {
+    ["newPassword", "confirmPassword"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.required = true;
+      element.minLength = 8;
+      element.autocomplete = "new-password";
+    });
+  }
+
   function ensurePageErrorBanner() {
     let banner = document.getElementById("phase25-page-error");
     if (banner) return banner;
@@ -123,11 +137,14 @@
   }
 
   function init() {
+    if (isCaseProfile()) {
+      applyCaseValidation();
+      if (getUserRole() === "assistant") hideFinancialControls();
+    }
+
+    if (isChangePassword()) applyPasswordValidation();
+
     if (!isCaseProfile()) return;
-
-    applyCaseValidation();
-
-    if (getUserRole() === "assistant") hideFinancialControls();
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
