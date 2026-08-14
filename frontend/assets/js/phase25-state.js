@@ -1,7 +1,10 @@
 (function (global) {
   "use strict";
 
-  function isPage(name) { return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname); }
+  function isPage(name) {
+    return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname);
+  }
+
   const pageNames = ["activation", "calendar", "case-profile", "cases", "change-password", "client-profile", "clients", "dashboard", "law-viewer", "laws", "library", "login", "notifications", "office-profile", "reports", "revenues", "service-profile", "services", "users"];
   const isCaseProfile = () => isPage("case-profile");
   const isClientProfile = () => isPage("client-profile");
@@ -13,21 +16,40 @@
   const isNotifications = () => isPage("notifications");
   const isFrozenPage = () => pageNames.some(isPage);
 
-  function getUserRole() { try { return global.auth?.getUser?.()?.role || null; } catch { return null; } }
-  function hideElement(id) { const element = document.getElementById(id); if (element) { element.hidden = true; element.setAttribute("aria-hidden", "true"); } }
+  function getUserRole() {
+    try {
+      return global.auth?.getUser?.()?.role || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function hideElement(id) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.hidden = true;
+      element.setAttribute("aria-hidden", "true");
+    }
+  }
 
   function hideSectionByHeading(headingText) {
     const heading = Array.from(document.querySelectorAll("h2, h3")).find((node) => node.textContent.trim() === headingText);
     if (!heading) return;
     const section = heading.closest(".bg-white.rounded-xl.shadow") || heading.parentElement;
-    if (section) { section.hidden = true; section.setAttribute("aria-hidden", "true"); }
+    if (section) {
+      section.hidden = true;
+      section.setAttribute("aria-hidden", "true");
+    }
   }
 
   function hideFinancialSectionByHeading(headingText) {
     const heading = Array.from(document.querySelectorAll("h3")).find((node) => node.textContent.trim() === headingText);
     if (!heading) return;
     const section = heading.closest(".bg-white.shadow.rounded.p-6");
-    if (section) { section.hidden = true; section.setAttribute("aria-hidden", "true"); }
+    if (section) {
+      section.hidden = true;
+      section.setAttribute("aria-hidden", "true");
+    }
   }
 
   function hideCaseFinancialControls() {
@@ -36,41 +58,87 @@
     hideFinancialSectionByHeading("المصروفات");
     ["paymentModal", "expenseModal"].forEach(hideElement);
     const feesInput = document.getElementById("edit_total_fees");
-    if (feesInput) { const wrapper = feesInput.closest("div"); if (wrapper) wrapper.hidden = true; }
+    if (feesInput) {
+      const wrapper = feesInput.closest("div");
+      if (wrapper) wrapper.hidden = true;
+    }
     document.querySelectorAll('[onclick="openPaymentModal()"], [onclick="openExpenseModal()"]')
-      .forEach((element) => { element.hidden = true; element.setAttribute("aria-hidden", "true"); });
+      .forEach((element) => {
+        element.hidden = true;
+        element.setAttribute("aria-hidden", "true");
+      });
   }
 
-  function hideClientFinancialControls() { hideSectionByHeading("الملخص المالي"); }
-  function hideDashboardFinancialControls() { ["kpi-revenue", "kpi-outstanding", "dashboard-financial-chart", "action-payment"].forEach(hideElement); }
+  function hideClientFinancialControls() {
+    hideSectionByHeading("الملخص المالي");
+  }
+
+  function hideDashboardFinancialControls() {
+    ["kpi-revenue", "kpi-outstanding", "dashboard-financial-chart", "action-payment"].forEach(hideElement);
+  }
 
   function applyCaseValidation() {
-    ["edit_case_title", "edit_court_case_number", "edit_case_type", "edit_court_name", "edit_court_chamber", "edit_opened_at", "hearing_date", "payment_amount", "payment_date", "expense_type", "expense_amount", "expense_date"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    ["edit_total_fees", "payment_amount", "expense_amount"].forEach((id) => { const element = document.getElementById(id); if (!element) return; element.type = "number"; element.min = "0"; element.step = "0.01"; element.inputMode = "decimal"; });
+    ["edit_case_title", "edit_court_case_number", "edit_case_type", "edit_court_name", "edit_court_chamber", "edit_opened_at", "hearing_date", "payment_amount", "payment_date", "expense_type", "expense_amount", "expense_date"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+    ["edit_total_fees", "payment_amount", "expense_amount"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.type = "number";
+      element.min = "0";
+      element.step = "0.01";
+      element.inputMode = "decimal";
+    });
   }
 
   function applyClientValidation() {
-    ["attorney_number", "attorney_type", "issue_date", "issuing_office"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    const file = document.getElementById("attorney_file"); if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
+    ["attorney_number", "attorney_type", "issue_date", "issuing_office"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+    const file = document.getElementById("attorney_file");
+    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
   }
 
   function applyPasswordValidation() {
-    ["newPassword", "confirmPassword"].forEach((id) => { const element = document.getElementById(id); if (!element) return; element.required = true; element.minLength = 8; element.autocomplete = "new-password"; });
+    ["newPassword", "confirmPassword"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.required = true;
+      element.minLength = 8;
+      element.autocomplete = "new-password";
+    });
   }
 
   function applyServiceValidation() {
-    const file = document.getElementById("serviceFileInput"); if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
+    const file = document.getElementById("serviceFileInput");
+    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
   }
 
   function applyServicesValidation() {
-    ["clientSearch", "service_title", "service_type", "assigned_to", "start_date", "due_date", "total_fees", "description"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    const fees = document.getElementById("total_fees"); if (fees) { fees.type = "number"; fees.min = "0"; fees.step = "0.01"; fees.inputMode = "decimal"; }
+    ["clientSearch", "service_title", "service_type", "assigned_to", "start_date", "due_date", "total_fees", "description"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+    const fees = document.getElementById("total_fees");
+    if (fees) {
+      fees.type = "number";
+      fees.min = "0";
+      fees.step = "0.01";
+      fees.inputMode = "decimal";
+    }
   }
 
   function applyCalendarValidation() {
-    ["calendarCaseId", "calendarHearingDate", "calendarHearingTime", "calendarHearingType"].forEach((id) => { const element = document.getElementById(id); if (element) element.required = true; });
-    const date = document.getElementById("calendarHearingDate"); if (date) date.type = "date";
-    const time = document.getElementById("calendarHearingTime"); if (time) time.type = "time";
+    ["calendarCaseId", "calendarHearingDate", "calendarHearingTime", "calendarHearingType"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+    const date = document.getElementById("calendarHearingDate");
+    if (date) date.type = "date";
+    const time = document.getElementById("calendarHearingTime");
+    if (time) time.type = "time";
   }
 
   function applyNotificationsLoadingState() {
@@ -97,14 +165,26 @@
     const retry = document.getElementById("phase25-page-error-retry");
     if (messageElement) messageElement.textContent = message || "حدث خطأ أثناء تحميل البيانات";
     banner.classList.remove("hidden");
-    if (retry && !retry.dataset.bound) { retry.dataset.bound = "true"; retry.addEventListener("click", () => global.location.reload()); }
+    if (retry && !retry.dataset.bound) {
+      retry.dataset.bound = "true";
+      retry.addEventListener("click", () => global.location.reload());
+    }
   }
 
-  function hidePageError() { const banner = document.getElementById("phase25-page-error"); if (banner) banner.classList.add("hidden"); }
+  function hidePageError() {
+    const banner = document.getElementById("phase25-page-error");
+    if (banner) banner.classList.add("hidden");
+  }
 
   function init() {
-    if (isCaseProfile()) { applyCaseValidation(); if (getUserRole() === "assistant") hideCaseFinancialControls(); }
-    if (isClientProfile()) { applyClientValidation(); if (getUserRole() === "assistant") hideClientFinancialControls(); }
+    if (isCaseProfile()) {
+      applyCaseValidation();
+      if (getUserRole() === "assistant") hideCaseFinancialControls();
+    }
+    if (isClientProfile()) {
+      applyClientValidation();
+      if (getUserRole() === "assistant") hideClientFinancialControls();
+    }
     if (isChangePassword()) applyPasswordValidation();
     if (isDashboard() && getUserRole() === "assistant") hideDashboardFinancialControls();
     if (isServiceProfile()) applyServiceValidation();
@@ -115,8 +195,12 @@
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
-    global.addEventListener("wathiqa:api-error", (event) => { if (event.detail?.method === "GET") showPageError(event.detail.message); });
-    global.addEventListener("wathiqa:api-success", (event) => { if (event.detail?.method === "GET") hidePageError(); });
+    global.addEventListener("wathiqa:api-error", (event) => {
+      if (event.detail?.method === "GET") showPageError(event.detail.message);
+    });
+    global.addEventListener("wathiqa:api-success", (event) => {
+      if (event.detail?.method === "GET") hidePageError();
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
