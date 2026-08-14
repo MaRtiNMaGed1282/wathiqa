@@ -168,15 +168,28 @@
 - [x] Duplicate-submission protection.
 - [ ] Browser/API regression.
 
-## Remaining Before Phase 25 Completion
+## Regression Gate
 
-1. Run browser/API regression across all 19 frozen pages.
-2. Verify loading → empty → error → success transitions.
-3. Verify duplicate mutation prevention.
-4. Verify destructive confirmations.
-5. Verify Assistant financial invisibility.
-6. Verify backend-offline/error recovery.
-7. Freeze Phase 25 only after all regression checks pass.
+The static implementation audit is complete. The remaining gate is execution in a real browser against the running backend.
+
+### Required browser/API checks
+
+1. Open every frozen page with backend online.
+2. Confirm initial loading state resolves correctly.
+3. Confirm populated state renders correctly.
+4. Confirm empty state renders correctly where applicable.
+5. Stop or disconnect the backend and verify Arabic error/retry behavior.
+6. Restore the backend and verify retry/reload recovery.
+7. Exercise every mutation button/form once.
+8. Rapidly repeat each mutation and verify duplicate in-flight requests are blocked.
+9. Verify destructive confirmation dialogs.
+10. Verify Assistant cannot see or invoke financial UI/API flows.
+11. Verify Admin/Lawyer financial access remains functional.
+12. Verify Calendar date creation, drag/drop update, event details, and case navigation.
+13. Verify Login → Dashboard and Login → Change Password flows.
+14. Verify Activation → Login flow.
+15. Verify file upload/download/view flows.
+16. Verify Excel/PDF/print report flows where applicable.
 
 ## Frozen Pages
 
@@ -200,4 +213,4 @@
 18. `services.html`
 19. `users.html`
 
-**Phase 25 remains open only for final browser/API regression.**
+**Phase 25 remains open only for final browser/API regression. Do not freeze the phase until the regression gate passes.**
