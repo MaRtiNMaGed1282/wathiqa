@@ -2,6 +2,7 @@ console.log(process.cwd());
 require("./config/env");
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
 
 require("./config/sqlite");
 
@@ -55,6 +56,46 @@ app.get("/", (req, res) => {
   res.json({
     status: "success",
     message: "Lawyer Case Management API is running",
+  });
+});
+
+/*
+ * Central upload/parser error handling.
+ * Never expose Express/Multer stack traces to clients.
+ */
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        message: "حجم الملف يتجاوز الحد المسموح (5 ميجابايت)",
+      });
+    }
+
+    return res.status(400).json({
+      message: "بيانات رفع الملف غير صالحة",
+    });
+  }
+
+  if (err?.message === "Unsupported file type") {
+    return res.status(400).json({
+      message: "نوع الملف غير مدعوم",
+    });
+  }
+
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      message: "صيغة الطلب غير صالحة",
+    });
+  }
+
+  console.error("Unhandled API error:", err?.message || err);
+
+  return res.status(err?.status || 500).json({
+    message: err?.status && err.status < 500
+      ? err.message || "حدث خطأ في الطلب"
+      : "حدث خطأ داخلي في الخادم",
   });
 });
 
