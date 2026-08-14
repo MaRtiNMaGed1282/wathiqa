@@ -1,281 +1,126 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <meta name="description" content="إدارة الموكلين في نظام وثيقة" />
-
-    <title>الموكلين | وثيقة</title>
-
-    <!-- Core -->
-
-    <script src="../assets/js/auth.js"></script>
-
-    <script src="../assets/js/api.js"></script>
-
-    <script src="../assets/js/core/app.js"></script>
-
-    <script src="../assets/js/loadSidebar.js"></script>
-
-    <script src="../assets/js/loadNavbar.js"></script>
-
-    <script src="../assets/vendor/toastify/toastify.js"></script>
-
-    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
-
-    <script src="../assets/vendor/xlsx/xlsx.full.min.js"></script>
-
-    <!-- Styles -->
-
-    <link rel="stylesheet" href="../assets/css/fonts.css" />
-
-    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
-    <link rel="stylesheet" href="../assets/css/input.css" />
-
-    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
-  </head>
-
-  <body class="font-cairo bg-light text-primary">
-    <div id="app-shell">
-      <div id="sidebar-container"></div>
-
-      <div id="app">
-        <div id="navbar-container"></div>
-
-        <main id="clients-page" class="page">
-          <div class="page-content">
-            <h2 class="text-xl font-semibold mb-4">الموكلين</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div class="bg-white rounded-lg shadow p-4">
-                <p class="text-gray-500">إجمالي الموكلين</p>
-                <h3 id="totalClients" class="text-3xl font-bold text-primary">
-                  0
-                </h3>
-              </div>
-
-              <div class="bg-white rounded-lg shadow p-4">
-                <p class="text-gray-500">آخر موكل مضاف</p>
-                <h3 id="latestClient" class="text-xl font-bold">---</h3>
-              </div>
-
-              <div class="bg-white rounded-lg shadow p-4">
-                <p class="text-gray-500">البحث السريع</p>
-                <input
-                  id="searchInput"
-                  type="text"
-                  placeholder="ابحث بالاسم أو الرقم القومي"
-                  class="w-full border rounded p-2 mt-2"
-                />
-              </div>
-            </div>
-
-            <!-- Form لإضافة موكل جديد -->
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-2xl font-bold">إدارة الموكلين</h2>
-
-              <button
-                id="openAddClientButton"
-                class="bg-accent text-white px-5 py-3 rounded-lg"
-              >
-                + إضافة موكل
-              </button>
-            </div>
-            <!-- جدول عرض الموكلين -->
-            <div
-              id="clientsTableContainer"
-              class="bg-white shadow rounded p-4 overflow-auto"
-            >
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">قائمة الموكلين</h3>
-
-                <button
-                  id="exportClientsButton"
-                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                >
-                  تصدير Excel
-                </button>
-              </div>
-
-              <table class="min-w-full text-right">
-                <thead>
-                  <tr class="bg-secondary text-white">
-                    <th class="p-2">#</th>
-                    <th class="p-2">الاسم</th>
-                    <th class="p-2">الرقم القومي</th>
-                    <th class="p-2">الهاتف</th>
-                    <th class="p-2">العنوان</th>
-                    <th class="p-2">الملاحظات</th>
-                    <th class="p-2">تاريخ الإضافة</th>
-                    <th class="p-2">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody id="clientsTableBody"></tbody>
-              </table>
-            </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الموكلين | وثيقة</title>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/core/ui.js"></script>
+  <script src="../assets/js/core/permissions.js"></script>
+  <script src="../assets/js/loadSidebar.js"></script>
+  <script src="../assets/js/loadNavbar.js"></script>
+  <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+  <script src="../assets/vendor/toastify/toastify.js"></script>
+  <script src="../assets/vendor/xlsx/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/tailwind.min.css">
+  <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css">
+</head>
+<body class="font-cairo bg-light text-primary">
+  <div id="app-shell" class="min-h-screen">
+    <div id="sidebar-container"></div>
+    <div id="app">
+      <div id="navbar-container"></div>
+      <main class="page-content p-4 md:p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-2xl font-bold">الموكلين</h1>
+            <p class="text-gray-500 mt-1">إدارة بيانات الموكلين والبحث والتصفية</p>
           </div>
-        </main>
-      </div>
-    </div>
-    <div
-      id="addClientModal"
-      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-    >
-      <div
-        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-      >
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-2xl font-bold">إضافة موكل جديد</h3>
-
-          <button
-            type="button"
-            id="closeAddClientModalButton"
-            class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl"
-          >
-            ✕
-          </button>
+          <button id="addClientButton" type="button" class="bg-accent text-white px-5 py-3 rounded-lg">+ إضافة موكل</button>
         </div>
 
-        <form
-          id="addClientForm"
-          action="javascript:void(0)"
-          method="post"
-          class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3"
-        >
-          <input
-            type="text"
-            id="full_name"
-            placeholder="الاسم الكامل"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="client_code"
-            placeholder="كود الموكل"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="national_id"
-            placeholder="الرقم القومي"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="phone"
-            placeholder="رقم الهاتف"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="address"
-            placeholder="العنوان"
-            class="border p-2 rounded"
-          />
-          <div class="border-t pt-4 mt-2">
-            <h4 class="font-bold text-primary mb-3">
-              بيانات التوكيل (اختياري)
-            </h4>
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <p class="text-gray-500">إجمالي النتائج</p>
+            <p id="totalClients" class="text-3xl font-bold mt-1">0</p>
           </div>
-          <input
-            type="text"
-            id="attorney_number"
-            placeholder="رقم التوكيل"
-            class="border p-2 rounded"
-          />
+          <div class="bg-white rounded-xl shadow p-5 md:col-span-2">
+            <label for="searchInput" class="block text-gray-500 mb-2">البحث</label>
+            <input id="searchInput" type="search" class="w-full border rounded-lg p-3" placeholder="الاسم أو كود الموكل أو الرقم القومي أو الهاتف">
+          </div>
+        </section>
 
-          <input
-            type="text"
-            id="attorney_type"
-            placeholder="نوع التوكيل"
-            class="border p-2 rounded"
-          />
+        <section class="bg-white rounded-xl shadow p-5 mb-6">
+          <div class="flex flex-col lg:flex-row lg:items-end gap-3">
+            <div>
+              <label for="dateFilter" class="block text-gray-600 mb-1">فلتر التاريخ</label>
+              <select id="dateFilter" class="border rounded-lg p-3 min-w-48">
+                <option value="all">الكل</option>
+                <option value="today">اليوم</option>
+                <option value="week">هذا الأسبوع</option>
+                <option value="month">هذا الشهر</option>
+                <option value="year">هذا العام</option>
+                <option value="custom">مخصص</option>
+              </select>
+            </div>
+            <div id="customDates" class="hidden flex flex-col md:flex-row gap-3">
+              <div><label for="startDate" class="block text-gray-600 mb-1">من</label><input id="startDate" type="date" class="border rounded-lg p-3"></div>
+              <div><label for="endDate" class="block text-gray-600 mb-1">إلى</label><input id="endDate" type="date" class="border rounded-lg p-3"></div>
+            </div>
+            <button id="applyFilter" type="button" class="bg-primary text-white px-5 py-3 rounded-lg">تطبيق</button>
+            <button id="clearFilter" type="button" class="bg-gray-200 text-primary px-5 py-3 rounded-lg">مسح</button>
+            <button id="exportClients" type="button" class="bg-green-600 text-white px-5 py-3 rounded-lg mr-auto">تصدير Excel</button>
+          </div>
+        </section>
 
-          <input
-            type="text"
-            id="issuing_office"
-            placeholder="جهة الإصدار"
-            class="border p-2 rounded"
-          />
-
-          <input type="file" id="attorney_file" class="border p-2 rounded" />
-
-          <textarea
-            id="notes"
-            placeholder="ملاحظات"
-            class="border p-2 rounded min-h-25"
-          ></textarea>
-          <button
-            type="submit"
-            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
-          >
-            إضافة موكل
-          </button>
-        </form>
-      </div>
+        <section class="bg-white rounded-xl shadow overflow-hidden">
+          <div id="loadingState" class="p-8 text-center text-gray-500">جاري التحميل...</div>
+          <div id="errorState" class="hidden p-8 text-center text-red-600"></div>
+          <div id="emptyState" class="hidden p-8 text-center text-gray-500">لا يوجد موكلون</div>
+          <div id="tableWrap" class="hidden overflow-x-auto">
+            <table class="min-w-full text-right">
+              <thead class="bg-secondary text-white">
+                <tr>
+                  <th class="p-3">#</th>
+                  <th class="p-3">الاسم</th>
+                  <th class="p-3">كود الموكل</th>
+                  <th class="p-3">الرقم القومي</th>
+                  <th class="p-3">الهاتف</th>
+                  <th class="p-3">العنوان</th>
+                  <th class="p-3">تاريخ الإضافة</th>
+                  <th class="p-3">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
-    <script src="../assets/js/pages/clients.js"></script>
-    <div
-      id="editModal"
-      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-    >
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl">
-        <h3 class="text-xl font-bold mb-4">تعديل بيانات الموكل</h3>
+  </div>
 
-        <input
-          id="edit_full_name"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="الاسم الكامل"
-        />
-
-        <input
-          id="edit_client_code"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="كود الموكل"
-        />
-
-        <input
-          id="edit_national_id"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="الرقم القومي"
-        />
-
-        <input
-          id="edit_phone"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="رقم الهاتف"
-        />
-
-        <input
-          id="edit_address"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="العنوان"
-        />
-
-        <textarea
-          id="edit_notes"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="ملاحظات"
-        ></textarea>
-
-        <div class="flex justify-end gap-3 mt-4">
-          <button
-            id="saveEditBtn"
-            class="bg-primary text-white px-5 py-2 rounded"
-          >
-            حفظ
-          </button>
-
-          <button
-            id="closeEditModalButton"
-            class="bg-gray-300 px-5 py-2 rounded"
-          >
-            إلغاء
-          </button>
+  <div id="clientModal" class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-5">
+        <h2 id="modalTitle" class="text-xl font-bold">إضافة موكل</h2>
+        <button id="closeModal" type="button" class="text-xl">✕</button>
+      </div>
+      <form id="clientForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input id="full_name" required class="border rounded-lg p-3" placeholder="الاسم الكامل">
+        <input id="client_code" class="border rounded-lg p-3" placeholder="كود الموكل">
+        <input id="national_id" required maxlength="14" class="border rounded-lg p-3" placeholder="الرقم القومي">
+        <input id="phone" required class="border rounded-lg p-3" placeholder="رقم الهاتف">
+        <input id="address" required class="border rounded-lg p-3 md:col-span-2" placeholder="العنوان">
+        <textarea id="notes" class="border rounded-lg p-3 md:col-span-2" placeholder="ملاحظات"></textarea>
+        <div class="md:col-span-2 border-t pt-4">
+          <h3 class="font-bold mb-3">بيانات التوكيل</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input id="attorney_number" class="border rounded-lg p-3" placeholder="رقم التوكيل">
+            <input id="attorney_type" class="border rounded-lg p-3" placeholder="نوع التوكيل">
+            <input id="issuing_office" class="border rounded-lg p-3" placeholder="جهة الإصدار">
+          </div>
+          <input id="attorney_file" type="file" class="border rounded-lg p-3 mt-3 w-full">
         </div>
-      </div>
+        <div class="md:col-span-2 flex justify-end gap-3">
+          <button id="cancelModal" type="button" class="bg-gray-200 px-5 py-2 rounded-lg">إلغاء</button>
+          <button id="saveClient" type="submit" class="bg-primary text-white px-5 py-2 rounded-lg">حفظ</button>
+        </div>
+      </form>
     </div>
-  </body>
+  </div>
+
+  <script src="../assets/js/pages/clients.js"></script>
+</body>
 </html>
