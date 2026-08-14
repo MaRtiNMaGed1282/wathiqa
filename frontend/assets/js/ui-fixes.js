@@ -52,6 +52,7 @@
   }
 
   async function loadOfficeInformation() {
+    if (!global.auth?.isAuthenticated?.()) return;
     if (!global.api || typeof global.api.get !== "function") return;
 
     try {
@@ -82,7 +83,7 @@
   function applyAdminNavigation() {
     const usersLink = document.querySelector('[data-page="users"][data-admin-only]');
     if (!usersLink) return;
-    const isAdmin = global.permissions?.isAdmin?.() === true;
+    const isAdmin = global.auth?.getUser?.()?.role === "admin";
     usersLink.hidden = !isAdmin;
     usersLink.setAttribute("aria-hidden", String(!isAdmin));
   }
