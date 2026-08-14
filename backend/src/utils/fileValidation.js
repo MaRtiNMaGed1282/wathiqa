@@ -1,11 +1,22 @@
 const path = require("path");
 
-const allowedExtensions = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
+const allowedExtensions = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+];
 
 const allowedMimeTypes = [
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "image/jpeg",
   "image/png",
 ];
@@ -13,7 +24,13 @@ const allowedMimeTypes = [
 const maxFileSize = 5 * 1024 * 1024;
 
 function sanitizeFilename(filename) {
-  return (filename || "").replace(/[^a-zA-Z0-9._-]/g, "-");
+  const basename = path.basename(filename || "");
+  const sanitized = basename
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/\.{2,}/g, ".")
+    .replace(/^\.+/, "");
+
+  return sanitized || "file";
 }
 
 function fileFilter(req, file, cb) {
