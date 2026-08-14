@@ -61,9 +61,7 @@ exports.login = (req, res) => {
 
         return res.json({
           token,
-
           must_change_password: Boolean(user.must_change_password),
-
           user: {
             id: user.id,
             full_name: user.full_name,
@@ -82,11 +80,13 @@ exports.login = (req, res) => {
 
 /**
  * Change Password (First Login)
+ * The authenticated JWT is the source of truth for the target user.
  */
 exports.changePassword = (req, res) => {
-  const { email, newPassword } = req.body;
+  const userId = req.user?.id;
+  const { newPassword } = req.body;
 
-  if (!email || !newPassword) {
+  if (!userId || !newPassword) {
     return res.status(400).json({
       message: "البيانات غير مكتملة",
     });
@@ -102,9 +102,9 @@ exports.changePassword = (req, res) => {
     `
     SELECT id
     FROM users
-    WHERE email = ?
+    WHERE id = ?
     `,
-    [email],
+    [userId],
     async (err, user) => {
       if (err) {
         return res.status(500).json({
@@ -127,9 +127,9 @@ exports.changePassword = (req, res) => {
           SET
             password_hash = ?,
             must_change_password = 0
-          WHERE email = ?
+          WHERE id = ?
           `,
-          [hash, email],
+          [hash, userId],
           function (err) {
             if (err) {
               return res.status(500).json({
