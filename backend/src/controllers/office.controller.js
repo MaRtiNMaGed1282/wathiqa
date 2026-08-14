@@ -3,8 +3,9 @@ const path = require("path");
 const db = require("../config/sqlite");
 const logActivity = require("../utils/activityLogger");
 const { createNotification } = require("../utils/notificationService");
+const { getUploadsRoot } = require("../utils/storagePaths");
 
-const UPLOADS_ROOT = path.resolve(__dirname, "../../../uploads");
+const UPLOADS_ROOT = getUploadsRoot();
 
 function cleanString(value) {
   return typeof value === "string" ? value.trim() : "";
