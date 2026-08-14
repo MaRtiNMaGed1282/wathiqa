@@ -29,11 +29,13 @@
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
     } catch {}
   }
+
   function removeUser() {
     try {
       localStorage.removeItem(STORAGE_KEYS.USER);
     } catch {}
   }
+
   function getUser() {
     try {
       const value = localStorage.getItem(STORAGE_KEYS.USER);
@@ -60,9 +62,7 @@
   function decodeJwt(token) {
     try {
       const payload = token.split(".")[1];
-
       const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-
       return JSON.parse(atob(normalized));
     } catch {
       return null;
@@ -70,16 +70,9 @@
   }
 
   function isTokenExpired(token = getToken()) {
-    if (!token) {
-      return true;
-    }
-
+    if (!token) return true;
     const payload = decodeJwt(token);
-
-    if (!payload?.exp) {
-      return false;
-    }
-
+    if (!payload?.exp) return false;
     return Date.now() >= payload.exp * 1000;
   }
 
@@ -89,16 +82,11 @@
 
   function isAuthenticated() {
     const token = getToken();
-
-    if (!token) {
-      return false;
-    }
-
+    if (!token) return false;
     if (isTokenExpired(token)) {
       clearSession();
       return false;
     }
-
     return true;
   }
 
@@ -107,13 +95,11 @@
       redirectToLogin();
       return false;
     }
-
     return true;
   }
 
   function hasRole(...roles) {
     const user = getUser();
-
     return !!user && roles.includes(user.role);
   }
 
@@ -139,10 +125,13 @@
   const isLoginPage = global.location.pathname.endsWith(ROUTES.LOGIN);
 
   if (isLoginPage) {
-    if (isAuthenticated()) {
-      global.location.replace(ROUTES.DASHBOARD);
-    }
+    if (isAuthenticated()) global.location.replace(ROUTES.DASHBOARD);
   } else {
     requireAuth();
   }
+
+  const phase25Script = global.document.createElement("script");
+  phase25Script.src = "../assets/js/phase25-state.js";
+  phase25Script.defer = false;
+  global.document.head.appendChild(phase25Script);
 })(window);
