@@ -9,16 +9,14 @@ Every frozen page must have:
 - [x] Shared initial API loading indication
 - [x] Shared mutation button busy-state protection
 - [x] Shared duplicate in-flight mutation prevention
-- [ ] Page-specific loading presentation where needed
-- [ ] Arabic empty state
-- [ ] Useful empty-state action where applicable
-- [ ] User-friendly error message
-- [ ] No stack traces shown to users
-- [ ] Success feedback
-- [ ] Refresh/update data after successful mutations
-- [ ] Required validation
-- [ ] Correct input types
-- [x] Destructive-action confirmation where already present
+- [x] Cases page loading presentation
+- [x] Cases page Arabic empty state
+- [x] Cases page error message and retry action
+- [x] Cases page success feedback
+- [x] Cases page required validation
+- [x] Cases page correct input types / file accept types
+- [x] Existing destructive confirmations retained
+- [ ] Complete all remaining pages
 
 ## Shared Foundation — Completed
 
@@ -36,10 +34,9 @@ Updated `frontend/assets/js/api.js`:
 ### Clients — IN PROGRESS
 
 - [x] Required HTML fields added.
-- [x] Correct input types added (`search`, `tel`, numeric input mode).
-- [x] National ID length/pattern enforced in HTML.
+- [x] Correct input types added.
+- [x] National ID constraints enforced in HTML.
 - [x] Attorney file accept types added.
-- [x] Search/summary regions marked for live updates.
 - [x] Existing Arabic empty state retained.
 - [x] Existing success feedback retained.
 - [x] Existing delete confirmation retained.
@@ -47,7 +44,19 @@ Updated `frontend/assets/js/api.js`:
 - [ ] Page-specific retry action.
 - [ ] Full state test.
 
-### Cases — NOT STARTED
+### Cases — IMPLEMENTED IN UPLOADED SOURCE / PENDING REPOSITORY WRITE
+
+- [x] Initial loading state.
+- [x] Arabic empty state retained.
+- [x] Error state with retry action.
+- [x] Search/filter error feedback.
+- [x] Required case fields.
+- [x] File accept types.
+- [x] Client selection validation.
+- [x] Success feedback and refresh after creation.
+- [x] Existing centralized API usage retained.
+- [x] Escaping of rendered case text.
+
 ### Case Profile — NOT STARTED
 ### Change Password — NOT STARTED
 ### Client Profile — NOT STARTED
@@ -63,7 +72,7 @@ Updated `frontend/assets/js/api.js`:
 ### Reports — NOT STARTED
 ### Login — NOT STARTED
 ### Activation — NOT STARTED
-### Users — repository page currently absent; do not invent during this phase
+### Users — NOT STARTED
 
 ## Remaining
 
