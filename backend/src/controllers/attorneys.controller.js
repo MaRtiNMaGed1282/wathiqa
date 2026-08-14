@@ -1,9 +1,10 @@
 const db = require("../config/sqlite");
+const path = require("path");
+const fs = require("fs");
 const logActivity = require("../utils/activityLogger");
+const attorneyUpload = require("../config/attorneyUpload");
 
 exports.createAttorney = (req, res) => {
-  console.log("BODY:", req.body);
-
   const client_id = req.body.client_id;
   const attorney_number = req.body.attorney_number;
   const attorney_type = req.body.attorney_type;
@@ -53,13 +54,14 @@ exports.createAttorney = (req, res) => {
         user_id: req.user.id,
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Attorney created successfully",
         id: attorneyId,
       });
     },
   );
 };
+
 exports.getClientAttorneys = (req, res) => {
   const { clientId } = req.params;
 
@@ -78,10 +80,43 @@ exports.getClientAttorneys = (req, res) => {
         });
       }
 
-      res.json(rows);
+      return res.json(rows);
     },
   );
 };
+
+exports.downloadAttorneyFile = (req, res) => {
+  const { id } = req.params;
+
+  db.get(
+    `
+    SELECT file_path
+    FROM client_attorneys
+    WHERE id = ?
+    `,
+    [id],
+    (err, attorney) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+
+      if (!attorney || !attorney.file_path) {
+        return res.status(404).json({ message: "ملف التوكيل غير موجود" });
+      }
+
+      const uploadDir = attorneyUpload.getUploadDir();
+      const filename = path.basename(attorney.file_path);
+      const absolutePath = path.join(uploadDir, filename);
+
+      if (!fs.existsSync(absolutePath)) {
+        return res.status(404).json({ message: "ملف التخزين غير موجود" });
+      }
+
+      return res.sendFile(absolutePath);
+    },
+  );
+};
+
 exports.deleteAttorney = (req, res) => {
   const { id } = req.params;
 
@@ -112,7 +147,7 @@ exports.deleteAttorney = (req, res) => {
         user_id: req.user.id,
       });
 
-      res.json({
+      return res.json({
         message: "Attorney deleted successfully",
       });
     },
