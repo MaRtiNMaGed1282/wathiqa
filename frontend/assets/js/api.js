@@ -438,3 +438,69 @@
   Object.freeze(api);
   global.api = api;
 })(window);
+
+(function (global) {
+  "use strict";
+
+  function isAssistant() {
+    return global.auth?.getUser?.()?.role === "assistant";
+  }
+
+  function hideElement(element) {
+    if (!element) return;
+    element.hidden = true;
+    element.setAttribute("aria-hidden", "true");
+    element.dataset.financialHidden = "true";
+  }
+
+  function hideSectionByHeading(headingText) {
+    const heading = Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6")).find(
+      (node) => node.textContent.trim() === headingText,
+    );
+    if (!heading) return;
+    const section = heading.closest("section") || heading.closest(".bg-white");
+    hideElement(section || heading);
+  }
+
+  function hideFinancialNavigation() {
+    const link = document.querySelector('a[data-page="revenues"]');
+    if (link) hideElement(link);
+  }
+
+  function applyAssistantFinancialVisibility() {
+    if (!isAssistant()) return;
+
+    hideFinancialNavigation();
+
+    const page = (global.location.pathname.split("/").pop() || "").toLowerCase();
+
+    if (page === "client-profile.html") {
+      hideSectionByHeading("الملخص المالي");
+      hideSectionByHeading("البيانات المالية");
+    }
+
+    if (page === "case-profile.html") {
+      hideSectionByHeading("البيانات المالية");
+      hideSectionByHeading("الدفعات");
+      hideSectionByHeading("المصروفات");
+    }
+  }
+
+  function initialize() {
+    applyAssistantFinancialVisibility();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
+  }
+
+  const observer = new MutationObserver(() => {
+    if (isAssistant()) applyAssistantFinancialVisibility();
+  });
+
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+})(window);
