@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../config/attorneyUpload");
 const auth = require("../middlewares/auth.middleware");
+const financial = require("../middlewares/financial.middleware");
 
 const {
   createClient,
@@ -33,25 +34,20 @@ router.get("/search", auth, searchClients);
  */
 router.get("/", auth, getAllClients);
 
-router.get("/:id/financial-summary", auth, getClientFinancialSummary);
+// Financial client data is restricted to Admin/Lawyer.
+router.get("/:id/financial-summary", auth, financial, getClientFinancialSummary);
+router.get("/:id/cases-financial", auth, financial, getClientCasesFinancial);
 
-router.get("/:id/cases-financial", auth, getClientCasesFinancial);
-
-router.get("/revenues/summary", auth, getRevenueSummary);
-
-router.get("/revenues/clients", auth, getRevenueClients);
+// Legacy financial/dashboard aggregations remain protected even though Revenues now uses /api/revenues.
+router.get("/revenues/summary", auth, financial, getRevenueSummary);
+router.get("/revenues/clients", auth, financial, getRevenueClients);
+router.get("/dashboard/top-debtors", auth, financial, getTopDebtors);
+router.get("/dashboard/recent-payments", auth, financial, getRecentPayments);
+router.get("/reports/top-revenue-items", auth, financial, getTopRevenueItems);
 
 router.get("/dashboard/stats", auth, getDashboardStats);
-
-router.get("/dashboard/monthly-revenue", auth, getMonthlyRevenue);
-
+router.get("/dashboard/monthly-revenue", auth, financial, getMonthlyRevenue);
 router.get("/dashboard/notifications", auth, getDashboardNotifications);
-
-router.get("/dashboard/top-debtors", auth, getTopDebtors);
-
-router.get("/dashboard/recent-payments", auth, getRecentPayments);
-
-router.get("/reports/top-revenue-items", auth, getTopRevenueItems);
 
 /**
  * Get single client
