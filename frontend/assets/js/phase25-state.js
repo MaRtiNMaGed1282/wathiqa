@@ -1,14 +1,12 @@
 (function (global) {
   "use strict";
 
-  function isPage(name) {
-    return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname);
-  }
-
+  function isPage(name) { return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname); }
   function isCaseProfile() { return isPage("case-profile"); }
   function isClientProfile() { return isPage("client-profile"); }
   function isChangePassword() { return isPage("change-password"); }
   function isDashboard() { return isPage("dashboard"); }
+  function isServiceProfile() { return isPage("service-profile"); }
 
   function getUserRole() {
     try { return global.auth?.getUser?.()?.role || null; } catch { return null; }
@@ -48,46 +46,26 @@
     hideFinancialSectionByHeading("الدفعات");
     hideFinancialSectionByHeading("المصروفات");
     ["paymentModal", "expenseModal"].forEach(hideElement);
-
     const feesInput = document.getElementById("edit_total_fees");
     if (feesInput) {
       const wrapper = feesInput.closest("div");
       if (wrapper) wrapper.hidden = true;
     }
-
-    document
-      .querySelectorAll('[onclick="openPaymentModal()"], [onclick="openExpenseModal()"]')
-      .forEach((element) => {
-        element.hidden = true;
-        element.setAttribute("aria-hidden", "true");
-      });
+    document.querySelectorAll('[onclick="openPaymentModal()"], [onclick="openExpenseModal()"]')
+      .forEach((element) => { element.hidden = true; element.setAttribute("aria-hidden", "true"); });
   }
 
-  function hideClientFinancialControls() {
-    hideSectionByHeading("الملخص المالي");
-  }
+  function hideClientFinancialControls() { hideSectionByHeading("الملخص المالي"); }
 
   function hideDashboardFinancialControls() {
-    [
-      "kpi-revenue",
-      "kpi-outstanding",
-      "dashboard-financial-chart",
-      "action-payment",
-    ].forEach(hideElement);
+    ["kpi-revenue", "kpi-outstanding", "dashboard-financial-chart", "action-payment"].forEach(hideElement);
   }
 
   function applyCaseValidation() {
-    const requiredFields = [
-      "edit_case_title", "edit_court_case_number", "edit_case_type",
-      "edit_court_name", "edit_court_chamber", "edit_opened_at",
-      "hearing_date", "payment_amount", "payment_date", "expense_type",
-      "expense_amount", "expense_date",
-    ];
-    requiredFields.forEach((id) => {
+    ["edit_case_title", "edit_court_case_number", "edit_case_type", "edit_court_name", "edit_court_chamber", "edit_opened_at", "hearing_date", "payment_amount", "payment_date", "expense_type", "expense_amount", "expense_date"].forEach((id) => {
       const element = document.getElementById(id);
       if (element) element.required = true;
     });
-
     ["edit_total_fees", "payment_amount", "expense_amount"].forEach((id) => {
       const element = document.getElementById(id);
       if (!element) return;
@@ -115,6 +93,11 @@
       element.minLength = 8;
       element.autocomplete = "new-password";
     });
+  }
+
+  function applyServiceValidation() {
+    const file = document.getElementById("serviceFileInput");
+    if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
   }
 
   function ensurePageErrorBanner() {
@@ -155,6 +138,7 @@
     const caseProfile = isCaseProfile();
     const clientProfile = isClientProfile();
     const dashboard = isDashboard();
+    const serviceProfile = isServiceProfile();
 
     if (caseProfile) {
       applyCaseValidation();
@@ -166,8 +150,9 @@
     }
     if (isChangePassword()) applyPasswordValidation();
     if (dashboard && getUserRole() === "assistant") hideDashboardFinancialControls();
+    if (serviceProfile) applyServiceValidation();
 
-    if (!caseProfile && !clientProfile && !dashboard) return;
+    if (!caseProfile && !clientProfile && !dashboard && !serviceProfile) return;
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
@@ -181,9 +166,6 @@
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
 })(window);
