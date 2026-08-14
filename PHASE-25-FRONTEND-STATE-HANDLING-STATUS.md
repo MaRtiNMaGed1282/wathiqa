@@ -14,7 +14,7 @@ Every frozen page must have:
 - [x] Arabic empty states retained on audited pages
 - [x] Success feedback retained on audited pages
 - [x] Validation attributes and input types normalized on audited forms
-- [x] Assistant financial UI hidden on Case Profile, Client Profile, and Dashboard
+- [x] Assistant financial UI hidden on Case Profile, Client Profile, Dashboard, and Service Profile
 - [x] Change Password required/minimum-length validation normalized
 - [x] Destructive confirmations retained where already present
 - [ ] Complete remaining page-by-page audits
@@ -104,11 +104,22 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [ ] Page-specific loading/empty/error audit.
 - [ ] Full browser/API state test.
 
+### Service Profile — IN PROGRESS
+
+- [x] Shared loading/busy/duplicate-submission foundation applies.
+- [x] Existing Arabic empty states retained for service files, payments, and expenses.
+- [x] GET API error state with Arabic retry banner added.
+- [x] Existing success feedback retained for uploads/deletions.
+- [x] Service-file input accepted types normalized.
+- [x] Existing financial visibility restriction retained for Assistant.
+- [x] Financial API calls are skipped for Assistant by the page implementation.
+- [x] Existing destructive confirmations retained.
+- [ ] Full browser/API state test.
+
 ### Remaining Pages
 
 - [ ] Calendar
 - [ ] Services
-- [ ] Service Profile
 - [ ] Notifications
 - [ ] Legal Library
 - [ ] Law Viewer
