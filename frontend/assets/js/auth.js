@@ -84,8 +84,6 @@
     if (!token) return true;
 
     const payload = decodeJwt(token);
-
-    // A malformed token is not considered a valid authenticated session.
     if (!payload) return true;
     if (!payload.exp) return false;
 
@@ -113,8 +111,10 @@
     return hasRole("assistant", "secretary");
   }
 
+  // Frozen architecture: destructive deletion of clients/cases/services/files
+  // is Admin-only. Other modules keep their own explicit backend permissions.
   function canDelete() {
-    return isAdmin() || isLawyer();
+    return isAdmin();
   }
 
   function canViewFinancials() {
@@ -153,6 +153,46 @@
   function redirectToChangePassword() {
     if (!isChangePasswordPage()) {
       global.location.replace(ROUTES.CHANGE_PASSWORD);
+    }
+  }
+
+  function hideCaseFinancialSections() {
+    if (!isAssistant()) return;
+
+    const financialAnchor = global.document.getElementById("totalFees");
+    if (financialAnchor) {
+      const section = financialAnchor.closest(".bg-white.shadow.rounded.p-6");
+      if (section) section.hidden = true;
+    }
+
+    ["paymentsContainer", "expensesContainer"].forEach((id) => {
+      const container = global.document.getElementById(id);
+      if (!container) return;
+
+      const section = container.closest(".bg-white.shadow.rounded.p-6");
+      if (section) section.hidden = true;
+    });
+
+    ["openPaymentModal", "openExpenseModal"].forEach((name) => {
+      global.document
+        .querySelectorAll(`[onclick*="${name}"]`)
+        .forEach((element) => element.remove());
+    });
+  }
+
+  function applyRoleVisibility() {
+    if (!global.document) return;
+
+    const run = () => {
+      if (global.location.pathname.endsWith("case-profile.html")) {
+        hideCaseFinancialSections();
+      }
+    };
+
+    if (global.document.readyState === "loading") {
+      global.document.addEventListener("DOMContentLoaded", run, { once: true });
+    } else {
+      run();
     }
   }
 
@@ -216,4 +256,6 @@
   } else if (!isChangePasswordPage()) {
     requireAuth();
   }
+
+  applyRoleVisibility();
 })(window);
