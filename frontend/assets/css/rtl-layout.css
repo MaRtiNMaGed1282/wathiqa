@@ -1,0 +1,163 @@
+/* ==========================================================
+   WATHIQA RTL APPLICATION LAYOUT
+   Keeps layout direction deterministic while preserving
+   Arabic text direction inside every application surface.
+   ========================================================== */
+
+html,
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+body,
+body[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Unified application shell: content on the left, sidebar on the right. */
+#app-shell {
+  direction: ltr !important;
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100%;
+  min-width: 0;
+}
+
+#app-shell > #app {
+  direction: rtl !important;
+  order: 1 !important;
+  min-width: 0;
+}
+
+#app-shell > #sidebar-container {
+  direction: rtl !important;
+  order: 2 !important;
+  flex: 0 0 var(--sidebar-width);
+  width: var(--sidebar-width);
+}
+
+#app-shell #sidebar {
+  direction: rtl !important;
+}
+
+/* Legacy pages that place navbar, sidebar and main directly under body. */
+body:has(> #sidebar-container) {
+  direction: ltr !important;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+body:has(> #sidebar-container) > #sidebar-container {
+  direction: rtl !important;
+  order: 3;
+  flex: 0 0 var(--sidebar-width);
+  width: var(--sidebar-width);
+}
+
+body:has(> #sidebar-container) > main {
+  direction: rtl !important;
+  order: 2;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  text-align: right;
+}
+
+body:has(> #navbar-container) > #navbar-container {
+  direction: rtl !important;
+  order: 1;
+}
+
+/* Sidebar itself always occupies the right edge on desktop. */
+.app-sidebar {
+  direction: rtl !important;
+  text-align: right;
+}
+
+/* Arabic content should remain RTL even inside flex/grid utility wrappers. */
+#app,
+#app main,
+.page,
+.page-content,
+main,
+.card,
+.surface,
+.widget,
+.modal,
+.modal-content,
+form,
+table {
+  direction: rtl;
+}
+
+/* Form controls: Arabic text is right-aligned while native date/file
+   controls keep their browser affordances. */
+input,
+textarea,
+select {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Keep numeric/date controls usable without flipping native widgets. */
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  text-align: right;
+}
+
+/* Full-width page content used by the frozen pages. */
+.page-content,
+.container-fluid {
+  width: 100%;
+  max-width: none;
+}
+
+/* Prevent grid/flex children from shrinking into narrow columns. */
+.grid > *,
+.flex > * {
+  min-width: 0;
+}
+
+/* Modal overlays must be viewport-sized and centered, never clipped by the
+   page's content column. */
+.modal-overlay,
+.modal-backdrop,
+.modal-container {
+  direction: rtl;
+}
+
+/* Toastify is a viewport-level component, not part of page direction. */
+.toastify {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Lucide icons should remain visually stable in RTL text flows. */
+[data-lucide] {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+  #app-shell,
+  body:has(> #sidebar-container) {
+    display: block !important;
+  }
+
+  #app-shell > #sidebar-container,
+  body:has(> #sidebar-container) > #sidebar-container {
+    width: 0;
+    flex: 0 0 auto;
+  }
+
+  #app-shell > #app,
+  body:has(> #sidebar-container) > main {
+    width: 100%;
+    max-width: 100%;
+  }
+}
