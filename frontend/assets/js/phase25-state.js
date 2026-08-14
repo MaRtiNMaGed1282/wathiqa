@@ -1,24 +1,24 @@
 (function (global) {
   "use strict";
 
-  function isCaseProfile() {
-    return /(^|\/)case-profile\.html$/i.test(global.location.pathname);
+  function isPage(name) {
+    return new RegExp(`(^|\\/)${name}\\.html$`, "i").test(global.location.pathname);
   }
 
-  function isClientProfile() {
-    return /(^|\/)client-profile\.html$/i.test(global.location.pathname);
-  }
-
-  function isChangePassword() {
-    return /(^|\/)change-password\.html$/i.test(global.location.pathname);
-  }
+  function isCaseProfile() { return isPage("case-profile"); }
+  function isClientProfile() { return isPage("client-profile"); }
+  function isChangePassword() { return isPage("change-password"); }
+  function isDashboard() { return isPage("dashboard"); }
 
   function getUserRole() {
-    try {
-      return global.auth?.getUser?.()?.role || null;
-    } catch {
-      return null;
-    }
+    try { return global.auth?.getUser?.()?.role || null; } catch { return null; }
+  }
+
+  function hideElement(id) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.hidden = true;
+    element.setAttribute("aria-hidden", "true");
   }
 
   function hideSectionByHeading(headingText) {
@@ -47,15 +47,7 @@
     hideFinancialSectionByHeading("البيانات المالية");
     hideFinancialSectionByHeading("الدفعات");
     hideFinancialSectionByHeading("المصروفات");
-
-    ["paymentModal", "expenseModal"].forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.hidden = true;
-        element.classList.add("hidden");
-        element.setAttribute("aria-hidden", "true");
-      }
-    });
+    ["paymentModal", "expenseModal"].forEach(hideElement);
 
     const feesInput = document.getElementById("edit_total_fees");
     if (feesInput) {
@@ -75,22 +67,22 @@
     hideSectionByHeading("الملخص المالي");
   }
 
+  function hideDashboardFinancialControls() {
+    [
+      "kpi-revenue",
+      "kpi-outstanding",
+      "dashboard-financial-chart",
+      "action-payment",
+    ].forEach(hideElement);
+  }
+
   function applyCaseValidation() {
     const requiredFields = [
-      "edit_case_title",
-      "edit_court_case_number",
-      "edit_case_type",
-      "edit_court_name",
-      "edit_court_chamber",
-      "edit_opened_at",
-      "hearing_date",
-      "payment_amount",
-      "payment_date",
-      "expense_type",
-      "expense_amount",
-      "expense_date",
+      "edit_case_title", "edit_court_case_number", "edit_case_type",
+      "edit_court_name", "edit_court_chamber", "edit_opened_at",
+      "hearing_date", "payment_amount", "payment_date", "expense_type",
+      "expense_amount", "expense_date",
     ];
-
     requiredFields.forEach((id) => {
       const element = document.getElementById(id);
       if (element) element.required = true;
@@ -98,12 +90,11 @@
 
     ["edit_total_fees", "payment_amount", "expense_amount"].forEach((id) => {
       const element = document.getElementById(id);
-      if (element) {
-        element.type = "number";
-        element.min = "0";
-        element.step = "0.01";
-        element.inputMode = "decimal";
-      }
+      if (!element) return;
+      element.type = "number";
+      element.min = "0";
+      element.step = "0.01";
+      element.inputMode = "decimal";
     });
   }
 
@@ -112,7 +103,6 @@
       const element = document.getElementById(id);
       if (element) element.required = true;
     });
-
     const file = document.getElementById("attorney_file");
     if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
   }
@@ -130,7 +120,6 @@
   function ensurePageErrorBanner() {
     let banner = document.getElementById("phase25-page-error");
     if (banner) return banner;
-
     banner = document.createElement("div");
     banner.id = "phase25-page-error";
     banner.className = "hidden mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700";
@@ -140,7 +129,6 @@
       <div id="phase25-page-error-message" class="text-sm mt-1"></div>
       <button id="phase25-page-error-retry" type="button" class="mt-3 bg-red-600 text-white px-4 py-2 rounded">إعادة المحاولة</button>
     `;
-
     const main = document.querySelector("main") || document.body;
     main.prepend(banner);
     return banner;
@@ -150,10 +138,8 @@
     const banner = ensurePageErrorBanner();
     const messageElement = document.getElementById("phase25-page-error-message");
     const retry = document.getElementById("phase25-page-error-retry");
-
     if (messageElement) messageElement.textContent = message || "حدث خطأ أثناء تحميل البيانات";
     banner.classList.remove("hidden");
-
     if (retry && !retry.dataset.bound) {
       retry.dataset.bound = "true";
       retry.addEventListener("click", () => global.location.reload());
@@ -168,20 +154,20 @@
   function init() {
     const caseProfile = isCaseProfile();
     const clientProfile = isClientProfile();
+    const dashboard = isDashboard();
 
     if (caseProfile) {
       applyCaseValidation();
       if (getUserRole() === "assistant") hideCaseFinancialControls();
     }
-
     if (clientProfile) {
       applyClientValidation();
       if (getUserRole() === "assistant") hideClientFinancialControls();
     }
-
     if (isChangePassword()) applyPasswordValidation();
+    if (dashboard && getUserRole() === "assistant") hideDashboardFinancialControls();
 
-    if (!caseProfile && !clientProfile) return;
+    if (!caseProfile && !clientProfile && !dashboard) return;
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
