@@ -136,7 +136,7 @@ exports.importClients = async (req, res) => {
 
     for (const row of prepared) {
       const existing = await get(
-        "SELECT id, client_code, notes FROM clients WHERE national_id = ?",
+        "SELECT id FROM clients WHERE national_id = ?",
         [row.national_id],
       );
 
@@ -146,46 +146,51 @@ exports.importClients = async (req, res) => {
           continue;
         }
 
-        if (row.client_code) {
-          const codeOwner = await get(
-            "SELECT id FROM clients WHERE client_code = ? AND id <> ?",
-            [row.client_code, existing.id],
-          );
-          if (codeOwner) {
-            result.failed += 1;
-            result.errors.push({ row: row.sourceRow, message: "كود الموكل مستخدم لدى موكل آخر" });
-            continue;
+        try {
+          if (row.client_code) {
+            const codeOwner = await get(
+              "SELECT id FROM clients WHERE client_code = ? AND id <> ?",
+              [row.client_code, existing.id],
+            );
+            if (codeOwner) {
+              result.failed += 1;
+              result.errors.push({ row: row.sourceRow, message: "كود الموكل مستخدم لدى موكل آخر" });
+              continue;
+            }
           }
+
+          await run(
+            `UPDATE clients
+             SET full_name = ?,
+                 phone = ?,
+                 address = ?,
+                 client_code = CASE WHEN ? <> '' THEN ? ELSE client_code END,
+                 notes = CASE WHEN ? <> '' THEN ? ELSE notes END
+             WHERE id = ?`,
+            [
+              row.full_name,
+              row.phone,
+              row.address,
+              row.client_code,
+              row.client_code,
+              row.notes,
+              row.notes,
+              existing.id,
+            ],
+          );
+
+          logActivity({
+            module: "client",
+            record_id: existing.id,
+            action: "updated",
+            description: "تم تحديث الموكل عبر الاستيراد الجماعي",
+            user_id: req.user.id,
+          });
+          result.updated += 1;
+        } catch (err) {
+          result.failed += 1;
+          result.errors.push({ row: row.sourceRow, message: uniqueConflictMessage(err) });
         }
-
-        await run(
-          `UPDATE clients
-           SET full_name = ?,
-               phone = ?,
-               address = ?,
-               client_code = CASE WHEN ? <> '' THEN ? ELSE client_code END,
-               notes = CASE WHEN ? <> '' THEN ? ELSE notes END
-           WHERE id = ?`,
-          [
-            row.full_name,
-            row.phone,
-            row.address,
-            row.client_code,
-            row.client_code,
-            row.notes,
-            row.notes,
-            existing.id,
-          ],
-        );
-
-        logActivity({
-          module: "client",
-          record_id: existing.id,
-          action: "updated",
-          description: "تم تحديث الموكل عبر الاستيراد الجماعي",
-          user_id: req.user.id,
-        });
-        result.updated += 1;
         continue;
       }
 
