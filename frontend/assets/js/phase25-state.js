@@ -7,6 +7,7 @@
   function isChangePassword() { return isPage("change-password"); }
   function isDashboard() { return isPage("dashboard"); }
   function isServiceProfile() { return isPage("service-profile"); }
+  function isServices() { return isPage("services"); }
 
   function getUserRole() {
     try { return global.auth?.getUser?.()?.role || null; } catch { return null; }
@@ -56,10 +57,7 @@
   }
 
   function hideClientFinancialControls() { hideSectionByHeading("الملخص المالي"); }
-
-  function hideDashboardFinancialControls() {
-    ["kpi-revenue", "kpi-outstanding", "dashboard-financial-chart", "action-payment"].forEach(hideElement);
-  }
+  function hideDashboardFinancialControls() { ["kpi-revenue", "kpi-outstanding", "dashboard-financial-chart", "action-payment"].forEach(hideElement); }
 
   function applyCaseValidation() {
     ["edit_case_title", "edit_court_case_number", "edit_case_type", "edit_court_name", "edit_court_chamber", "edit_opened_at", "hearing_date", "payment_amount", "payment_date", "expense_type", "expense_amount", "expense_date"].forEach((id) => {
@@ -98,6 +96,20 @@
   function applyServiceValidation() {
     const file = document.getElementById("serviceFileInput");
     if (file) file.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
+  }
+
+  function applyServicesValidation() {
+    ["clientSearch", "service_title", "service_type", "assigned_to", "start_date", "due_date", "total_fees", "description"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.required = true;
+    });
+    const fees = document.getElementById("total_fees");
+    if (fees) {
+      fees.type = "number";
+      fees.min = "0";
+      fees.step = "0.01";
+      fees.inputMode = "decimal";
+    }
   }
 
   function ensurePageErrorBanner() {
@@ -139,6 +151,7 @@
     const clientProfile = isClientProfile();
     const dashboard = isDashboard();
     const serviceProfile = isServiceProfile();
+    const services = isServices();
 
     if (caseProfile) {
       applyCaseValidation();
@@ -151,8 +164,9 @@
     if (isChangePassword()) applyPasswordValidation();
     if (dashboard && getUserRole() === "assistant") hideDashboardFinancialControls();
     if (serviceProfile) applyServiceValidation();
+    if (services) applyServicesValidation();
 
-    if (!caseProfile && !clientProfile && !dashboard && !serviceProfile) return;
+    if (!caseProfile && !clientProfile && !dashboard && !serviceProfile && !services) return;
 
     const lastError = global.__WATHIQA_LAST_API_ERROR__;
     if (lastError?.method === "GET") showPageError(lastError.message);
