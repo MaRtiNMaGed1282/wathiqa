@@ -14,6 +14,7 @@ Every frozen page must have:
 - [x] Case Profile success feedback retained
 - [x] Case Profile validation attributes and input types normalized
 - [x] Case Profile Assistant financial UI hidden
+- [x] Change Password required/minimum-length validation normalized
 - [x] Destructive confirmations retained where already present
 - [ ] Complete remaining page-by-page audits
 
@@ -70,9 +71,18 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [x] Existing destructive confirmations retained.
 - [ ] Full browser/API state test.
 
+### Change Password — IN PROGRESS
+
+- [x] Required validation retained and reinforced through shared state handler.
+- [x] Minimum password length of 8 enforced through HTML validation.
+- [x] New-password autocomplete normalized.
+- [x] Existing inline error feedback retained.
+- [x] Existing button loading feedback retained.
+- [x] Existing success feedback and redirect retained.
+- [ ] Full browser/API state test.
+
 ### Remaining Pages
 
-- [ ] Change Password
 - [ ] Client Profile
 - [ ] Dashboard
 - [ ] Calendar
