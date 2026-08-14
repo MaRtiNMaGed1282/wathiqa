@@ -8,9 +8,49 @@ function isNonNegativeInteger(value) {
   return /^\d+$/.test(String(value)) && Number(value) >= 0;
 }
 
+function validatePagination(limit, offset, res) {
+  if (!isPositiveInteger(limit)) {
+    res.status(400).json({ message: "Invalid limit" });
+    return false;
+  }
+  if (!isNonNegativeInteger(offset)) {
+    res.status(400).json({ message: "Invalid offset" });
+    return false;
+  }
+  return true;
+}
+
+function getRecordActivity(module, id, req, res, invalidMessage) {
+  const { limit = "20", offset = "0" } = req.query;
+
+  if (!isPositiveInteger(id)) {
+    return res.status(400).json({ message: invalidMessage });
+  }
+
+  if (!validatePagination(limit, offset, res)) return;
+
+  db.all(
+    `
+    SELECT
+      activity_logs.*,
+      users.full_name AS user_name
+    FROM activity_logs
+    LEFT JOIN users ON activity_logs.user_id = users.id
+    WHERE activity_logs.module = ?
+      AND activity_logs.record_id = ?
+    ORDER BY created_at DESC, id DESC
+    LIMIT ? OFFSET ?
+    `,
+    [module, id, Number(limit), Number(offset)],
+    (err, rows) => {
+      if (err) return res.status(500).json({ message: err.message });
+      res.json(rows);
+    },
+  );
+}
+
 exports.getActivity = (req, res) => {
   const { limit = "20", offset = "0", module, user_id } = req.query;
-
   const conditions = [];
   const params = [];
 
@@ -21,157 +61,36 @@ exports.getActivity = (req, res) => {
 
   if (user_id) {
     if (!isPositiveInteger(user_id)) {
-      return res.status(400).json({
-        message: "Invalid user_id",
-      });
+      return res.status(400).json({ message: "Invalid user_id" });
     }
-
     conditions.push("user_id = ?");
     params.push(user_id);
   }
 
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
-  }
+  if (!validatePagination(limit, offset, res)) return;
 
   let query = `
-    SELECT
-      activity_logs.*,
-      users.full_name AS user_name
+    SELECT activity_logs.*, users.full_name AS user_name
     FROM activity_logs
-    LEFT JOIN users
-      ON activity_logs.user_id = users.id
+    LEFT JOIN users ON activity_logs.user_id = users.id
   `;
 
-  if (conditions.length > 0) {
-    query += `
-    WHERE ${conditions.join(" AND ")}
-    `;
-  }
+  if (conditions.length > 0) query += ` WHERE ${conditions.join(" AND ")} `;
 
-  query += `
-    ORDER BY created_at DESC,
-             id DESC
-    LIMIT ?
-    OFFSET ?
-  `;
+  query += ` ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ? `;
   params.push(Number(limit), Number(offset));
 
   db.all(query, params, (err, rows) => {
-    if (err) {
-      return res.status(500).json({
-        message: err.message,
-      });
-    }
-
+    if (err) return res.status(500).json({ message: err.message });
     res.json(rows);
   });
 };
 
-exports.getCaseActivity = (req, res) => {
-  const { id } = req.params;
-  const { limit = "20", offset = "0" } = req.query;
+exports.getCaseActivity = (req, res) =>
+  getRecordActivity("case", req.params.id, req, res, "Invalid case id");
 
-  if (!isPositiveInteger(id)) {
-    return res.status(400).json({
-      message: "Invalid case id",
-    });
-  }
+exports.getClientActivity = (req, res) =>
+  getRecordActivity("client", req.params.id, req, res, "Invalid client id");
 
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
-  }
-
-  db.all(
-    `
-    SELECT
-      activity_logs.*,
-      users.full_name AS user_name
-    FROM activity_logs
-    LEFT JOIN users
-      ON activity_logs.user_id = users.id
-    WHERE module = ?
-    AND record_id = ?
-    ORDER BY created_at DESC,
-             id DESC
-    LIMIT ?
-    OFFSET ?
-    `,
-    ["case", id, Number(limit), Number(offset)],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
-      res.json(rows);
-    },
-  );
-};
-
-exports.getClientActivity = (req, res) => {
-  const { id } = req.params;
-  const { limit = "20", offset = "0" } = req.query;
-
-  if (!isPositiveInteger(id)) {
-    return res.status(400).json({
-      message: "Invalid client id",
-    });
-  }
-
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
-  }
-
-  db.all(
-    `
-    SELECT
-      activity_logs.*,
-      users.full_name AS user_name
-    FROM activity_logs
-    LEFT JOIN users
-      ON activity_logs.user_id = users.id
-    WHERE module = ?
-    AND record_id = ?
-    ORDER BY created_at DESC,
-             id DESC
-    LIMIT ?
-    OFFSET ?
-    `,
-    ["client", id, Number(limit), Number(offset)],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
-      res.json(rows);
-    },
-  );
-};
+exports.getServiceActivity = (req, res) =>
+  getRecordActivity("service", req.params.id, req, res, "Invalid service id");
