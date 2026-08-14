@@ -2,13 +2,15 @@ const fs = require("fs");
 const path = require("path");
 const db = require("../config/sqlite");
 
-const LAWS_ROOT = path.resolve(__dirname, "../../database/laws");
+const LAWS_ROOT = path.resolve(__dirname, "../../../database/laws");
 
 function safeLawFilePath(relativePath) {
   if (!relativePath || typeof relativePath !== "string") return null;
 
-  const filename = path.basename(relativePath);
-  if (!filename || filename !== relativePath && relativePath.includes("/")) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  const filename = path.basename(normalized);
+
+  if (!filename || normalized !== filename || filename.includes("..")) {
     return null;
   }
 
@@ -20,7 +22,6 @@ function safeLawFilePath(relativePath) {
 exports.getAllLaws = (req, res) => {
   const search = String(req.query.search || "").trim();
   const category = String(req.query.category || "").trim();
-
   const conditions = [];
   const params = [];
 
@@ -37,18 +38,10 @@ exports.getAllLaws = (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   db.all(
-    `
-      SELECT id, title, category, pdf_path
-      FROM laws
-      ${where}
-      ORDER BY title COLLATE NOCASE ASC
-    `,
+    `SELECT id, title, category, pdf_path FROM laws ${where} ORDER BY title COLLATE NOCASE ASC`,
     params,
     (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: err.message });
-      }
-
+      if (err) return res.status(500).json({ message: err.message });
       res.json(rows || []);
     },
   );
@@ -61,14 +54,8 @@ exports.getLawById = (req, res) => {
     `SELECT id, title, category, pdf_path FROM laws WHERE id = ?`,
     [id],
     (err, row) => {
-      if (err) {
-        return res.status(500).json({ message: err.message });
-      }
-
-      if (!row) {
-        return res.status(404).json({ message: "القانون غير موجود" });
-      }
-
+      if (err) return res.status(500).json({ message: err.message });
+      if (!row) return res.status(404).json({ message: "القانون غير موجود" });
       res.json(row);
     },
   );
@@ -82,13 +69,8 @@ exports.getLawFile = (req, res) => {
     `SELECT id, title, pdf_path FROM laws WHERE id = ?`,
     [id],
     (err, row) => {
-      if (err) {
-        return res.status(500).json({ message: err.message });
-      }
-
-      if (!row) {
-        return res.status(404).json({ message: "القانون غير موجود" });
-      }
+      if (err) return res.status(500).json({ message: err.message });
+      if (!row) return res.status(404).json({ message: "القانون غير موجود" });
 
       const filePath = safeLawFilePath(row.pdf_path);
       if (!filePath || !fs.existsSync(filePath)) {
