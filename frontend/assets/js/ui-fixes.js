@@ -89,6 +89,89 @@
     return true;
   }
 
+  function getAuthenticatedFileEndpoint(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") return null;
+    const normalized = rawUrl.replace(/\\/g, "/");
+
+    if (normalized.startsWith("/uploads/")) {
+      const filename = normalized.slice("/uploads/".length);
+      if (!filename) return null;
+      return `/files/by-name/${encodeURIComponent(filename)}`;
+    }
+
+    if (normalized.startsWith("/attorney-files/")) {
+      const filename = normalized.slice("/attorney-files/".length);
+      if (!filename) return null;
+      return `/attorneys/file-by-name/${encodeURIComponent(filename)}`;
+    }
+
+    return null;
+  }
+
+  async function openAuthenticatedFile(url, download = false, filename = "file") {
+    if (!global.api?.download) return false;
+
+    const endpoint = getAuthenticatedFileEndpoint(url);
+    if (!endpoint) return false;
+
+    try {
+      const blob = await global.api.download(endpoint);
+      const objectUrl = global.URL.createObjectURL(blob);
+
+      if (download) {
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = filename || "file";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      } else if (typeof global.openPdfModal === "function") {
+        global.openPdfModal(objectUrl);
+      } else {
+        global.open(objectUrl, "_blank", "noopener,noreferrer");
+      }
+
+      global.setTimeout(() => global.URL.revokeObjectURL(objectUrl), 60000);
+      return true;
+    } catch (error) {
+      console.error("Authenticated file access failed.", error);
+      return false;
+    }
+  }
+
+  function initAuthenticatedFileAccess() {
+    document.addEventListener(
+      "click",
+      async (event) => {
+        const element = event.target?.closest?.("a,button");
+        if (!element) return;
+
+        const href = element.getAttribute("href");
+        const onclick = element.getAttribute("onclick") || "";
+        const directUrl =
+          getAuthenticatedFileEndpoint(href) ? href :
+          (onclick.match(/['\"](\/(?:uploads|attorney-files)\/[^'\"]+)['\"]/) || [])[1];
+
+        if (!directUrl) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const filename =
+          directUrl.split("/").pop() ||
+          element.textContent.trim() ||
+          "file";
+        const download = element.hasAttribute("download") || /تحميل|download/i.test(element.textContent);
+
+        const handled = await openAuthenticatedFile(directUrl, download, decodeURIComponent(filename));
+        if (!handled) {
+          console.error("Unable to open authenticated file.");
+        }
+      },
+      true,
+    );
+  }
+
   function initializeShellData() {
     if (!document.getElementById("sidebar")) return false;
     applyAdminNavigation();
@@ -98,6 +181,7 @@
 
   function initialize() {
     initCasesFilter();
+    initAuthenticatedFileAccess();
 
     if (initializeShellData()) return;
 
