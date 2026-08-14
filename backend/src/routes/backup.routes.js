@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
-const { createBackup, listBackups, getBackupRoot } = require("../services/backup.service");
+const { createBackup, listBackups, scheduleRestore, getBackupRoot } = require("../services/backup.service");
 const requireAuth = require("../middlewares/auth.middleware");
 const requireAdmin = require("../middlewares/admin.middleware");
 
@@ -17,17 +17,26 @@ router.get("/", async (req, res) => {
       return { name, size: stat.size, createdAt: stat.mtime.toISOString() };
     }));
     res.json({ success: true, backups });
-  } catch (error) {
+  } catch (_) {
     res.status(500).json({ success: false, message: "تعذر قراءة النسخ الاحتياطية" });
   }
 });
 
 router.post("/", async (req, res) => {
   try {
-    const result = await createBackup();
-    res.status(201).json({ success: true, message: "تم إنشاء النسخة الاحتياطية بنجاح", backup: result });
-  } catch (error) {
+    const backup = await createBackup();
+    res.status(201).json({ success: true, message: "تم إنشاء النسخة الاحتياطية بنجاح", backup });
+  } catch (_) {
     res.status(500).json({ success: false, message: "تعذر إنشاء النسخة الاحتياطية" });
+  }
+});
+
+router.post("/restore", async (req, res) => {
+  try {
+    const result = await scheduleRestore(req.body?.name);
+    res.json({ success: true, message: "تم تجهيز الاستعادة. يجب إعادة تشغيل النظام لإكمالها.", restore: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error?.message || "تعذر تجهيز الاستعادة" });
   }
 });
 
@@ -38,7 +47,7 @@ router.get("/:name/download", async (req, res) => {
   }
   const file = path.join(getBackupRoot(), name);
   if (!fs.existsSync(file)) return res.status(404).json({ success: false, message: "النسخة الاحتياطية غير موجودة" });
-  res.download(file, name);
+  return res.download(file, name);
 });
 
 module.exports = router;
