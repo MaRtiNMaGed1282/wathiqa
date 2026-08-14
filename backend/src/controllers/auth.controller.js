@@ -29,7 +29,7 @@ exports.login = (req, res) => {
         });
       }
 
-      if (!user) {
+      if (!user || Number(user.is_active) !== 1) {
         return res.status(401).json({
           message: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
         });
@@ -92,7 +92,7 @@ exports.changePassword = (req, res) => {
     });
   }
 
-  if (newPassword.length < 8) {
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
     return res.status(400).json({
       message: "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
     });
@@ -102,7 +102,7 @@ exports.changePassword = (req, res) => {
     `
     SELECT id
     FROM users
-    WHERE id = ?
+    WHERE id = ? AND is_active = 1
     `,
     [userId],
     async (err, user) => {
@@ -114,7 +114,7 @@ exports.changePassword = (req, res) => {
 
       if (!user) {
         return res.status(404).json({
-          message: "المستخدم غير موجود",
+          message: "المستخدم غير موجود أو غير نشط",
         });
       }
 
