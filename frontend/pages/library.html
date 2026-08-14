@@ -1,25 +1,15 @@
 <!doctype html>
-
 <html lang="ar" dir="rtl">
   <head>
     <link rel="icon" type="image/png" href="../assets/faviconw.png" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>المكتبة القانونية</title>
-
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
-
-    <!-- Cairo -->
     <link rel="stylesheet" href="../assets/css/fonts.css" />
-    <!-- Tailwind -->
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
-    <style>
-      body {
-        font-family: "Cairo", sans-serif;
-      }
-    </style>
+    <style>body { font-family: "Cairo", sans-serif; }</style>
   </head>
 
   <body class="bg-light text-primary min-h-screen flex font-cairo">
@@ -27,41 +17,162 @@
     <div id="sidebar-container"></div>
 
     <main class="flex-1 p-6 overflow-auto">
-      <div class="flex justify-between items-center mb-8">
-        <div>
-          <h1 class="text-3xl font-bold">المكتبة القانونية</h1>
-          <p class="text-gray-600 mt-2">
-            القوانين والمراجع القانونية والنماذج العملية
-          </p>
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold">المكتبة القانونية</h1>
+        <p class="text-gray-600 mt-2">الوصول إلى القوانين والمراجع القانونية المتاحة داخل النظام.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 lg:items-end lg:justify-between">
+          <div class="flex-1">
+            <label for="librarySearch" class="block text-sm font-semibold mb-2">البحث</label>
+            <input id="librarySearch" type="search" autocomplete="off"
+              placeholder="ابحث باسم القانون أو التصنيف..."
+              class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <button id="clearSearch" type="button"
+            class="px-5 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 font-semibold">
+            مسح
+          </button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          onclick="window.location.href = 'laws.html'"
-          class="bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer p-6 border-r-4 border-accent"
-        >
-          <div class="text-4xl mb-4">📚</div>
-
-          <h3 class="text-xl font-bold mb-2">القوانين</h3>
-
-          <p class="text-gray-600">
-            القوانين المصرية المنظمة للأعمال القانونية.
-          </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <p class="text-gray-500">إجمالي القوانين</p>
+          <h2 id="totalLaws" class="text-3xl font-bold mt-2">0</h2>
         </div>
-
-        <div
-          onclick="window.location.href = 'templates.html'"
-          class="bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer p-6 border-r-4 border-green-600"
-        >
-          <div class="text-4xl mb-4">📄</div>
-
-          <h3 class="text-xl font-bold mb-2">النماذج القانونية</h3>
-
-          <p class="text-gray-600">العقود والمذكرات والصحف القانونية.</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <p class="text-gray-500">نتائج البحث</p>
+          <h2 id="visibleLaws" class="text-3xl font-bold mt-2">0</h2>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <p class="text-gray-500">آخر قانون حسب القائمة</p>
+          <h2 id="latestLaw" class="text-lg font-bold mt-2">—</h2>
         </div>
       </div>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+        <div class="p-5 border-b border-gray-100">
+          <h2 class="text-xl font-bold">القوانين المصرية</h2>
+          <p class="text-sm text-gray-500 mt-1">قراءة وعرض وتحميل فقط — لا توجد عمليات إضافة أو تعديل أو حذف.</p>
+        </div>
+
+        <div id="libraryState" class="hidden p-10 text-center text-gray-500"></div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right">
+            <thead>
+              <tr class="bg-secondary text-white">
+                <th class="p-4">#</th>
+                <th class="p-4">اسم القانون</th>
+                <th class="p-4">التصنيف</th>
+                <th class="p-4">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="libraryTableBody"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
+
+    <script>
+      "use strict";
+
+      const state = { laws: [], searchTimer: null };
+      const searchInput = document.getElementById("librarySearch");
+      const tableBody = document.getElementById("libraryTableBody");
+      const stateBox = document.getElementById("libraryState");
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function setState(message, visible = true) {
+        stateBox.textContent = message || "";
+        stateBox.classList.toggle("hidden", !visible);
+      }
+
+      function renderLaws(laws) {
+        tableBody.replaceChildren();
+        document.getElementById("visibleLaws").textContent = laws.length.toLocaleString("ar-EG");
+
+        if (!laws.length) {
+          setState("لا توجد قوانين مطابقة.");
+          return;
+        }
+
+        setState("", false);
+        laws.forEach((law, index) => {
+          const row = document.createElement("tr");
+          row.className = "border-b border-gray-100 hover:bg-gray-50";
+          row.innerHTML = `
+            <td class="p-4">${index + 1}</td>
+            <td class="p-4">
+              <div class="flex items-center gap-3">
+                <span class="text-xl" aria-hidden="true">⚖️</span>
+                <span class="font-semibold">${escapeHtml(law.title)}</span>
+              </div>
+            </td>
+            <td class="p-4"><span class="inline-block px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">${escapeHtml(law.category || "غير مصنف")}</span></td>
+            <td class="p-4">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" data-view-id="${escapeHtml(law.id)}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">عرض</button>
+                <button type="button" data-download-id="${escapeHtml(law.id)}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">تحميل</button>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      async function loadLaws(search = "") {
+        setState("جاري تحميل القوانين...", true);
+        try {
+          const query = search.trim();
+          const laws = await api.get("/library/laws", { params: query ? { search: query } : {} });
+          state.laws = Array.isArray(laws) ? laws : [];
+          document.getElementById("totalLaws").textContent = state.laws.length.toLocaleString("ar-EG");
+          document.getElementById("latestLaw").textContent = state.laws[0]?.title || "—";
+          renderLaws(state.laws);
+        } catch (error) {
+          console.error(error);
+          tableBody.replaceChildren();
+          setState(error?.message || "فشل تحميل المكتبة القانونية.", true);
+        }
+      }
+
+      tableBody.addEventListener("click", (event) => {
+        const viewButton = event.target.closest("[data-view-id]");
+        if (viewButton) {
+          window.location.href = `law-viewer.html?id=${encodeURIComponent(viewButton.dataset.viewId)}`;
+          return;
+        }
+
+        const downloadButton = event.target.closest("[data-download-id]");
+        if (downloadButton) {
+          window.open(`/api/library/laws/${encodeURIComponent(downloadButton.dataset.downloadId)}/file?download=1`, "_blank", "noopener");
+        }
+      });
+
+      searchInput.addEventListener("input", () => {
+        clearTimeout(state.searchTimer);
+        state.searchTimer = setTimeout(() => loadLaws(searchInput.value), 250);
+      });
+
+      document.getElementById("clearSearch").addEventListener("click", () => {
+        searchInput.value = "";
+        loadLaws();
+        searchInput.focus();
+      });
+
+      loadLaws();
+    </script>
 
     <script src="../assets/js/loadSidebar.js"></script>
     <script src="../assets/js/loadNavbar.js"></script>
