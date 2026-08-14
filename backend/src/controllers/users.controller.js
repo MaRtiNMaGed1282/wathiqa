@@ -124,32 +124,33 @@ exports.getUsers = (req, res) => {
         return res.status(500).json({ message: err.message });
       }
 
-      db.get(
-        `
-        SELECT
-          COUNT(*) AS total_users,
-          COALESCE(SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END), 0) AS active_users,
-          COALESCE(SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END), 0) AS inactive_users,
-          COALESCE(SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END), 0) AS total_admins
-        FROM users
-        `,
-        [],
-        (statsErr, stats) => {
-          if (statsErr) {
-            return res.status(500).json({ message: statsErr.message });
-          }
+      res.json(rows);
+    },
+  );
+};
 
-          res.json({
-            users: rows,
-            stats: {
-              total_users: Number(stats.total_users || 0),
-              active_users: Number(stats.active_users || 0),
-              inactive_users: Number(stats.inactive_users || 0),
-              total_admins: Number(stats.total_admins || 0),
-            },
-          });
-        },
-      );
+exports.getUserStats = (req, res) => {
+  db.get(
+    `
+    SELECT
+      COUNT(*) AS total_users,
+      COALESCE(SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END), 0) AS active_users,
+      COALESCE(SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END), 0) AS inactive_users,
+      COALESCE(SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END), 0) AS total_admins
+    FROM users
+    `,
+    [],
+    (err, stats) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+
+      res.json({
+        total_users: Number(stats?.total_users || 0),
+        active_users: Number(stats?.active_users || 0),
+        inactive_users: Number(stats?.inactive_users || 0),
+        total_admins: Number(stats?.total_admins || 0),
+      });
     },
   );
 };
