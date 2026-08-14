@@ -5,20 +5,20 @@ const {
   sanitizeFilename,
   createFileValidationOptions,
 } = require("../utils/fileValidation");
-let uploadDir;
 
-try {
-  const { app } = require("electron");
+function getUploadDir() {
+  try {
+    const { app } = require("electron");
 
-  uploadDir =
-    app && app.isPackaged
+    return app && app.isPackaged
       ? path.join(app.getPath("userData"), "uploads")
       : path.join(__dirname, "../../../uploads");
-} catch {
-  uploadDir = path.join(__dirname, "../../../uploads");
+  } catch {
+    return path.join(__dirname, "../../../uploads");
+  }
 }
 
-console.log("UPLOAD DIR =", uploadDir);
+const uploadDir = getUploadDir();
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -38,7 +38,11 @@ const storage = multer.diskStorage({
   },
 });
 
-module.exports = multer({
+const upload = multer({
   storage,
   ...createFileValidationOptions(),
 });
+
+upload.getUploadDir = getUploadDir;
+
+module.exports = upload;
