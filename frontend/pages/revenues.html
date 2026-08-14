@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>الإيرادات</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/core/permissions.js"></script>
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/css/input.css" />
+    <style>
+      body {
+        font-family: Cairo, sans-serif;
+      }
+      .metric-card {
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(31, 42, 68, 0.08);
+      }
+    </style>
+  </head>
+<body class="font-cairo bg-light text-primary">
+  <div id="app-shell">
+    <div id="sidebar-container"></div>
+
+    <div id="app">
+      <div id="navbar-container"></div>
+
+      <main id="revenues-page" class="page">
+        <div class="page-content">
+        <div
+          id="accessDenied"
+          class="hidden min-h-[70vh] items-center justify-center"
+        >
+          <div class="bg-white rounded-2xl shadow p-10 text-center max-w-lg">
+            <div class="text-5xl mb-4">—</div>
+            <h1 class="text-2xl font-bold mb-3">غير مصرح</h1>
+            <p class="text-gray-600">
+              لا توجد لديك صلاحية للوصول إلى البيانات المالية.
+            </p>
+          </div>
+        </div>
+
+        <div id="revenuesPage">
+          <div
+            class="mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
+          >
+            <div>
+              <h1 class="text-3xl font-bold">الإيرادات</h1>
+              <p class="text-gray-600 mt-2">
+                ملخص الإيرادات والمستحقات — عرض مالي فقط.
+              </p>
+            </div>
+
+            <div
+              class="bg-white rounded-2xl shadow-sm border p-4 min-w-[320px]"
+            >
+              <div class="flex flex-wrap gap-2 mb-3" id="filterButtons">
+                <button
+                  data-filter="today"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  اليوم
+                </button>
+                <button
+                  data-filter="week"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  هذا الأسبوع
+                </button>
+                <button
+                  data-filter="month"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  هذا الشهر
+                </button>
+                <button
+                  data-filter="year"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  هذا العام
+                </button>
+                <button
+                  data-filter="all"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  الكل
+                </button>
+                <button
+                  data-filter="custom"
+                  class="filter-btn px-4 py-2 rounded-xl border"
+                >
+                  مخصص
+                </button>
+              </div>
+
+              <div id="customDates" class="hidden grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    for="startDate"
+                    class="block text-xs text-gray-500 mb-1"
+                    >من</label
+                  >
+                  <input
+                    id="startDate"
+                    type="date"
+                    class="w-full border rounded-xl p-2"
+                  />
+                </div>
+                <div>
+                  <label for="endDate" class="block text-xs text-gray-500 mb-1"
+                    >إلى</label
+                  >
+                  <input
+                    id="endDate"
+                    type="date"
+                    class="w-full border rounded-xl p-2"
+                  />
+                </div>
+                <div class="col-span-2 flex gap-2">
+                  <button
+                    id="applyCustom"
+                    class="flex-1 bg-[#1f2a44] text-white rounded-xl py-2"
+                  >
+                    تطبيق
+                  </button>
+                  <button
+                    id="clearFilters"
+                    class="flex-1 border rounded-xl py-2"
+                  >
+                    مسح
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="pageError"
+            class="hidden bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 mb-6"
+          ></div>
+          <div
+            id="loadingState"
+            class="bg-white rounded-2xl shadow p-8 text-center text-gray-500 mb-6"
+          >
+            جاري تحميل البيانات المالية...
+          </div>
+
+          <div id="contentState" class="hidden">
+            <section
+              class="bg-[#1f2a44] text-white rounded-2xl p-6 md:p-8 mb-6 shadow-lg"
+            >
+              <div
+                class="flex flex-col md:flex-row md:items-end md:justify-between gap-5"
+              >
+                <div>
+                  <p class="text-sm opacity-70">إجمالي الأتعاب</p>
+                  <p id="totalFees" class="text-4xl md:text-5xl font-bold mt-2">
+                    0 جنيه
+                  </p>
+                  <p id="periodLabel" class="text-sm opacity-70 mt-3">
+                    كل الفترات
+                  </p>
+                </div>
+                <div class="grid grid-cols-2 gap-5 text-sm">
+                  <div>
+                    <p class="opacity-70">القضايا</p>
+                    <p id="caseFees" class="text-xl font-bold mt-1">0</p>
+                  </div>
+                  <div>
+                    <p class="opacity-70">الخدمات</p>
+                    <p id="serviceFees" class="text-xl font-bold mt-1">0</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow p-5 mb-6">
+              <div class="flex justify-between items-center mb-2">
+                <span class="font-semibold">نسبة التحصيل العامة</span>
+                <span id="collectionRate">0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div
+                  id="collectionBar"
+                  class="bg-green-600 h-3 rounded-full"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </section>
+
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">إجمالي الموكلين</p>
+                <p id="totalClients" class="text-3xl font-bold mt-2">0</p>
+              </div>
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">إجمالي القضايا</p>
+                <p id="totalCases" class="text-3xl font-bold mt-2">0</p>
+              </div>
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">إجمالي الخدمات</p>
+                <p id="totalServices" class="text-3xl font-bold mt-2">0</p>
+              </div>
+            </section>
+
+            <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">إجمالي الأتعاب</p>
+                <p id="feesCard" class="text-2xl font-bold mt-2">0</p>
+              </div>
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">المحصل</p>
+                <p id="paidCard" class="text-2xl font-bold text-green-600 mt-2">
+                  0
+                </p>
+              </div>
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">المستحق</p>
+                <p
+                  id="remainingCard"
+                  class="text-2xl font-bold text-red-600 mt-2"
+                >
+                  0
+                </p>
+              </div>
+              <div class="metric-card bg-white rounded-2xl shadow p-5">
+                <p class="text-gray-500">المصروفات</p>
+                <p
+                  id="expensesCard"
+                  class="text-2xl font-bold text-orange-600 mt-2"
+                >
+                  0
+                </p>
+              </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow p-6 mb-6">
+              <div
+                class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5"
+              >
+                <div>
+                  <h2 class="text-xl font-bold">صافي الربح</h2>
+                  <p class="text-sm text-gray-500 mt-1">
+                    المحصل ناقص المصروفات للفترة المحددة.
+                  </p>
+                </div>
+                <p id="netProfit" class="text-4xl font-bold text-purple-700">
+                  0 جنيه
+                </p>
+              </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-2xl shadow p-6">
+                <div class="flex justify-between items-center mb-5">
+                  <div>
+                    <h2 class="text-xl font-bold">أعلى 5 مدينين</h2>
+                    <p class="text-sm text-gray-500 mt-1">
+                      أعلى الأرصدة المستحقة.
+                    </p>
+                  </div>
+                  <span id="debtorCount" class="text-sm text-gray-500"
+                    >0 مدين</span
+                  >
+                </div>
+                <div id="topDebtors" class="space-y-3"></div>
+              </div>
+
+              <div class="bg-white rounded-2xl shadow p-6">
+                <div class="mb-5">
+                  <h2 class="text-xl font-bold">آخر المدفوعات</h2>
+                  <p class="text-sm text-gray-500 mt-1">
+                    آخر العمليات المالية للفترة المحددة.
+                  </p>
+                </div>
+                <div id="recentPayments" class="space-y-3"></div>
+              </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow overflow-hidden">
+              <div class="p-6 border-b">
+                <div
+                  class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+                >
+                  <div>
+                    <h2 class="text-xl font-bold">المستحقات حسب الموكل</h2>
+                    <p class="text-sm text-gray-500 mt-1">
+                      متابعة الأتعاب والمحصل والمتبقي.
+                    </p>
+                  </div>
+                  <div class="flex gap-3 items-center">
+                    <input
+                      id="clientSearch"
+                      type="search"
+                      placeholder="بحث باسم الموكل..."
+                      class="border rounded-xl p-3 w-full lg:w-72"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 border-b bg-red-50"
+              >
+                <div class="bg-white rounded-2xl p-5 text-center">
+                  <p class="text-gray-500">عدد المدينين</p>
+                  <p
+                    id="debtorsCount"
+                    class="text-3xl font-bold text-red-600 mt-1"
+                  >
+                    0
+                  </p>
+                </div>
+                <div class="bg-white rounded-2xl p-5 text-center">
+                  <p class="text-gray-500">إجمالي المستحقات</p>
+                  <p
+                    id="totalRemaining"
+                    class="text-3xl font-bold text-orange-600 mt-1"
+                  >
+                    0 جنيه
+                  </p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-right min-w-[760px]">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="p-4">الموكل</th>
+                      <th class="p-4">القضايا / الخدمات</th>
+                      <th class="p-4">الأتعاب</th>
+                      <th class="p-4">المحصل</th>
+                      <th class="p-4">المتبقي</th>
+                      <th class="p-4">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody id="clientsTable"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow p-6 mt-6">
+              <div
+                class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+              >
+                <div>
+                  <h2 class="text-xl font-bold">التصدير</h2>
+                  <p class="text-sm text-gray-500 mt-1">
+                    تصدير التقرير المالي بصيغة PDF سيتم ربطه بطبقة PDF المشتركة
+                    في المرحلة التالية.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  class="px-6 py-3 rounded-xl bg-gray-200 text-gray-500 cursor-not-allowed"
+                >
+                  Financial PDF — Phase 19
+                </button>
+              </div>
+            </section>
+          </div>
+         </div>
+      </main>
+    </div>
+  </div>
+
+    <script>
+      "use strict";
+
+      const isFinancialRole = permissions.canViewFinancials();
+      const state = {
+        filter: "all",
+        startDate: "",
+        endDate: "",
+        clients: [],
+      };
+
+      const money = (value) =>
+        `${Number(value || 0).toLocaleString("ar-EG")} جنيه`;
+
+      const apiOptions = () => ({
+        params: {
+          filter: state.filter,
+          startDate: state.filter === "custom" ? state.startDate : undefined,
+          endDate: state.filter === "custom" ? state.endDate : undefined,
+        },
+      });
+
+      function setLoading(loading) {
+        document
+          .getElementById("loadingState")
+          .classList.toggle("hidden", !loading);
+        document
+          .getElementById("contentState")
+          .classList.toggle("hidden", loading);
+      }
+
+      function setError(message) {
+        const box = document.getElementById("pageError");
+        box.textContent = message || "";
+        box.classList.toggle("hidden", !message);
+      }
+
+      function periodLabel(period) {
+        if (!period?.startDate) return "كل الفترات";
+        return `من ${period.startDate} إلى ${period.endDate}`;
+      }
+
+      function setMetric(id, value) {
+        document.getElementById(id).textContent = Number(
+          value || 0,
+        ).toLocaleString("ar-EG");
+      }
+
+      async function loadSummary() {
+        const data = await api.get("/revenues/summary", apiOptions());
+        setMetric("totalClients", data.total_clients);
+        setMetric("totalCases", data.total_cases);
+        setMetric("totalServices", data.total_services);
+        setMetric("caseFees", data.case_fees);
+        setMetric("serviceFees", data.service_fees);
+        setMetric("feesCard", data.total_fees);
+        setMetric("paidCard", data.total_paid);
+        setMetric("remainingCard", data.remaining);
+        setMetric("expensesCard", data.total_expenses);
+        document.getElementById("totalFees").textContent = money(
+          data.total_fees,
+        );
+        document.getElementById("netProfit").textContent = money(
+          data.net_profit,
+        );
+        document.getElementById("collectionRate").textContent =
+          `${data.collection_rate}%`;
+        document.getElementById("collectionBar").style.width =
+          `${Math.min(100, Math.max(0, Number(data.collection_rate || 0)))}%`;
+        document.getElementById("periodLabel").textContent = periodLabel(
+          data.period,
+        );
+      }
+
+      async function loadClients() {
+        const data = await api.get("/revenues/clients", apiOptions());
+        state.clients = Array.isArray(data) ? data : [];
+        renderClients();
+      }
+
+      function renderClients() {
+        const query = document
+          .getElementById("clientSearch")
+          .value.trim()
+          .toLowerCase();
+        const rows = state.clients.filter((client) =>
+          client.full_name.toLowerCase().includes(query),
+        );
+        const tbody = document.getElementById("clientsTable");
+        const debtors = rows.filter((client) => Number(client.remaining) > 0);
+        const totalRemaining = debtors.reduce(
+          (sum, client) => sum + Number(client.remaining || 0),
+          0,
+        );
+
+        setMetric("debtorsCount", debtors.length);
+        setMetric("totalRemaining", totalRemaining);
+        document.getElementById("totalRemaining").textContent =
+          money(totalRemaining);
+
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">لا توجد بيانات مستحقات لهذه الفترة.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rows
+          .map((client) => {
+            const remaining = Number(client.remaining || 0);
+            const paid = Number(client.total_paid || 0);
+            const statusClass =
+              remaining > 0
+                ? "bg-red-100 text-red-700"
+                : "bg-green-100 text-green-700";
+            const status = remaining > 0 ? "مدين" : "مسدد";
+            return `
+            <tr class="border-t hover:bg-gray-50">
+              <td class="p-4"><a href="client-profile.html?id=${encodeURIComponent(client.id)}" class="font-bold hover:underline">${escapeHtml(client.full_name)}</a></td>
+              <td class="p-4">${Number(client.total_items || 0).toLocaleString("ar-EG")}</td>
+              <td class="p-4">${money(client.total_fees)}</td>
+              <td class="p-4 text-green-700">${money(paid)}</td>
+              <td class="p-4 font-bold ${remaining > 0 ? "text-red-600" : "text-green-600"}">${money(remaining)}</td>
+              <td class="p-4"><span class="px-3 py-1 rounded-full text-xs ${statusClass}">${status}</span></td>
+            </tr>`;
+          })
+          .join("");
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(
+          /[&<>'"]/g,
+          (char) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            })[char],
+        );
+      }
+
+      async function loadTopDebtors() {
+        const debtors = await api.get("/revenues/top-debtors", apiOptions());
+        const container = document.getElementById("topDebtors");
+        document.getElementById("debtorCount").textContent =
+          `${state.clients.filter((client) => Number(client.remaining) > 0).length.toLocaleString("ar-EG")} مدين`;
+
+        if (!debtors.length) {
+          container.innerHTML = `<div class="p-5 rounded-xl bg-green-50 text-green-700 text-center">لا توجد مديونيات حالياً.</div>`;
+          return;
+        }
+
+        container.innerHTML = debtors
+          .map(
+            (debtor, index) => `
+          <a href="client-profile.html?id=${encodeURIComponent(debtor.id)}" class="flex items-center justify-between gap-4 border rounded-xl p-4 hover:bg-gray-50">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-red-600 text-white font-bold">${index + 1}</span>
+              <span class="font-bold truncate">${escapeHtml(debtor.full_name)}</span>
+            </div>
+            <span class="font-bold text-red-600 whitespace-nowrap">${money(debtor.remaining)}</span>
+          </a>`,
+          )
+          .join("");
+      }
+
+      async function loadRecentPayments() {
+        const payments = await api.get(
+          "/revenues/recent-payments",
+          apiOptions(),
+        );
+        const container = document.getElementById("recentPayments");
+
+        if (!payments.length) {
+          container.innerHTML = `<div class="p-5 rounded-xl bg-gray-50 text-gray-500 text-center">لا توجد مدفوعات لهذه الفترة.</div>`;
+          return;
+        }
+
+        container.innerHTML = payments
+          .map(
+            (payment) => `
+          <div class="flex items-center justify-between gap-4 border rounded-xl p-4">
+            <div class="min-w-0">
+              <p class="font-bold truncate">${escapeHtml(payment.full_name || "غير مرتبط بموكل")}</p>
+              <p class="text-sm text-gray-500 truncate">${escapeHtml(payment.case_title || payment.service_title || "بدون عنوان")}</p>
+              <p class="text-xs text-gray-400 mt-1">${escapeHtml(payment.payment_date || "—")} · ${escapeHtml(payment.payment_method || "—")}</p>
+            </div>
+            <p class="font-bold text-green-600 whitespace-nowrap">${money(payment.amount)}</p>
+          </div>`,
+          )
+          .join("");
+      }
+
+      async function refresh() {
+        setError("");
+        setLoading(true);
+        try {
+          await loadSummary();
+          await Promise.all([
+            loadClients(),
+            loadTopDebtors(),
+            loadRecentPayments(),
+          ]);
+          setLoading(false);
+        } catch (error) {
+          setLoading(false);
+          setError(error?.message || "تعذر تحميل البيانات المالية.");
+        }
+      }
+
+      function activateFilter(filter) {
+        state.filter = filter;
+        document.querySelectorAll(".filter-btn").forEach((button) => {
+          const active = button.dataset.filter === filter;
+          button.classList.toggle("bg-[#1f2a44]", active);
+          button.classList.toggle("text-white", active);
+        });
+        document
+          .getElementById("customDates")
+          .classList.toggle("hidden", filter !== "custom");
+        if (filter !== "custom") refresh();
+      }
+
+      document.querySelectorAll(".filter-btn").forEach((button) => {
+        button.addEventListener("click", () =>
+          activateFilter(button.dataset.filter),
+        );
+      });
+
+      document.getElementById("applyCustom").addEventListener("click", () => {
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        if (!startDate || !endDate) {
+          setError("يرجى اختيار تاريخ البداية والنهاية.");
+          return;
+        }
+        if (startDate > endDate) {
+          setError("تاريخ البداية يجب أن يسبق أو يساوي تاريخ النهاية.");
+          return;
+        }
+        state.startDate = startDate;
+        state.endDate = endDate;
+        refresh();
+      });
+
+      document.getElementById("clearFilters").addEventListener("click", () => {
+        state.filter = "all";
+        state.startDate = "";
+        state.endDate = "";
+        document.getElementById("startDate").value = "";
+        document.getElementById("endDate").value = "";
+        activateFilter("all");
+      });
+
+      document
+        .getElementById("clientSearch")
+        .addEventListener("input", renderClients);
+
+      if (!isFinancialRole) {
+        document.getElementById("revenuesPage").classList.add("hidden");
+        document.getElementById("accessDenied").classList.remove("hidden");
+        document.getElementById("accessDenied").classList.add("flex");
+      } else {
+        activateFilter("all");
+      }
+    </script>
+
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+  </body>
+</html>
