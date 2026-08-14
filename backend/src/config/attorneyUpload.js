@@ -6,10 +6,9 @@ function getUploadDir() {
   try {
     const { app } = require("electron");
 
-    return
-      app && app.isPackaged
-        ? path.join(app.getPath("userData"), "attorneys")
-        : path.join(__dirname, "../../../database/attorneys");
+    return app && app.isPackaged
+      ? path.join(app.getPath("userData"), "attorneys")
+      : path.join(__dirname, "../../../database/attorneys");
   } catch {
     return path.join(__dirname, "../../../database/attorneys");
   }
@@ -35,8 +34,10 @@ const storage = multer.diskStorage({
   },
 });
 
-module.exports = multer({
+const upload = multer({
   storage,
 });
 
-module.exports.getUploadDir = getUploadDir;
+upload.getUploadDir = getUploadDir;
+
+module.exports = upload;
