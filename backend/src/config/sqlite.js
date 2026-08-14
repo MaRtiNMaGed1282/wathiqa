@@ -2,32 +2,31 @@ const sqlite3 = require("sqlite3").verbose();
 const fs = require("fs");
 const path = require("path");
 
-function resolveDatabasePath() {
+function getElectronUserDataDir() {
   try {
     const { app } = require("electron");
+    if (app && app.isPackaged) return app.getPath("userData");
+  } catch (_) {}
+  return null;
+}
 
-    if (app && app.isPackaged) {
-      const userDataDir = app.getPath("userData");
-      const databaseDir = path.join(userDataDir, "database");
-      const persistentDbPath = path.join(databaseDir, "wathiqa.db");
-      const bundledDbPath = path.join(process.resourcesPath, "database", "wathiqa.db");
+function resolveDatabasePath() {
+  const userDataDir = getElectronUserDataDir();
 
-      fs.mkdirSync(databaseDir, { recursive: true });
+  if (userDataDir) {
+    const databaseDir = path.join(userDataDir, "database");
+    const persistentDbPath = path.join(databaseDir, "wathiqa.db");
+    const bundledDbPath = path.join(process.resourcesPath, "database", "wathiqa.db");
+    fs.mkdirSync(databaseDir, { recursive: true });
 
-      if (!fs.existsSync(persistentDbPath)) {
-        if (!fs.existsSync(bundledDbPath)) {
-          throw new Error(`Bundled database not found: ${bundledDbPath}`);
-        }
-
-        fs.copyFileSync(bundledDbPath, persistentDbPath);
+    if (!fs.existsSync(persistentDbPath)) {
+      if (!fs.existsSync(bundledDbPath)) {
+        throw new Error(`Bundled database not found: ${bundledDbPath}`);
       }
+      fs.copyFileSync(bundledDbPath, persistentDbPath);
+    }
 
-      return persistentDbPath;
-    }
-  } catch (error) {
-    if (error?.message?.startsWith("Bundled database not found")) {
-      throw error;
-    }
+    return persistentDbPath;
   }
 
   return path.join(__dirname, "../../../database/wathiqa.db");
@@ -60,13 +59,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
   `,
     (tableErr) => {
       if (tableErr) {
-        console.error(
-          "Failed to create notifications table:",
-          tableErr.message,
-        );
+        console.error("Failed to create notifications table:", tableErr.message);
       }
     },
   );
 });
 
 module.exports = db;
+module.exports.dbPath = dbPath;
