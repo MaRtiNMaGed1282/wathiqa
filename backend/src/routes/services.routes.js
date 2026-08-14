@@ -1,5 +1,4 @@
 const express = require("express");
-
 const router = express.Router();
 
 const {
@@ -11,6 +10,7 @@ const {
   getClientServices,
 } = require("../controllers/services.controller");
 const auth = require("../middlewares/auth.middleware");
+const role = require("../middlewares/role.middleware");
 
 router.post("/", auth, createService);
 
@@ -22,6 +22,6 @@ router.get("/:id", auth, getServiceById);
 
 router.put("/:id", auth, updateService);
 
-router.delete("/:id", auth, deleteService);
+router.delete("/:id", auth, role("admin"), deleteService);
 
 module.exports = router;
