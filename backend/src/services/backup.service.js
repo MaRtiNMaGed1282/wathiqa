@@ -22,24 +22,15 @@ async function createBackup() {
 
   try {
     await fs.promises.copyFile(db.dbPath, path.join(staging, "wathiqa.db"));
-    if (fs.existsSync(upload.getUploadDir())) {
-      await fs.promises.cp(upload.getUploadDir(), path.join(staging, "uploads"), { recursive: true });
-    }
-    if (fs.existsSync(attorneyUpload.getUploadDir())) {
-      await fs.promises.cp(attorneyUpload.getUploadDir(), path.join(staging, "attorneys"), { recursive: true });
-    }
-
-    await fs.promises.writeFile(
-      path.join(staging, "backup-metadata.json"),
-      JSON.stringify({
-        application: "Wathiqa",
-        createdAt: new Date().toISOString(),
-        version: process.env.npm_package_version || "unknown",
-        database: "wathiqa.db",
-        includes: ["database", "case-and-service-files", "attorney-files"],
-      }, null, 2),
-      "utf8",
-    );
+    if (fs.existsSync(upload.getUploadDir())) await fs.promises.cp(upload.getUploadDir(), path.join(staging, "uploads"), { recursive: true });
+    if (fs.existsSync(attorneyUpload.getUploadDir())) await fs.promises.cp(attorneyUpload.getUploadDir(), path.join(staging, "attorneys"), { recursive: true });
+    await fs.promises.writeFile(path.join(staging, "backup-metadata.json"), JSON.stringify({
+      application: "Wathiqa",
+      createdAt: new Date().toISOString(),
+      version: process.env.npm_package_version || "unknown",
+      database: "wathiqa.db",
+      includes: ["database", "case-and-service-files", "attorney-files"],
+    }, null, 2), "utf8");
 
     if (process.platform === "win32") {
       const command = `Compress-Archive -Path '${staging}\\*' -DestinationPath '${archive}' -Force`;
@@ -47,7 +38,6 @@ async function createBackup() {
     } else {
       await execFileAsync("zip", ["-qr", archive, "."], { cwd: staging });
     }
-
     return { archive, name: path.basename(archive), createdAt: new Date().toISOString() };
   } finally {
     await fs.promises.rm(staging, { recursive: true, force: true });
@@ -61,4 +51,28 @@ async function listBackups() {
   return names.filter((name) => /^Wathiqa-Backup-.*\.zip$/i.test(name)).sort().reverse();
 }
 
-module.exports = { createBackup, listBackups, getBackupRoot };
+async function scheduleRestore(name) {
+  if (!/^Wathiqa-Backup-.*\.zip$/i.test(name) || path.basename(name) !== name) throw new Error("اسم النسخة الاحتياطية غير صالح");
+  const archive = path.join(getBackupRoot(), name);
+  if (!fs.existsSync(archive)) throw new Error("النسخة الاحتياطية غير موجودة");
+
+  await createBackup();
+  const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "wathiqa-restore-"));
+  const pending = path.join(getBackupRoot(), "pending-restore");
+  try {
+    if (process.platform === "win32") {
+      await execFileAsync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `Expand-Archive -LiteralPath '${archive}' -DestinationPath '${temp}' -Force`]);
+    } else {
+      await execFileAsync("unzip", ["-q", archive, "-d", temp]);
+    }
+    const database = path.join(temp, "wathiqa.db");
+    if (!fs.existsSync(database)) throw new Error("النسخة الاحتياطية لا تحتوي على قاعدة البيانات المطلوبة");
+    await fs.promises.rm(pending, { recursive: true, force: true });
+    await fs.promises.cp(temp, pending, { recursive: true });
+    return { name, restartRequired: true };
+  } finally {
+    await fs.promises.rm(temp, { recursive: true, force: true });
+  }
+}
+
+module.exports = { createBackup, listBackups, scheduleRestore, getBackupRoot };
