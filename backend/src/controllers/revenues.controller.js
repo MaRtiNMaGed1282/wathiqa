@@ -3,10 +3,7 @@ const db = require("../config/sqlite");
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function parseDate(value) {
@@ -37,27 +34,27 @@ function resolveDateRange(filter = "all", startDate, endDate) {
   }
 
   if (filter === "month") {
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    return { startDate: formatDate(start), endDate: formatDate(end) };
+    return {
+      startDate: formatDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+      endDate: formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+    };
   }
 
   if (filter === "year") {
-    const start = new Date(today.getFullYear(), 0, 1);
-    const end = new Date(today.getFullYear(), 11, 31);
-    return { startDate: formatDate(start), endDate: formatDate(end) };
+    return {
+      startDate: formatDate(new Date(today.getFullYear(), 0, 1)),
+      endDate: formatDate(new Date(today.getFullYear(), 11, 31)),
+    };
   }
 
   if (filter === "custom") {
     const start = parseDate(startDate);
     const end = parseDate(endDate);
-
     if (!start || !end || start > end) {
       const error = new Error("فترة التاريخ غير صالحة");
       error.status = 400;
       throw error;
     }
-
     return { startDate, endDate };
   }
 
@@ -66,45 +63,49 @@ function resolveDateRange(filter = "all", startDate, endDate) {
   throw error;
 }
 
-function dateCondition(column, range, params) {
-  if (!range) return "";
-  params.push(range.startDate, range.endDate);
-  return `AND date(${column}) BETWEEN ? AND ?`;
+function condition(column, range) {
+  return range ? `AND date(${column}) BETWEEN ? AND ?` : "";
 }
 
-function runQuery(res, query, params, transform = (value) => value) {
+function addRangeParams(params, range) {
+  if (range) params.push(range.startDate, range.endDate);
+}
+
+function runQuery(res, query, params) {
   db.all(query, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({
-        message: "فشل تحميل البيانات المالية",
-        error: err.message,
-      });
+      return res.status(500).json({ message: "فشل تحميل البيانات المالية", error: err.message });
     }
-
-    res.json(transform(rows || []));
+    res.json(rows || []);
   });
 }
 
-exports.getSummary = (req, res) => {
-  let range;
+function resolveRequestRange(req, res) {
   try {
-    range = resolveDateRange(req.query.filter || "all", req.query.startDate, req.query.endDate);
+    return resolveDateRange(req.query.filter || "all", req.query.startDate, req.query.endDate);
   } catch (error) {
-    return res.status(error.status || 400).json({ message: error.message });
+    res.status(error.status || 400).json({ message: error.message });
+    return undefined;
   }
+}
+
+exports.getSummary = (req, res) => {
+  const range = resolveRequestRange(req, res);
+  if (range === undefined && req.query.filter && req.query.filter !== "all") return;
 
   const params = [];
-  const caseDate = dateCondition("created_at", range, params);
-  const serviceDate = dateCondition("created_at", range, params);
-  const paymentDate = dateCondition("payment_date", range, params);
-  const caseExpenseDate = dateCondition("expense_date", range, params);
-  const serviceExpenseDate = dateCondition("expense_date", range, params);
+  const clientDate = condition("created_at", range);
+  const caseDate = condition("created_at", range);
+  const serviceDate = condition("created_at", range);
+  const paymentDate = condition("payment_date", range);
+  const caseExpenseDate = condition("expense_date", range);
+  const serviceExpenseDate = condition("expense_date", range);
 
   const query = `
     SELECT
-      (SELECT COUNT(*) FROM clients ${range ? `WHERE date(created_at) BETWEEN ? AND ?` : ""}) AS total_clients,
-      (SELECT COUNT(*) FROM legal_cases ${range ? `WHERE date(created_at) BETWEEN ? AND ?` : ""}) AS total_cases,
-      (SELECT COUNT(*) FROM legal_services ${range ? `WHERE date(created_at) BETWEEN ? AND ?` : ""}) AS total_services,
+      (SELECT COUNT(*) FROM clients WHERE 1=1 ${clientDate}) AS total_clients,
+      (SELECT COUNT(*) FROM legal_cases WHERE 1=1 ${caseDate}) AS total_cases,
+      (SELECT COUNT(*) FROM legal_services WHERE 1=1 ${serviceDate}) AS total_services,
       (SELECT COALESCE(SUM(total_fees), 0) FROM legal_cases WHERE 1=1 ${caseDate}) AS case_fees,
       (SELECT COALESCE(SUM(total_fees), 0) FROM legal_services WHERE 1=1 ${serviceDate}) AS service_fees,
       (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE 1=1 ${paymentDate}) AS total_paid,
@@ -112,17 +113,19 @@ exports.getSummary = (req, res) => {
       (SELECT COALESCE(SUM(amount), 0) FROM service_expenses WHERE 1=1 ${serviceExpenseDate}) AS service_expenses
   `;
 
-  const countParams = [];
-  if (range) {
-    countParams.push(range.startDate, range.endDate, range.startDate, range.endDate, range.startDate, range.endDate);
-  }
+  // Parameter order must exactly match the subquery order above.
+  addRangeParams(params, range); // clients
+  addRangeParams(params, range); // cases count
+  addRangeParams(params, range); // services count
+  addRangeParams(params, range); // case fees
+  addRangeParams(params, range); // service fees
+  addRangeParams(params, range); // payments
+  addRangeParams(params, range); // case expenses
+  addRangeParams(params, range); // service expenses
 
-  db.get(query, [...countParams, ...params], (err, row) => {
+  db.get(query, params, (err, row) => {
     if (err) {
-      return res.status(500).json({
-        message: "فشل تحميل الملخص المالي",
-        error: err.message,
-      });
+      return res.status(500).json({ message: "فشل تحميل الملخص المالي", error: err.message });
     }
 
     const data = row || {};
@@ -144,42 +147,34 @@ exports.getSummary = (req, res) => {
 };
 
 exports.getClientReceivables = (req, res) => {
-  let range;
-  try {
-    range = resolveDateRange(req.query.filter || "all", req.query.startDate, req.query.endDate);
-  } catch (error) {
-    return res.status(error.status || 400).json({ message: error.message });
-  }
+  const range = resolveRequestRange(req, res);
+  if (range === undefined && req.query.filter && req.query.filter !== "all") return;
 
   const search = String(req.query.search || "").trim();
   const params = [];
-  const caseDate = dateCondition("lc.created_at", range, params);
-  const serviceDate = dateCondition("ls.created_at", range, params);
-  const paymentDate = dateCondition("p.payment_date", range, params);
-
-  if (search) params.push(`%${search}%`);
+  const caseDateCount = condition("lc.created_at", range);
+  const serviceDateCount = condition("ls.created_at", range);
+  const caseDateFees = condition("lc.created_at", range);
+  const serviceDateFees = condition("ls.created_at", range);
+  const paymentDate = condition("p.payment_date", range);
 
   const query = `
     SELECT
       c.id,
       c.full_name,
       (
-        SELECT COUNT(*)
-        FROM legal_cases lc
-        WHERE lc.client_id = c.id ${caseDate}
+        SELECT COUNT(*) FROM legal_cases lc
+        WHERE lc.client_id = c.id ${caseDateCount}
       ) + (
-        SELECT COUNT(*)
-        FROM legal_services ls
-        WHERE ls.client_id = c.id ${serviceDate}
+        SELECT COUNT(*) FROM legal_services ls
+        WHERE ls.client_id = c.id ${serviceDateCount}
       ) AS total_items,
       (
-        SELECT COALESCE(SUM(lc.total_fees), 0)
-        FROM legal_cases lc
-        WHERE lc.client_id = c.id ${caseDate}
+        SELECT COALESCE(SUM(lc.total_fees), 0) FROM legal_cases lc
+        WHERE lc.client_id = c.id ${caseDateFees}
       ) + (
-        SELECT COALESCE(SUM(ls.total_fees), 0)
-        FROM legal_services ls
-        WHERE ls.client_id = c.id ${serviceDate}
+        SELECT COALESCE(SUM(ls.total_fees), 0) FROM legal_services ls
+        WHERE ls.client_id = c.id ${serviceDateFees}
       ) AS total_fees,
       (
         SELECT COALESCE(SUM(p.amount), 0)
@@ -193,15 +188,20 @@ exports.getClientReceivables = (req, res) => {
     ORDER BY total_fees DESC, c.full_name COLLATE NOCASE ASC
   `;
 
+  // The same date range occurs five times in the query, so its parameters are repeated five times.
+  addRangeParams(params, range); // case count
+  addRangeParams(params, range); // service count
+  addRangeParams(params, range); // case fees
+  addRangeParams(params, range); // service fees
+  addRangeParams(params, range); // payments
+  if (search) params.push(`%${search}%`);
+
   db.all(query, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({
-        message: "فشل تحميل المستحقات",
-        error: err.message,
-      });
+      return res.status(500).json({ message: "فشل تحميل المستحقات", error: err.message });
     }
 
-    const result = (rows || []).map((row) => {
+    res.json((rows || []).map((row) => {
       const totalFees = Number(row.total_fees || 0);
       const totalPaid = Number(row.total_paid || 0);
       return {
@@ -213,24 +213,19 @@ exports.getClientReceivables = (req, res) => {
         remaining: totalFees - totalPaid,
         status: totalFees - totalPaid > 0 ? "مدين" : "مسدد",
       };
-    });
-
-    res.json(result);
+    }));
   });
 };
 
 exports.getRecentPayments = (req, res) => {
-  let range;
-  try {
-    range = resolveDateRange(req.query.filter || "all", req.query.startDate, req.query.endDate);
-  } catch (error) {
-    return res.status(error.status || 400).json({ message: error.message });
-  }
+  const range = resolveRequestRange(req, res);
+  if (range === undefined && req.query.filter && req.query.filter !== "all") return;
 
   const params = [];
-  const paymentDate = dateCondition("p.payment_date", range, params);
+  const paymentDate = condition("p.payment_date", range);
+  addRangeParams(params, range);
 
-  const query = `
+  runQuery(res, `
     SELECT
       p.payment_id,
       p.amount,
@@ -246,23 +241,17 @@ exports.getRecentPayments = (req, res) => {
     WHERE 1=1 ${paymentDate}
     ORDER BY date(p.payment_date) DESC, p.payment_id DESC
     LIMIT 10
-  `;
-
-  runQuery(res, query, params);
+  `, params);
 };
 
 exports.getTopDebtors = (req, res) => {
-  let range;
-  try {
-    range = resolveDateRange(req.query.filter || "all", req.query.startDate, req.query.endDate);
-  } catch (error) {
-    return res.status(error.status || 400).json({ message: error.message });
-  }
+  const range = resolveRequestRange(req, res);
+  if (range === undefined && req.query.filter && req.query.filter !== "all") return;
 
   const params = [];
-  const caseDate = dateCondition("lc.created_at", range, params);
-  const serviceDate = dateCondition("ls.created_at", range, params);
-  const paymentDate = dateCondition("p.payment_date", range, params);
+  const caseDate = condition("lc.created_at", range);
+  const serviceDate = condition("ls.created_at", range);
+  const paymentDate = condition("p.payment_date", range);
 
   const query = `
     SELECT
@@ -288,17 +277,17 @@ exports.getTopDebtors = (req, res) => {
     LIMIT 5
   `;
 
+  addRangeParams(params, range); // case fees
+  addRangeParams(params, range); // service fees
+  addRangeParams(params, range); // payments
+
   db.all(query, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({
-        message: "فشل تحميل أعلى المدينين",
-        error: err.message,
-      });
+      return res.status(500).json({ message: "فشل تحميل أعلى المدينين", error: err.message });
     }
 
-    res.json((rows || []).filter((row) => Number(row.remaining || 0) > 0).map((row) => ({
-      ...row,
-      remaining: Number(row.remaining || 0),
-    })));
+    res.json((rows || [])
+      .filter((row) => Number(row.remaining || 0) > 0)
+      .map((row) => ({ ...row, remaining: Number(row.remaining || 0) })));
   });
 };
