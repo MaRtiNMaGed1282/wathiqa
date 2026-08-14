@@ -7,6 +7,7 @@ const role = require("../middlewares/role.middleware");
 const {
   uploadFile,
   getFilesByCase,
+  downloadCaseFile,
   deleteFile,
   uploadServiceFile,
   getFilesByService,
@@ -17,6 +18,7 @@ const {
 // Case files
 router.post("/upload", auth, upload.single("file"), uploadFile);
 router.get("/case/:caseId", auth, getFilesByCase);
+router.get("/case/:caseId/:id/download", auth, downloadCaseFile);
 router.delete("/:id", auth, role("admin", "lawyer"), deleteFile);
 
 // Service files
