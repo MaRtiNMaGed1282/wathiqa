@@ -116,10 +116,19 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [x] Existing destructive confirmations retained.
 - [ ] Full browser/API state test.
 
+### Services — IN PROGRESS
+
+- [x] Shared loading/busy/duplicate-submission foundation applies.
+- [x] Existing Arabic empty state retained.
+- [x] GET API error state with Arabic retry banner added.
+- [x] Existing success feedback retained.
+- [x] Required service/client/date fields normalized.
+- [x] Numeric fee input normalized.
+- [ ] Full browser/API state test.
+
 ### Remaining Pages
 
 - [ ] Calendar
-- [ ] Services
 - [ ] Notifications
 - [ ] Legal Library
 - [ ] Law Viewer
