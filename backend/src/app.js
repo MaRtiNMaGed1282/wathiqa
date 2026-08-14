@@ -13,6 +13,7 @@ const attorneyRoutes = require("./routes/attorneys.routes");
 const serviceRoutes = require("./routes/services.routes");
 const expensesRoutes = require("./routes/expenses.routes");
 const caseExpensesRoutes = require("./routes/case-expenses.routes");
+const activityAuditMiddleware = require("./middlewares/activityAudit.middleware");
 
 /* Middlewares */
 app.use(cors());
@@ -39,6 +40,11 @@ app.use("/api/activity", require("./routes/activity.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
 app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
+
+// Audit successful mutating API requests after route handlers have populated req.user.
+// Existing explicit activity logs remain intact; this middleware provides a centralized
+// safety net for mutation coverage without recording request bodies or secrets.
+app.use(activityAuditMiddleware);
 
 console.log("STATIC UPLOADS =", path.join(process.cwd(), "../uploads"));
 app.use("/uploads", express.static(path.join(process.cwd(), "../uploads")));
