@@ -2,12 +2,23 @@ const db = require("../config/sqlite");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config/env");
+const logActivity = require("../utils/activityLogger");
+
+const MIN_PASSWORD_LENGTH = 8;
+
+function validatePassword(password) {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return "يجب أن تكون كلمة المرور 8 أحرف على الأقل";
+  }
+
+  return null;
+}
 
 /**
  * Login
  */
 exports.login = (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
 
   if (!email || !password) {
     return res.status(400).json({
@@ -17,7 +28,16 @@ exports.login = (req, res) => {
 
   db.get(
     `
-    SELECT *
+    SELECT
+      id,
+      full_name,
+      username,
+      email,
+      password_hash,
+      role,
+      last_login,
+      is_active,
+      must_change_password
     FROM users
     WHERE email = ?
     `,
@@ -35,6 +55,12 @@ exports.login = (req, res) => {
         });
       }
 
+      if (!user.is_active) {
+        return res.status(403).json({
+          message: "هذا الحساب غير نشط",
+        });
+      }
+
       try {
         const validPassword = await bcrypt.compare(
           password,
@@ -46,6 +72,8 @@ exports.login = (req, res) => {
             message: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
           });
         }
+
+        const mustChangePassword = Boolean(user.must_change_password);
 
         const token = jwt.sign(
           {
@@ -59,18 +87,33 @@ exports.login = (req, res) => {
           },
         );
 
-        return res.json({
-          token,
+        db.run(
+          `
+          UPDATE users
+          SET last_login = CURRENT_TIMESTAMP
+          WHERE id = ?
+          `,
+          [user.id],
+          (updateErr) => {
+            if (updateErr) {
+              return res.status(500).json({
+                message: updateErr.message,
+              });
+            }
 
-          must_change_password: Boolean(user.must_change_password),
-
-          user: {
-            id: user.id,
-            full_name: user.full_name,
-            email: user.email,
-            role: user.role,
+            return res.json({
+              token,
+              must_change_password: mustChangePassword,
+              user: {
+                id: user.id,
+                full_name: user.full_name,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+              },
+            });
           },
-        });
+        );
       } catch (error) {
         return res.status(500).json({
           message: error.message,
@@ -81,30 +124,35 @@ exports.login = (req, res) => {
 };
 
 /**
- * Change Password (First Login)
+ * Change Password
+ *
+ * Requires an authenticated JWT. The current user is taken from req.user;
+ * email is never accepted as an identity selector for this operation.
  */
-exports.changePassword = (req, res) => {
-  const { email, newPassword } = req.body;
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
 
-  if (!email || !newPassword) {
+  if (!currentPassword || !newPassword) {
     return res.status(400).json({
-      message: "البيانات غير مكتملة",
+      message: "كلمة المرور الحالية والجديدة مطلوبتان",
     });
   }
 
-  if (newPassword.length < 8) {
+  const passwordError = validatePassword(newPassword);
+
+  if (passwordError) {
     return res.status(400).json({
-      message: "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+      message: passwordError,
     });
   }
 
   db.get(
     `
-    SELECT id
+    SELECT id, password_hash, must_change_password
     FROM users
-    WHERE email = ?
+    WHERE id = ?
     `,
-    [email],
+    [req.user.id],
     async (err, user) => {
       if (err) {
         return res.status(500).json({
@@ -113,12 +161,23 @@ exports.changePassword = (req, res) => {
       }
 
       if (!user) {
-        return res.status(404).json({
+        return res.status(401).json({
           message: "المستخدم غير موجود",
         });
       }
 
       try {
+        const validCurrentPassword = await bcrypt.compare(
+          currentPassword,
+          user.password_hash,
+        );
+
+        if (!validCurrentPassword) {
+          return res.status(401).json({
+            message: "كلمة المرور الحالية غير صحيحة",
+          });
+        }
+
         const hash = await bcrypt.hash(newPassword, 10);
 
         db.run(
@@ -127,18 +186,27 @@ exports.changePassword = (req, res) => {
           SET
             password_hash = ?,
             must_change_password = 0
-          WHERE email = ?
+          WHERE id = ?
           `,
-          [hash, email],
-          function (err) {
-            if (err) {
+          [hash, req.user.id],
+          function (updateErr) {
+            if (updateErr) {
               return res.status(500).json({
-                message: err.message,
+                message: updateErr.message,
               });
             }
 
+            logActivity({
+              module: "user",
+              record_id: req.user.id,
+              action: "password_changed",
+              description: "تم تغيير كلمة المرور",
+              user_id: req.user.id,
+            });
+
             return res.json({
               message: "تم تغيير كلمة المرور بنجاح",
+              must_change_password: false,
             });
           },
         );
