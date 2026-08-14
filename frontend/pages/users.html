@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="إدارة مستخدمي نظام وثيقة" />
+    <title>المستخدمون | وثيقة</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/core/app.js"></script>
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/css/input.css" />
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+
+    <style>
+      body { font-family: Cairo, sans-serif; }
+      .stat-card { transition: transform .15s ease, box-shadow .15s ease; }
+      .stat-card:hover { transform: translateY(-2px); }
+    </style>
+  </head>
+
+  <body class="bg-[#e8e3da]">
+    <div class="flex min-h-screen">
+      <div id="navbar-container"></div>
+      <div id="sidebar-container"></div>
+
+      <main class="flex-1 p-6">
+        <div id="accessDenied" class="hidden min-h-[70vh] items-center justify-center">
+          <div class="bg-white rounded-2xl shadow p-10 text-center max-w-md">
+            <div class="text-5xl mb-4">!</div>
+            <h1 class="text-2xl font-bold text-[#1f2a44] mb-3">غير مصرح لك بالدخول</h1>
+            <p class="text-gray-600 mb-6">إدارة المستخدمين متاحة لمدير النظام فقط.</p>
+            <a href="dashboard.html" class="inline-block bg-[#1f2a44] text-white px-6 py-3 rounded-lg">العودة للوحة التحكم</a>
+          </div>
+        </div>
+
+        <section id="usersContent" class="hidden">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <div>
+              <h1 class="text-3xl font-bold text-[#1f2a44]">المستخدمون</h1>
+              <p class="text-gray-600 mt-2">إدارة حسابات مستخدمي نظام وثيقة وصلاحياتهم</p>
+            </div>
+            <button id="addUserBtn" type="button" class="bg-[#1f2a44] text-white px-5 py-3 rounded-lg shadow hover:opacity-90">+ إضافة مستخدم</button>
+          </div>
+
+          <div id="statsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card bg-white rounded-xl shadow p-5"><p class="text-gray-500">إجمالي المستخدمين</p><p id="totalUsers" class="text-3xl font-bold text-[#1f2a44] mt-2">0</p></div>
+            <div class="stat-card bg-white rounded-xl shadow p-5"><p class="text-gray-500">المستخدمون النشطون</p><p id="activeUsers" class="text-3xl font-bold text-green-700 mt-2">0</p></div>
+            <div class="stat-card bg-white rounded-xl shadow p-5"><p class="text-gray-500">المستخدمون المعطلون</p><p id="inactiveUsers" class="text-3xl font-bold text-red-700 mt-2">0</p></div>
+            <div class="stat-card bg-white rounded-xl shadow p-5"><p class="text-gray-500">مديرو النظام</p><p id="totalAdmins" class="text-3xl font-bold text-[#1f2a44] mt-2">0</p></div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-5 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <h2 class="text-xl font-bold text-[#1f2a44]">قائمة المستخدمين</h2>
+              <input id="userSearch" type="search" placeholder="بحث بالاسم أو البريد أو اسم المستخدم" class="w-full md:w-80 border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#1f2a44]" />
+            </div>
+
+            <div id="tableLoading" class="p-10 text-center text-gray-500">جاري تحميل المستخدمين...</div>
+            <div id="tableError" class="hidden p-10 text-center text-red-600"></div>
+            <div id="emptyState" class="hidden p-10 text-center text-gray-500">لا يوجد مستخدمون.</div>
+
+            <div id="tableWrap" class="hidden overflow-x-auto">
+              <table class="w-full text-right">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="p-4 whitespace-nowrap">الاسم</th>
+                    <th class="p-4 whitespace-nowrap">البريد الإلكتروني</th>
+                    <th class="p-4 whitespace-nowrap">الدور</th>
+                    <th class="p-4 whitespace-nowrap">الحالة</th>
+                    <th class="p-4 whitespace-nowrap">آخر دخول</th>
+                    <th class="p-4 whitespace-nowrap">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="userModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-[#1f2a44]">إضافة مستخدم</h3>
+          <button id="closeUserModal" type="button" class="text-gray-500 text-2xl">×</button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2 font-semibold">الاسم الكامل</label>
+            <input id="userFullName" type="text" class="w-full border rounded-lg p-3" autocomplete="off" />
+          </div>
+          <div>
+            <label class="block mb-2 font-semibold">اسم المستخدم</label>
+            <div class="flex">
+              <input id="userUsername" type="text" dir="ltr" class="flex-1 border rounded-r-lg p-3" autocomplete="off" />
+              <span class="bg-gray-100 border border-r-0 rounded-l-lg px-4 flex items-center" dir="ltr">@wathiqa.com</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">سيتم إنشاء البريد تلقائياً من اسم المستخدم.</p>
+          </div>
+          <div>
+            <label class="block mb-2 font-semibold">كلمة المرور</label>
+            <input id="userPassword" type="password" dir="ltr" class="w-full border rounded-lg p-3" autocomplete="new-password" />
+          </div>
+          <div>
+            <label class="block mb-2 font-semibold">تأكيد كلمة المرور</label>
+            <input id="userConfirmPassword" type="password" dir="ltr" class="w-full border rounded-lg p-3" autocomplete="new-password" />
+          </div>
+          <div>
+            <label class="block mb-2 font-semibold">الدور</label>
+            <select id="userRole" class="w-full border rounded-lg p-3">
+              <option value="admin">مدير النظام</option>
+              <option value="lawyer">محامي</option>
+              <option value="assistant">مساعد</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+          <button id="cancelUserBtn" type="button" class="px-5 py-2 border rounded-lg">إلغاء</button>
+          <button id="saveUserBtn" type="button" class="px-5 py-2 bg-[#1f2a44] text-white rounded-lg">حفظ المستخدم</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resetModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold text-[#1f2a44] mb-6">إعادة تعيين كلمة المرور</h3>
+        <input id="resetUserId" type="hidden" />
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2 font-semibold">كلمة المرور الجديدة</label>
+            <input id="resetPassword" type="password" dir="ltr" class="w-full border rounded-lg p-3" autocomplete="new-password" />
+          </div>
+          <div>
+            <label class="block mb-2 font-semibold">تأكيد كلمة المرور</label>
+            <input id="resetConfirmPassword" type="password" dir="ltr" class="w-full border rounded-lg p-3" autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+          <button id="cancelResetBtn" type="button" class="px-5 py-2 border rounded-lg">إلغاء</button>
+          <button id="saveResetBtn" type="button" class="px-5 py-2 bg-[#1f2a44] text-white rounded-lg">حفظ</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      "use strict";
+
+      const state = { users: [], currentUser: null };
+
+      const $ = (id) => document.getElementById(id);
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function showToast(message, success = true) {
+        if (window.Toastify) {
+          Toastify({ text: message, duration: 3000, gravity: "top", position: "center", className: success ? "bg-green-600" : "bg-red-600" }).showToast();
+        } else if (window.Swal) {
+          Swal.fire({ toast: true, position: "top", icon: success ? "success" : "error", title: message, showConfirmButton: false, timer: 2500 });
+        } else {
+          alert(message);
+        }
+      }
+
+      function roleLabel(role) {
+        return role === "admin" ? "مدير النظام" : role === "lawyer" ? "محامي" : "مساعد";
+      }
+
+      function formatLastLogin(value) {
+        return value ? escapeHtml(value) : "لم يسجل الدخول بعد";
+      }
+
+      function renderStats() {
+        const users = state.users;
+        $("totalUsers").textContent = users.length;
+        $("activeUsers").textContent = users.filter((user) => Number(user.is_active) === 1).length;
+        $("inactiveUsers").textContent = users.filter((user) => Number(user.is_active) === 0).length;
+        $("totalAdmins").textContent = users.filter((user) => user.role === "admin").length;
+      }
+
+      function renderUsers() {
+        const query = $("userSearch").value.trim().toLowerCase();
+        const users = state.users.filter((user) => {
+          return [user.full_name, user.username, user.email].some((value) => String(value || "").toLowerCase().includes(query));
+        });
+
+        $("emptyState").classList.toggle("hidden", users.length !== 0);
+        $("tableWrap").classList.toggle("hidden", users.length === 0);
+
+        $("usersTableBody").innerHTML = users.map((user) => {
+          const active = Number(user.is_active) === 1;
+          const isSelf = Number(user.id) === Number(state.currentUser?.id);
+          return `
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-4 font-semibold">${escapeHtml(user.full_name)}</td>
+              <td class="p-4" dir="ltr">${escapeHtml(user.email)}</td>
+              <td class="p-4">${roleLabel(user.role)}</td>
+              <td class="p-4"><span class="inline-flex px-3 py-1 rounded-full text-sm ${active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}">${active ? "نشط" : "معطل"}</span></td>
+              <td class="p-4">${formatLastLogin(user.last_login)}</td>
+              <td class="p-4">
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" data-action="toggle" data-id="${user.id}" data-active="${active ? 1 : 0}" class="px-3 py-1 rounded-lg text-white ${active ? "bg-red-600" : "bg-green-600"}">${active ? "تعطيل" : "تفعيل"}</button>
+                  <button type="button" data-action="reset" data-id="${user.id}" class="px-3 py-1 rounded-lg bg-[#1f2a44] text-white">إعادة كلمة المرور</button>
+                  ${isSelf ? "" : `<button type="button" data-action="delete" data-id="${user.id}" class="px-3 py-1 rounded-lg bg-red-700 text-white">حذف</button>`}
+                </div>
+              </td>
+            </tr>`;
+        }).join("");
+      }
+
+      async function loadUsers() {
+        $("tableLoading").classList.remove("hidden");
+        $("tableError").classList.add("hidden");
+        $("tableWrap").classList.add("hidden");
+        $("emptyState").classList.add("hidden");
+
+        try {
+          const users = await api.get("/users");
+          if (!Array.isArray(users)) throw new Error("استجابة غير صالحة من الخادم");
+          state.users = users;
+          renderStats();
+          renderUsers();
+        } catch (error) {
+          $("tableError").textContent = error?.message || "تعذر تحميل المستخدمين";
+          $("tableError").classList.remove("hidden");
+        } finally {
+          $("tableLoading").classList.add("hidden");
+        }
+      }
+
+      function openModal(id) { $(id).classList.remove("hidden"); $(id).classList.add("flex"); }
+      function closeModal(id) { $(id).classList.add("hidden"); $(id).classList.remove("flex"); }
+
+      async function saveUser() {
+        const full_name = $("userFullName").value.trim();
+        const username = $("userUsername").value.trim();
+        const password = $("userPassword").value;
+        const confirmPassword = $("userConfirmPassword").value;
+        const role = $("userRole").value;
+
+        if (!full_name || !username || !password || !role) return showToast("يرجى إدخال جميع البيانات المطلوبة", false);
+        if (password.length < 8) return showToast("يجب أن تكون كلمة المرور 8 أحرف على الأقل", false);
+        if (password !== confirmPassword) return showToast("كلمتا المرور غير متطابقتين", false);
+
+        const button = $("saveUserBtn");
+        button.disabled = true;
+        try {
+          const result = await api.post("/users", { full_name, username, password, role });
+          showToast(result.message || "تم إنشاء المستخدم بنجاح");
+          closeModal("userModal");
+          ["userFullName", "userUsername", "userPassword", "userConfirmPassword"].forEach((id) => $(id).value = "");
+          $("userRole").value = "lawyer";
+          await loadUsers();
+        } catch (error) {
+          showToast(error?.message || "تعذر إنشاء المستخدم", false);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      async function toggleUserStatus(id, currentActive) {
+        const action = currentActive ? "تعطيل" : "تفعيل";
+        const result = await Swal.fire({ title: `${action} المستخدم؟`, text: `هل تريد ${action} هذا الحساب؟`, icon: "question", showCancelButton: true, confirmButtonText: action, cancelButtonText: "إلغاء" });
+        if (!result.isConfirmed) return;
+
+        try {
+          const response = await api.put(`/users/${id}/status`, { is_active: currentActive ? 0 : 1 });
+          showToast(response.message || `تم ${action} المستخدم}`);
+          await loadUsers();
+        } catch (error) {
+          showToast(error?.message || `تعذر ${action} المستخدم`, false);
+        }
+      }
+
+      function openReset(id) {
+        $("resetUserId").value = id;
+        $("resetPassword").value = "";
+        $("resetConfirmPassword").value = "";
+        openModal("resetModal");
+      }
+
+      async function saveReset() {
+        const id = $("resetUserId").value;
+        const password = $("resetPassword").value;
+        const confirmPassword = $("resetConfirmPassword").value;
+
+        if (password.length < 8) return showToast("يجب أن تكون كلمة المرور 8 أحرف على الأقل", false);
+        if (password !== confirmPassword) return showToast("كلمتا المرور غير متطابقتين", false);
+
+        try {
+          const response = await api.put(`/users/${id}/password`, { password });
+          showToast(response.message || "تم إعادة تعيين كلمة المرور بنجاح");
+          closeModal("resetModal");
+        } catch (error) {
+          showToast(error?.message || "تعذر إعادة تعيين كلمة المرور", false);
+        }
+      }
+
+      async function deleteUser(id) {
+        const result = await Swal.fire({ title: "حذف المستخدم", text: "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟", icon: "warning", showCancelButton: true, confirmButtonText: "حذف", cancelButtonText: "إلغاء", confirmButtonColor: "#b91c1c" });
+        if (!result.isConfirmed) return;
+
+        try {
+          const response = await api.delete(`/users/${id}`);
+          showToast(response.message || "تم حذف المستخدم بنجاح");
+          await loadUsers();
+        } catch (error) {
+          showToast(error?.message || "تعذر حذف المستخدم", false);
+        }
+      }
+
+      $("usersTableBody").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const id = Number(button.dataset.id);
+        if (button.dataset.action === "toggle") toggleUserStatus(id, button.dataset.active === "1");
+        if (button.dataset.action === "reset") openReset(id);
+        if (button.dataset.action === "delete") deleteUser(id);
+      });
+
+      $("userSearch").addEventListener("input", renderUsers);
+      $("addUserBtn").addEventListener("click", () => openModal("userModal"));
+      $("closeUserModal").addEventListener("click", () => closeModal("userModal"));
+      $("cancelUserBtn").addEventListener("click", () => closeModal("userModal"));
+      $("cancelResetBtn").addEventListener("click", () => closeModal("resetModal"));
+      $("saveUserBtn").addEventListener("click", saveUser);
+      $("saveResetBtn").addEventListener("click", saveReset);
+
+      ["userModal", "resetModal"].forEach((id) => $(id).addEventListener("click", (event) => {
+        if (event.target.id === id) closeModal(id);
+      }));
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        state.currentUser = auth.getUser();
+        const isAdmin = state.currentUser?.role === "admin";
+
+        if (!isAdmin) {
+          $("accessDenied").classList.remove("hidden");
+          $("accessDenied").classList.add("flex");
+          return;
+        }
+
+        $("usersContent").classList.remove("hidden");
+        await loadUsers();
+      });
+    </script>
+  </body>
+</html>
