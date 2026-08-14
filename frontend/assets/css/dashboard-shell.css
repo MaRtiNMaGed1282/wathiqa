@@ -1,180 +1,98 @@
-/* ==========================================================
-   WATHIQA DASHBOARD SHELL COMPATIBILITY
-   All authenticated pages that still use the legacy direct-body
-   structure inherit the same frame as dashboard.html.
-   ========================================================== */
+/* Wathiqa — Dashboard-canonical shell for every authenticated page. */
 
-/* ---------- Authenticated legacy pages ---------- */
-body:has(> #sidebar-container) {
+/* Canonical app-shell pages: content left, sidebar right. */
+#app-shell {
+  direction: ltr !important;
   display: grid !important;
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  grid-template-rows: var(--navbar-height) minmax(0, 1fr);
-  grid-template-areas:
-    "sidebar navbar"
-    "sidebar main";
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width) !important;
+  grid-template-areas: "app sidebar" !important;
+  width: 100% !important;
+  min-width: 0 !important;
   min-height: 100vh !important;
-  min-width: 0;
   margin: 0 !important;
   padding: 0 !important;
-  overflow-x: hidden;
-  direction: rtl !important;
   background: var(--color-page) !important;
-  color: var(--color-text) !important;
-  font-family: var(--font-family) !important;
 }
+#app-shell > #app { grid-area: app !important; direction: rtl !important; min-width: 0 !important; min-height: 100vh !important; width: 100% !important; }
+#app-shell > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+#app-shell > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
+#app-shell #navbar-container, #app-shell #app > main { direction: rtl !important; width: 100% !important; min-width: 0 !important; }
 
-body:has(> #sidebar-container) > #sidebar-container {
-  grid-area: sidebar;
-  width: var(--sidebar-width) !important;
-  min-width: var(--sidebar-width) !important;
-  height: 100vh;
-  align-self: stretch;
-  direction: rtl;
-}
-
-body:has(> #sidebar-container) > #sidebar-container > #sidebar {
-  width: var(--sidebar-width) !important;
-  height: 100vh;
-  position: sticky !important;
-  top: 0 !important;
-  right: auto !important;
-  left: auto !important;
-}
-
-body:has(> #sidebar-container) > #navbar-container {
-  grid-area: navbar;
-  width: 100%;
-  min-width: 0;
-  height: var(--navbar-height);
-  position: sticky !important;
-  top: 0 !important;
-  z-index: var(--z-navbar);
-  direction: rtl;
-}
-
-body:has(> #sidebar-container) > #navbar-container > #navbar {
-  width: 100%;
-  height: var(--navbar-height);
-  direction: rtl;
-}
-
-body:has(> #sidebar-container) > main {
-  grid-area: main;
+/* Legacy pages with navbar/sidebar/main directly under body. */
+body:has(> #sidebar-container) {
+  direction: ltr !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width) !important;
+  grid-template-rows: var(--navbar-height) minmax(0, 1fr) !important;
+  grid-template-areas: "navbar sidebar" "main sidebar" !important;
   width: 100% !important;
-  min-width: 0;
-  max-width: none !important;
-  min-height: calc(100vh - var(--navbar-height));
+  min-width: 0 !important;
+  min-height: 100vh !important;
   margin: 0 !important;
-  padding: var(--space-8) !important;
-  overflow: visible !important;
-  direction: rtl !important;
-  text-align: right;
-  background: var(--color-page);
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  background: var(--color-page) !important;
 }
+body:has(> #sidebar-container) > #navbar-container { grid-area: navbar !important; direction: rtl !important; width: 100% !important; height: var(--navbar-height) !important; position: sticky !important; top: 0 !important; z-index: var(--z-navbar) !important; }
+body:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+body:has(> #sidebar-container) > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
+body:has(> #sidebar-container) > main { grid-area: main !important; direction: rtl !important; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: calc(100vh - var(--navbar-height)) !important; margin: 0 !important; padding: var(--space-8) !important; overflow: visible !important; text-align: right !important; background: var(--color-page) !important; }
 
-/* ---------- Dashboard-equivalent page spacing ---------- */
-body:has(> #sidebar-container) > main > * {
-  direction: rtl;
+/* Legacy pages with a flex wrapper around navbar/sidebar/main. */
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) {
+  direction: ltr !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width) !important;
+  grid-template-rows: var(--navbar-height) minmax(0, 1fr) !important;
+  grid-template-areas: "navbar sidebar" "main sidebar" !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--color-page) !important;
 }
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #navbar-container { grid-area: navbar !important; direction: rtl !important; width: 100% !important; height: var(--navbar-height) !important; position: sticky !important; top: 0 !important; z-index: var(--z-navbar) !important; }
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container { grid-area: sidebar !important; direction: rtl !important; width: var(--sidebar-width) !important; min-width: var(--sidebar-width) !important; height: 100vh !important; }
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container > #sidebar { width: var(--sidebar-width) !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
+body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > main { grid-area: main !important; direction: rtl !important; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: calc(100vh - var(--navbar-height)) !important; margin: 0 !important; padding: var(--space-8) !important; overflow: visible !important; text-align: right !important; background: var(--color-page) !important; }
 
-body:has(> #sidebar-container) > main > h1,
-body:has(> #sidebar-container) > main > h2:first-child {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
-}
+/* Page direction, width and controls. */
+.page, .page-content, body:has(#sidebar-container) main, body:has(#sidebar-container) main > * { direction: rtl; text-align: right; }
+.page-content, .container-fluid { width: 100% !important; max-width: none !important; }
+body:has(#sidebar-container) main table { width: 100%; direction: rtl; }
+body:has(#sidebar-container) main th, body:has(#sidebar-container) main td { text-align: right; vertical-align: middle; }
+body:has(#sidebar-container) main input, body:has(#sidebar-container) main textarea, body:has(#sidebar-container) main select { direction: rtl; text-align: right; }
 
-/* ---------- Dashboard-equivalent surfaces ---------- */
-body:has(> #sidebar-container) > main .bg-white.rounded-lg,
-body:has(> #sidebar-container) > main .bg-white.rounded-xl,
-body:has(> #sidebar-container) > main .bg-white.rounded-2xl,
-body:has(> #sidebar-container) > main .bg-white.rounded-3xl {
-  border: 1px solid rgba(41, 48, 64, 0.08) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
+/* Dashboard visual language for legacy cards. */
+body:has(#sidebar-container) main .bg-white.rounded-lg,
+body:has(#sidebar-container) main .bg-white.rounded-xl,
+body:has(#sidebar-container) main .bg-white.rounded-2xl,
+body:has(#sidebar-container) main .bg-white.rounded-3xl,
+body:has(#sidebar-container) main .card,
+body:has(#sidebar-container) main .surface { border: 1px solid rgba(41,48,64,.08) !important; box-shadow: var(--shadow-sm) !important; }
+body:has(#sidebar-container) main .bg-white.rounded-lg, body:has(#sidebar-container) main .bg-white.rounded-xl { border-radius: var(--radius-lg) !important; }
+body:has(#sidebar-container) main .bg-white.rounded-2xl, body:has(#sidebar-container) main .bg-white.rounded-3xl, body:has(#sidebar-container) main .card, body:has(#sidebar-container) main .surface { border-radius: var(--radius-xl) !important; }
+body:has(#sidebar-container) main button.bg-accent, body:has(#sidebar-container) main button[class*="bg-accent"] { min-height: 46px; border-radius: var(--radius-md) !important; background: var(--color-accent) !important; color: #fff !important; font-weight: var(--font-weight-semibold); box-shadow: var(--shadow-sm); }
+body:has(#sidebar-container) main button.bg-accent:hover, body:has(#sidebar-container) main button[class*="bg-accent"]:hover { background: var(--color-accent-dark) !important; box-shadow: var(--shadow-md); }
 
-body:has(> #sidebar-container) > main .bg-white.rounded-lg,
-body:has(> #sidebar-container) > main .bg-white.rounded-xl {
-  border-radius: var(--radius-lg) !important;
-}
+/* Dashboard-specific fixes requested during visual review. */
+#dashboard-hero #dashboard-greeting { color: #fff !important; }
+#dashboard-kpis h2 { font-family: var(--font-family) !important; font-weight: 700 !important; font-variant-numeric: tabular-nums; color: var(--color-primary) !important; }
 
-body:has(> #sidebar-container) > main .bg-white.rounded-2xl,
-body:has(> #sidebar-container) > main .bg-white.rounded-3xl {
-  border-radius: var(--radius-xl) !important;
-}
+/* Search icon must survive Lucide replacement and RTL positioning. */
+.navbar-search { position: relative !important; }
+.navbar-search-icon, .navbar-search svg { display: block !important; position: absolute !important; top: 50% !important; right: 18px !important; left: auto !important; width: 20px !important; height: 20px !important; transform: translateY(-50%) !important; color: var(--color-text-secondary) !important; pointer-events: none !important; z-index: 2 !important; }
+.navbar-search input { padding-inline: 52px 18px !important; }
 
-/* ---------- Dashboard-equivalent controls ---------- */
-body:has(> #sidebar-container) > main button.bg-accent,
-body:has(> #sidebar-container) > main button[class*="bg-accent"] {
-  min-height: 46px;
-  border-radius: var(--radius-md) !important;
-  background: var(--color-accent) !important;
-  color: white !important;
-  font-weight: var(--font-weight-semibold);
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
+/* Modals are viewport overlays, never constrained by the page shell. */
+body:has(#sidebar-container) .fixed.inset-0 { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; overflow-y: auto !important; padding: 24px !important; z-index: var(--z-modal) !important; }
+body:has(#sidebar-container) .fixed.inset-0 > div { width: min(100%, 1200px) !important; max-width: 1200px !important; max-height: calc(100vh - 48px) !important; overflow-y: auto !important; margin: auto !important; }
+body:has(#sidebar-container) [id*="Modal"], body:has(#sidebar-container) [id*="modal" i] { z-index: var(--z-modal) !important; }
 
-body:has(> #sidebar-container) > main button.bg-accent:hover,
-body:has(> #sidebar-container) > main button[class*="bg-accent"]:hover {
-  background: var(--color-accent-dark) !important;
-  box-shadow: var(--shadow-md);
-}
-
-body:has(> #sidebar-container) > main button.bg-gray-300 {
-  min-height: 46px;
-  border-radius: var(--radius-md) !important;
-}
-
-/* ---------- RTL tables ---------- */
-body:has(> #sidebar-container) > main table {
-  direction: rtl;
-}
-
-body:has(> #sidebar-container) > main th,
-body:has(> #sidebar-container) > main td {
-  text-align: right;
-  vertical-align: middle;
-}
-
-/* ---------- RTL forms ---------- */
-body:has(> #sidebar-container) > main input,
-body:has(> #sidebar-container) > main textarea,
-body:has(> #sidebar-container) > main select {
-  direction: rtl;
-  text-align: right;
-}
-
-/* ---------- Keep fixed overlays independent from the page grid ---------- */
-body:has(> #sidebar-container) > .fixed,
-body:has(> #sidebar-container) > [id$="Modal"],
-body:has(> #sidebar-container) > [id*="modal" i] {
-  grid-area: unset;
-}
-
-/* ---------- Responsive ---------- */
 @media (max-width: 768px) {
-  body:has(> #sidebar-container) {
-    display: block !important;
-    min-height: 100vh !important;
-  }
-
-  body:has(> #sidebar-container) > #sidebar-container {
-    width: 0 !important;
-    min-width: 0 !important;
-  }
-
-  body:has(> #sidebar-container) > #sidebar-container > #sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    right: 0 !important;
-  }
-
-  body:has(> #sidebar-container) > #navbar-container {
-    height: var(--navbar-height);
-  }
-
-  body:has(> #sidebar-container) > main {
-    min-height: calc(100vh - var(--navbar-height));
-    padding: var(--space-6) !important;
-  }
+  #app-shell, body:has(> #sidebar-container), body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) { display: block !important; min-height: 100vh !important; }
+  #app-shell > #sidebar-container, body:has(> #sidebar-container) > #sidebar-container, body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container { width: 0 !important; min-width: 0 !important; }
+  #app-shell > #sidebar-container > #sidebar, body:has(> #sidebar-container) > #sidebar-container > #sidebar, body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > #sidebar-container > #sidebar { position: fixed !important; top: 0 !important; right: 0 !important; }
+  body:has(> #sidebar-container) > main, body:has(> .flex > #sidebar-container) > .flex:has(> #sidebar-container) > main { padding: var(--space-6) !important; }
 }
