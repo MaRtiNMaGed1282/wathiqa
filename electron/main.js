@@ -1,6 +1,11 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, session } = require("electron");
 const path = require("path");
 const http = require("http");
+
+const BACKEND_URL = "http://localhost:5000";
+const LOGIN_PAGE = path.join(__dirname, "../frontend/pages/login.html");
+const ACTIVATION_PAGE = path.join(__dirname, "../frontend/pages/activation.html");
+const APP_ICON = path.join(__dirname, "../assets/wathiqa.ico");
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
@@ -12,27 +17,54 @@ process.on("unhandledRejection", (err) => {
 
 const server = require("../backend/src/server");
 
-function createWindow() {
+function configureSession() {
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false);
+  });
+}
+
+function configureNavigation(win) {
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
+  win.webContents.on("will-navigate", (event, url) => {
+    if (!url.startsWith("file://")) {
+      event.preventDefault();
+    }
+  });
+}
+
+function createWindow(page) {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    minWidth: 1100,
+    minHeight: 700,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, "../assets/wathiqa.ico"),
+    icon: APP_ICON,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
   });
 
   win.maximize();
+  configureNavigation(win);
 
-  win.loadFile(path.join(__dirname, "../frontend/pages/login.html"));
+  win.loadFile(page);
 
-  win.webContents.on("did-fail-load", (e, code, desc) => {
-    console.log("LOAD FAILED:", code, desc);
+  win.webContents.on("did-fail-load", (_event, code, desc) => {
+    console.error("LOAD FAILED:", code, desc);
   });
+
+  return win;
 }
 
 function checkLicense() {
   return new Promise((resolve) => {
     http
-      .get("http://localhost:5000/api/license/validate", (res) => {
+      .get(`${BACKEND_URL}/api/license/validate`, (res) => {
         let data = "";
 
         res.on("data", (chunk) => {
@@ -52,22 +84,23 @@ function checkLicense() {
       });
   });
 }
+
 function waitForServer(timeout = 15000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
 
     const check = () => {
-      http
-        .get("http://localhost:5000", () => {
-          resolve();
-        })
-        .on("error", () => {
-          if (Date.now() - start > timeout) {
-            reject(new Error("Backend startup timeout"));
-          } else {
-            setTimeout(check, 1000);
-          }
-        });
+      const request = http.get(BACKEND_URL, () => {
+        resolve();
+      });
+
+      request.on("error", () => {
+        if (Date.now() - start > timeout) {
+          reject(new Error("Backend startup timeout"));
+        } else {
+          setTimeout(check, 500);
+        }
+      });
     };
 
     check();
@@ -75,25 +108,13 @@ function waitForServer(timeout = 15000) {
 }
 
 app.whenReady().then(async () => {
+  configureSession();
+
   try {
     await waitForServer();
 
     const license = await checkLicense();
-
-    if (license.valid) {
-      createWindow();
-    } else {
-      const win = new BrowserWindow({
-        width: 1400,
-        height: 900,
-        autoHideMenuBar: true,
-        icon: path.join(__dirname, "../frontend/assets/faviconw.png"),
-      });
-
-      win.maximize();
-
-      win.loadFile(path.join(__dirname, "../frontend/pages/activation.html"));
-    }
+    createWindow(license.valid ? LOGIN_PAGE : ACTIVATION_PAGE);
   } catch (err) {
     console.error(err);
 
@@ -101,9 +122,20 @@ app.whenReady().then(async () => {
       width: 800,
       height: 500,
       autoHideMenuBar: true,
+      icon: APP_ICON,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
     });
 
-    win.loadURL("data:text/html,<h2>Failed to start backend server</h2>");
+    win.loadURL(
+      "data:text/html;charset=utf-8," +
+        encodeURIComponent(
+          "<!doctype html><html lang=\"en\"><body style=\"font-family:sans-serif;padding:40px\"><h2>Wathiqa could not start</h2><p>The local application server did not become available.</p></body></html>",
+        ),
+    );
   }
 });
 
