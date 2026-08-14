@@ -4,7 +4,9 @@
   const ROUTES = Object.freeze({
     LOGIN: "login.html",
     DASHBOARD: "dashboard.html",
+    CHANGE_PASSWORD: "change-password.html",
   });
+
   const STORAGE_KEYS = Object.freeze({
     TOKEN: "token",
     USER: "user",
@@ -20,7 +22,8 @@
 
   function setToken(token) {
     try {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      if (token) localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      else localStorage.removeItem(STORAGE_KEYS.TOKEN);
     } catch {}
   }
 
@@ -29,11 +32,7 @@
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
     } catch {}
   }
-  function removeUser() {
-    try {
-      localStorage.removeItem(STORAGE_KEYS.USER);
-    } catch {}
-  }
+
   function getUser() {
     try {
       const value = localStorage.getItem(STORAGE_KEYS.USER);
@@ -45,7 +44,13 @@
 
   function setUser(user) {
     try {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user || {}));
+    } catch {}
+  }
+
+  function removeUser() {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.USER);
     } catch {}
   }
 
@@ -60,46 +65,95 @@
   function decodeJwt(token) {
     try {
       const payload = token.split(".")[1];
+      if (!payload) return null;
 
       const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
 
-      return JSON.parse(atob(normalized));
+      return JSON.parse(atob(padded));
     } catch {
       return null;
     }
   }
 
+  function getTokenPayload(token = getToken()) {
+    return token ? decodeJwt(token) : null;
+  }
+
   function isTokenExpired(token = getToken()) {
-    if (!token) {
-      return true;
-    }
+    if (!token) return true;
 
     const payload = decodeJwt(token);
 
-    if (!payload?.exp) {
-      return false;
-    }
+    // A malformed token is not considered a valid authenticated session.
+    if (!payload) return true;
+    if (!payload.exp) return false;
 
     return Date.now() >= payload.exp * 1000;
   }
 
-  function redirectToLogin() {
-    global.location.replace(ROUTES.LOGIN);
+  function getCurrentRole() {
+    return getUser()?.role || getTokenPayload()?.role || null;
+  }
+
+  function hasRole(...roles) {
+    const role = getCurrentRole();
+    return Boolean(role) && roles.includes(role);
+  }
+
+  function isAdmin() {
+    return hasRole("admin");
+  }
+
+  function isLawyer() {
+    return hasRole("lawyer");
+  }
+
+  function isAssistant() {
+    return hasRole("assistant", "secretary");
+  }
+
+  function canDelete() {
+    return isAdmin() || isLawyer();
+  }
+
+  function canViewFinancials() {
+    return isAdmin() || isLawyer();
+  }
+
+  function canManageUsers() {
+    return isAdmin();
+  }
+
+  function mustChangePassword() {
+    return Boolean(getUser()?.must_change_password);
   }
 
   function isAuthenticated() {
     const token = getToken();
 
-    if (!token) {
-      return false;
-    }
-
-    if (isTokenExpired(token)) {
+    if (!token || isTokenExpired(token)) {
       clearSession();
       return false;
     }
 
     return true;
+  }
+
+  function isChangePasswordPage() {
+    return global.location.pathname.endsWith(ROUTES.CHANGE_PASSWORD);
+  }
+
+  function redirectToLogin() {
+    if (!global.location.pathname.endsWith(ROUTES.LOGIN)) {
+      global.location.replace(ROUTES.LOGIN);
+    }
+  }
+
+  function redirectToChangePassword() {
+    if (!isChangePasswordPage()) {
+      global.location.replace(ROUTES.CHANGE_PASSWORD);
+    }
   }
 
   function requireAuth() {
@@ -108,13 +162,17 @@
       return false;
     }
 
+    if (mustChangePassword() && !isChangePasswordPage()) {
+      redirectToChangePassword();
+      return false;
+    }
+
     return true;
   }
 
-  function hasRole(...roles) {
-    const user = getUser();
-
-    return !!user && roles.includes(user.role);
+  function requireRole(...roles) {
+    if (!requireAuth()) return false;
+    return hasRole(...roles);
   }
 
   function logout() {
@@ -128,11 +186,23 @@
     removeToken,
     getUser,
     setUser,
+    removeUser,
     clearSession,
+    decodeJwt,
+    getTokenPayload,
     isTokenExpired,
+    getCurrentRole,
+    hasRole,
+    isAdmin,
+    isLawyer,
+    isAssistant,
+    canDelete,
+    canViewFinancials,
+    canManageUsers,
+    mustChangePassword,
     isAuthenticated,
     requireAuth,
-    hasRole,
+    requireRole,
     logout,
   });
 
@@ -140,9 +210,10 @@
 
   if (isLoginPage) {
     if (isAuthenticated()) {
-      global.location.replace(ROUTES.DASHBOARD);
+      if (mustChangePassword()) redirectToChangePassword();
+      else global.location.replace(ROUTES.DASHBOARD);
     }
-  } else {
+  } else if (!isChangePasswordPage()) {
     requireAuth();
   }
 })(window);
