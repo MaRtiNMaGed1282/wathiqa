@@ -1,30 +1,34 @@
 (function (global) {
+  "use strict";
+
   const DEFAULT_BASE_URL = "/api";
   const FORBIDDEN_MESSAGE = "ليس لديك صلاحية لتنفيذ هذا الإجراء";
+  const DEFAULT_ERROR_MESSAGE = "حدث خطأ في الطلب";
+  const DEFAULT_TIMEOUT = 30000;
+
   const HTTP_STATUS = Object.freeze({
     OK: 200,
     NO_CONTENT: 204,
     RESET_CONTENT: 205,
-    REQUEST_TIMEOUT: 408,
+    BAD_REQUEST: 400,
     UNAUTHORIZED: 401,
     FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    CONFLICT: 409,
+    VALIDATION: 422,
+    REQUEST_TIMEOUT: 408,
     NETWORK_ERROR: 0,
   });
-  const DEFAULT_TIMEOUT = 30000;
+
   function isLiveServerEnvironment() {
     try {
       const location = global.location;
 
-      if (!location) {
-        return false;
-      }
-
-      const hostname = location.hostname;
-      const port = location.port;
+      if (!location) return false;
 
       return (
-        (hostname === "localhost" || hostname === "127.0.0.1") &&
-        port === "5500"
+        (location.hostname === "localhost" || location.hostname === "127.0.0.1") &&
+        location.port === "5500"
       );
     } catch {
       return false;
@@ -55,51 +59,36 @@
   }
 
   function resolveUrl(url, baseUrl) {
-    if (!url) {
-      return baseUrl;
-    }
-
-    if (/^https?:\/\//i.test(url)) {
-      return url;
-    }
-
-    if (url === "/api" || url.startsWith("/api/")) {
-      return url;
-    }
+    if (!url) return baseUrl;
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url === "/api" || url.startsWith("/api/")) return url;
 
     const normalizedBase = baseUrl.endsWith("/")
       ? baseUrl.slice(0, -1)
       : baseUrl;
-
     const normalizedUrl = url.startsWith("/") ? url : `/${url}`;
 
     return `${normalizedBase}${normalizedUrl}`;
   }
+
   function appendQueryParams(url, params) {
-    if (!params || typeof params !== "object") {
-      return url;
-    }
+    if (!params || typeof params !== "object") return url;
 
     const searchParams = new URLSearchParams();
 
     Object.entries(params).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === "") {
-        return;
-      }
-
+      if (value === undefined || value === null || value === "") return;
       searchParams.append(key, value);
     });
 
     const query = searchParams.toString();
-
-    if (!query) {
-      return url;
-    }
+    if (!query) return url;
 
     return `${url}${url.includes("?") ? "&" : "?"}${query}`;
   }
+
   function isFormData(value) {
-    return value instanceof FormData;
+    return typeof FormData !== "undefined" && value instanceof FormData;
   }
 
   function isJsonSerializable(value) {
@@ -108,14 +97,14 @@
       value !== null &&
       !isFormData(value) &&
       typeof value !== "string" &&
-      !(value instanceof Blob) &&
-      !(value instanceof ArrayBuffer) &&
-      !ArrayBuffer.isView(value) &&
-      !(value instanceof URLSearchParams)
+      !(typeof Blob !== "undefined" && value instanceof Blob) &&
+      !(typeof ArrayBuffer !== "undefined" && value instanceof ArrayBuffer) &&
+      !(typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView(value)) &&
+      !(typeof URLSearchParams !== "undefined" && value instanceof URLSearchParams)
     );
   }
 
-  async function parseResponse(response, responseType) {
+  async function parseResponse(response, responseType = "json") {
     if (
       response.status === HTTP_STATUS.NO_CONTENT ||
       response.status === HTTP_STATUS.RESET_CONTENT
@@ -123,16 +112,13 @@
       return null;
     }
 
-    if (responseType === "blob") {
-      return response.blob();
-    }
+    if (responseType === "blob") return response.blob();
+    if (responseType === "text") return response.text();
 
     const contentType = response.headers.get("content-type") || "";
     const text = await response.text();
 
-    if (!text) {
-      return null;
-    }
+    if (!text) return null;
 
     if (
       contentType.includes("application/json") ||
@@ -151,11 +137,12 @@
 
   function buildHeaders(options = {}, body) {
     const headers = new Headers(options.headers || {});
+
     if (!headers.has("Accept")) {
       headers.set("Accept", "application/json");
     }
-    const token = getToken();
 
+    const token = getToken();
     if (token && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${token}`);
     }
@@ -164,7 +151,7 @@
       headers.set("Content-Type", "application/json");
     }
 
-    if (isFormData(body) && !headers.has("Content-Type")) {
+    if (isFormData(body)) {
       headers.delete("Content-Type");
     }
 
@@ -174,7 +161,6 @@
   class ApiError extends Error {
     constructor(message, status, body = null, url = "") {
       super(message);
-
       this.name = "ApiError";
       this.status = status;
       this.body = body;
@@ -190,21 +176,33 @@
     return new ApiError(message, status, body, url);
   }
 
+  function getPayloadMessage(payload, fallback = DEFAULT_ERROR_MESSAGE) {
+    if (!payload) return fallback;
+    if (typeof payload === "string") return payload || fallback;
+
+    return (
+      payload.message ||
+      payload.error ||
+      payload.detail ||
+      (Array.isArray(payload.errors) && payload.errors[0]?.message) ||
+      fallback
+    );
+  }
+
   async function request(method, url, options = {}) {
     const baseUrl = options.baseUrl ?? getConfiguredBaseUrl();
     const requestUrl = appendQueryParams(
       resolveUrl(url, baseUrl),
       options.params,
     );
+
     const body = options.body !== undefined ? options.body : options.data;
     const shouldSerializeJson = isJsonSerializable(body);
     const requestBody = shouldSerializeJson ? JSON.stringify(body) : body;
     const headers = buildHeaders(options, body);
     const controller = new AbortController();
 
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, options.timeout ?? DEFAULT_TIMEOUT);
+    const timeout = setTimeout(() => controller.abort(), options.timeout ?? DEFAULT_TIMEOUT);
 
     let response;
 
@@ -241,35 +239,34 @@
     }
 
     clearTimeout(timeout);
+
     if (response.status === HTTP_STATUS.UNAUTHORIZED) {
       try {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       } catch {}
 
-      throw createError("غير مصرح", HTTP_STATUS.UNAUTHORIZED, null, requestUrl);
+      throw createError("انتهت جلسة تسجيل الدخول", HTTP_STATUS.UNAUTHORIZED, null, requestUrl);
     }
 
     if (response.status === HTTP_STATUS.FORBIDDEN) {
+      const payload = await parseResponse(response, options.responseType ?? "json");
       throw createError(
-        FORBIDDEN_MESSAGE,
+        getPayloadMessage(payload, FORBIDDEN_MESSAGE),
         HTTP_STATUS.FORBIDDEN,
-        null,
+        payload,
         requestUrl,
       );
     }
 
     if (!response.ok) {
-      const payload = await parseResponse(
-        response,
-        options.responseType ?? "json",
+      const payload = await parseResponse(response, options.responseType ?? "json");
+      throw createError(
+        getPayloadMessage(payload),
+        response.status,
+        payload,
+        requestUrl,
       );
-      const message =
-        (payload && payload.message) ||
-        (payload && payload.error) ||
-        "حدث خطأ في الطلب";
-
-      throw createError(message, response.status, payload, requestUrl);
     }
 
     return parseResponse(response, options.responseType ?? "json");
@@ -279,39 +276,19 @@
     return api.get(endpoint, options);
   }
 
-  api.get = function (url, options = {}) {
-    return request("GET", url, options);
-  };
-
-  api.post = function (url, data, options = {}) {
-    return request("POST", url, { ...options, data });
-  };
-
-  api.put = function (url, data, options = {}) {
-    return request("PUT", url, { ...options, data });
-  };
-
-  api.patch = function (url, data, options = {}) {
-    return request("PATCH", url, { ...options, data });
-  };
-
-  api.delete = function (url, options = {}) {
-    return request("DELETE", url, options);
-  };
-
-  api.upload = function (url, formData, options = {}) {
-    return request("POST", url, {
-      ...options,
-      body: formData,
-      data: formData,
-    });
-  };
-
-  api.download = function (url, options = {}) {
-    return request("GET", url, { ...options, responseType: "blob" });
-  };
-
+  api.get = (url, options = {}) => request("GET", url, options);
+  api.post = (url, data, options = {}) => request("POST", url, { ...options, data });
+  api.put = (url, data, options = {}) => request("PUT", url, { ...options, data });
+  api.patch = (url, data, options = {}) => request("PATCH", url, { ...options, data });
+  api.delete = (url, options = {}) => request("DELETE", url, options);
+  api.upload = (url, formData, options = {}) =>
+    request("POST", url, { ...options, body: formData, data: formData });
+  api.download = (url, options = {}) =>
+    request("GET", url, { ...options, responseType: "blob" });
   api.request = request;
+  api.ApiError = ApiError;
+  api.HTTP_STATUS = HTTP_STATUS;
+
   Object.freeze(api);
   global.api = api;
 })(window);
