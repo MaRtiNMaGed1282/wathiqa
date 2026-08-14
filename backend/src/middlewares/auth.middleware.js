@@ -1,5 +1,10 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config/env");
+const db = require("../config/sqlite");
+
+function isPasswordChangeRequest(req) {
+  return req.originalUrl === "/api/auth/change-password";
+}
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,23 +15,66 @@ module.exports = (req, res, next) => {
     });
   }
 
-  const token = authHeader.split(" ")[1];
+  const [scheme, token] = authHeader.trim().split(/\s+/);
 
-  if (!token) {
+  if (scheme !== "Bearer" || !token) {
     return res.status(401).json({
-      message: "غير مصرح",
+      message: "صيغة رمز الدخول غير صالحة",
     });
   }
 
+  let decoded;
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    req.user = decoded;
-
-    next();
+    decoded = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     return res.status(401).json({
       message: "رمز الدخول غير صالح",
     });
   }
+
+  if (!decoded?.id) {
+    return res.status(401).json({
+      message: "رمز الدخول غير صالح",
+    });
+  }
+
+  db.get(
+    `
+    SELECT id, full_name, email, role, is_active, must_change_password
+    FROM users
+    WHERE id = ?
+    `,
+    [decoded.id],
+    (err, user) => {
+      if (err) {
+        return res.status(500).json({
+          message: "تعذر التحقق من المستخدم",
+        });
+      }
+
+      if (!user || Number(user.is_active) !== 1) {
+        return res.status(401).json({
+          message: "الحساب غير نشط أو غير موجود",
+        });
+      }
+
+      req.user = {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        must_change_password: Boolean(user.must_change_password),
+      };
+
+      if (req.user.must_change_password && !isPasswordChangeRequest(req)) {
+        return res.status(403).json({
+          message: "يجب تغيير كلمة المرور قبل استخدام النظام",
+          code: "PASSWORD_CHANGE_REQUIRED",
+        });
+      }
+
+      next();
+    },
+  );
 };
