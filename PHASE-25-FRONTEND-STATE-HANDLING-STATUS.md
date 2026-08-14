@@ -137,9 +137,16 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 - [ ] Full browser/API state test.
 - [ ] Verify calendar drag/drop mutation success path; current page contains an unconditional error throw after the PUT response and must be corrected before Phase 25 completion.
 
+### Notifications — IN PROGRESS
+
+- [x] Shared loading/busy/duplicate-submission foundation applies.
+- [x] Initial Arabic loading state added to the notification list container.
+- [x] NotificationCenter existing filtering/empty/error handling retained.
+- [x] Existing refresh and mark-all-read actions retained.
+- [ ] Full browser/API state test.
+
 ### Remaining Pages
 
-- [ ] Notifications
 - [ ] Legal Library
 - [ ] Law Viewer
 - [ ] Office Profile
