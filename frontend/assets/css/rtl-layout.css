@@ -143,6 +143,78 @@ input[type="datetime-local"] {
   flex: 0 0 auto;
 }
 
+/* ==========================================================
+   REVENUES / REPORTS — CANONICAL DASHBOARD SHELL
+   These two pages still use the legacy wrapper markup. Force
+   the exact same outer geometry as dashboard.html: content
+   column on the left, sidebar on the right, navbar above.
+   ========================================================== */
+body:has(#revenuesPage) > .flex,
+body:has(#operationalSection) > .flex {
+  direction: ltr !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width) !important;
+  grid-template-rows: var(--navbar-height) minmax(0, 1fr) !important;
+  grid-template-areas:
+    "navbar sidebar"
+    "main sidebar" !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body:has(#revenuesPage) > .flex > #navbar-container,
+body:has(#operationalSection) > .flex > #navbar-container {
+  grid-area: navbar !important;
+  direction: rtl !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: var(--navbar-height) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: var(--z-navbar) !important;
+}
+
+body:has(#revenuesPage) > .flex > #sidebar-container,
+body:has(#operationalSection) > .flex > #sidebar-container {
+  grid-area: sidebar !important;
+  direction: rtl !important;
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  height: 100vh !important;
+}
+
+body:has(#revenuesPage) > .flex > #sidebar-container > #sidebar,
+body:has(#operationalSection) > .flex > #sidebar-container > #sidebar {
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  height: 100vh !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+body:has(#revenuesPage) > .flex > main,
+body:has(#operationalSection) > .flex > main {
+  grid-area: main !important;
+  direction: rtl !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: calc(100vh - var(--navbar-height)) !important;
+  margin: 0 !important;
+  padding: var(--space-8) !important;
+  overflow: visible !important;
+  text-align: right !important;
+  background: var(--color-page) !important;
+}
+
+body:has(#revenuesPage) > .flex > main > *,
+body:has(#operationalSection) > .flex > main > * {
+  direction: rtl;
+}
+
 @media (max-width: 768px) {
   #app-shell,
   body:has(> #sidebar-container) {
@@ -159,5 +231,24 @@ input[type="datetime-local"] {
   body:has(> #sidebar-container) > main {
     width: 100%;
     max-width: 100%;
+  }
+
+  body:has(#revenuesPage) > .flex,
+  body:has(#operationalSection) > .flex {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  body:has(#revenuesPage) > .flex > #sidebar-container,
+  body:has(#operationalSection) > .flex > #sidebar-container {
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+  body:has(#revenuesPage) > .flex > main,
+  body:has(#operationalSection) > .flex > main {
+    width: 100% !important;
+    min-height: calc(100vh - var(--navbar-height)) !important;
+    padding: var(--space-6) !important;
   }
 }
