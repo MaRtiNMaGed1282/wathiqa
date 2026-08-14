@@ -1,32 +1,25 @@
-const auth = require("../middlewares/auth.middleware");
-
-const admin = require("../middlewares/admin.middleware");
-
 const express = require("express");
-
 const router = express.Router();
 
+const auth = require("../middlewares/auth.middleware");
+const admin = require("../middlewares/admin.middleware");
 const officeController = require("../controllers/office.controller");
-
 const upload = require("../middlewares/upload.js");
 
-router.get("/", auth, officeController.getOfficeSettings);
+router.use(auth);
 
-router.post("/", auth, admin, officeController.saveOfficeSettings);
+// All roles may view office information and office identity assets.
+router.get("/", officeController.getOfficeSettings);
+router.get("/asset/:type", officeController.getOfficeAsset);
 
+// Only Admin may manage office information and identity assets.
+router.post("/", admin, officeController.saveOfficeSettings);
 router.post(
   "/upload",
-  auth,
   admin,
   upload.fields([
-    {
-      name: "logo",
-      maxCount: 1,
-    },
-    {
-      name: "stamp",
-      maxCount: 1,
-    },
+    { name: "logo", maxCount: 1 },
+    { name: "stamp", maxCount: 1 },
   ]),
   officeController.uploadOfficeAssets,
 );
