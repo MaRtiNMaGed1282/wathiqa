@@ -37,12 +37,26 @@
   }
 
   function applyRoleVisibility() {
-    const role = global.auth?.getUser?.()?.role;
+    const role = global.auth?.getCurrentRole?.() || null;
+    const financialAllowed = global.permissions?.canViewFinancials?.() ??
+      (role === "admin" || role === "lawyer");
 
     state.elements.sidebar?.querySelectorAll("[data-role]").forEach((element) => {
       const requiredRole = element.dataset.role;
-      element.classList.toggle("hidden", role !== requiredRole);
-      element.setAttribute("aria-hidden", role !== requiredRole ? "true" : "false");
+      const visible = role === requiredRole;
+      element.classList.toggle("hidden", !visible);
+      element.setAttribute("aria-hidden", visible ? "false" : "true");
+    });
+
+    state.elements.sidebar?.querySelectorAll("[data-admin-only]").forEach((element) => {
+      const visible = role === "admin";
+      element.classList.toggle("hidden", !visible);
+      element.setAttribute("aria-hidden", visible ? "false" : "true");
+    });
+
+    state.elements.sidebar?.querySelectorAll("[data-financial-only]").forEach((element) => {
+      element.classList.toggle("hidden", !financialAllowed);
+      element.setAttribute("aria-hidden", financialAllowed ? "false" : "true");
     });
   }
 
@@ -91,7 +105,7 @@
 
     state.elements.navLinks.forEach((link) => {
       const page = link.dataset.page || "";
-      const active = page === currentPage;
+      const active = page === currentPage && !link.classList.contains("hidden");
       link.classList.toggle("active", active);
       if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
