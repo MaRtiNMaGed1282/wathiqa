@@ -1,6 +1,7 @@
 const db = require("../config/sqlite");
-const fs = require("fs");
 const path = require("path");
+const fs = require("fs");
+const upload = require("../config/upload");
 const logActivity = require("../utils/activityLogger");
 const { createNotification } = require("../utils/notificationService");
 const { isEmpty } = require("../utils/validation");
@@ -9,10 +10,28 @@ function decodeOriginalName(name) {
   return Buffer.from(name, "latin1").toString("utf8");
 }
 
-function removeStoredFile(filePath) {
-  if (!filePath) return;
+function getStoredFilePath(filePath) {
+  if (!filePath) return null;
 
-  const absolutePath = path.resolve(__dirname, "../../", filePath);
+  const filename = path.basename(String(filePath));
+  if (!filename || filename === "." || filename === "..") return null;
+
+  const uploadDir = path.resolve(upload.getUploadDir());
+  const absolutePath = path.resolve(uploadDir, filename);
+
+  if (
+    absolutePath !== uploadDir &&
+    !absolutePath.startsWith(`${uploadDir}${path.sep}`)
+  ) {
+    return null;
+  }
+
+  return absolutePath;
+}
+
+function removeStoredFile(filePath) {
+  const absolutePath = getStoredFilePath(filePath);
+  if (!absolutePath) return;
 
   if (fs.existsSync(absolutePath)) {
     try {
@@ -24,15 +43,15 @@ function removeStoredFile(filePath) {
 }
 
 function sendStoredFile(res, filePath, originalName) {
-  const absolutePath = path.resolve(__dirname, "../../", filePath);
+  const absolutePath = getStoredFilePath(filePath);
 
-  if (!fs.existsSync(absolutePath)) {
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
     return res.status(404).json({ message: "ملف التخزين غير موجود" });
   }
 
   return res.sendFile(absolutePath, {
     headers: {
-      "Content-Disposition": `inline; filename="${encodeURIComponent(originalName)}"`,
+      "Content-Disposition": `inline; filename="${encodeURIComponent(originalName || "file")}"`,
     },
   });
 }
@@ -66,6 +85,7 @@ exports.uploadFile = (req, res) => {
     [case_id, req.file.filename, originalName, `uploads/${req.file.filename}`],
     function (err) {
       if (err) {
+        removeStoredFile(`uploads/${req.file.filename}`);
         return res.status(500).json({ message: err.message });
       }
 
