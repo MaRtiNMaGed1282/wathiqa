@@ -2,97 +2,74 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <meta name="description" content="إدارة الموكلين في نظام وثيقة" />
-
     <title>الموكلين | وثيقة</title>
-
-    <!-- Core -->
-
     <script src="../assets/js/auth.js"></script>
-
     <script src="../assets/js/api.js"></script>
-
     <script src="../assets/js/core/app.js"></script>
-
     <script src="../assets/js/loadSidebar.js"></script>
-
     <script src="../assets/js/loadNavbar.js"></script>
-
     <script src="../assets/vendor/toastify/toastify.js"></script>
-
     <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
-
     <script src="../assets/vendor/xlsx/xlsx.full.min.js"></script>
-
-    <!-- Styles -->
-
     <link rel="stylesheet" href="../assets/css/fonts.css" />
-
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
     <link rel="stylesheet" href="../assets/css/input.css" />
-
     <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
   </head>
 
   <body class="font-cairo bg-light text-primary">
     <div id="app-shell">
       <div id="sidebar-container"></div>
-
       <div id="app">
         <div id="navbar-container"></div>
 
         <main id="clients-page" class="page">
           <div class="page-content">
             <h2 class="text-xl font-semibold mb-4">الموكلين</h2>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-gray-500">إجمالي الموكلين</p>
-                <h3 id="totalClients" class="text-3xl font-bold text-primary">
-                  0
-                </h3>
+                <h3 id="totalClients" class="text-3xl font-bold text-primary" aria-live="polite">0</h3>
               </div>
 
               <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-gray-500">آخر موكل مضاف</p>
-                <h3 id="latestClient" class="text-xl font-bold">---</h3>
+                <h3 id="latestClient" class="text-xl font-bold" aria-live="polite">---</h3>
               </div>
 
               <div class="bg-white rounded-lg shadow p-4">
                 <p class="text-gray-500">البحث السريع</p>
                 <input
                   id="searchInput"
-                  type="text"
+                  type="search"
+                  autocomplete="off"
                   placeholder="ابحث بالاسم أو الرقم القومي"
+                  aria-label="البحث بالاسم أو الرقم القومي"
                   class="w-full border rounded p-2 mt-2"
                 />
               </div>
             </div>
 
-            <!-- Form لإضافة موكل جديد -->
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-2xl font-bold">إدارة الموكلين</h2>
-
               <button
                 id="openAddClientButton"
+                type="button"
                 class="bg-accent text-white px-5 py-3 rounded-lg"
               >
                 + إضافة موكل
               </button>
             </div>
-            <!-- جدول عرض الموكلين -->
-            <div
-              id="clientsTableContainer"
-              class="bg-white shadow rounded p-4 overflow-auto"
-            >
+
+            <div id="clientsTableContainer" class="bg-white shadow rounded p-4 overflow-auto" aria-live="polite">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold">قائمة الموكلين</h3>
-
                 <button
                   id="exportClientsButton"
+                  type="button"
                   class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                 >
                   تصدير Excel
@@ -119,161 +96,54 @@
         </main>
       </div>
     </div>
-    <div
-      id="addClientModal"
-      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-    >
-      <div
-        class="bg-white rounded-xl shadow-xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-      >
+
+    <div id="addClientModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50">
+      <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-2xl font-bold">إضافة موكل جديد</h3>
-
-          <button
-            type="button"
-            id="closeAddClientModalButton"
-            class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl"
-          >
-            ✕
-          </button>
+          <button type="button" id="closeAddClientModalButton" class="w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 text-xl" aria-label="إغلاق">✕</button>
         </div>
 
-        <form
-          id="addClientForm"
-          action="javascript:void(0)"
-          method="post"
-          class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3"
-        >
-          <input
-            type="text"
-            id="full_name"
-            placeholder="الاسم الكامل"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="client_code"
-            placeholder="كود الموكل"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="national_id"
-            placeholder="الرقم القومي"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="phone"
-            placeholder="رقم الهاتف"
-            class="border p-2 rounded"
-          />
-          <input
-            type="text"
-            id="address"
-            placeholder="العنوان"
-            class="border p-2 rounded"
-          />
+        <form id="addClientForm" action="javascript:void(0)" method="post" class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3">
+          <input type="text" id="full_name" name="full_name" placeholder="الاسم الكامل" autocomplete="name" required class="border p-2 rounded" />
+          <input type="text" id="client_code" name="client_code" placeholder="كود الموكل" autocomplete="off" class="border p-2 rounded" />
+          <input type="text" id="national_id" name="national_id" placeholder="الرقم القومي" inputmode="numeric" autocomplete="off" maxlength="14" minlength="14" pattern="[0-9]{14}" required class="border p-2 rounded" />
+          <input type="tel" id="phone" name="phone" placeholder="رقم الهاتف" inputmode="tel" autocomplete="tel" required class="border p-2 rounded" />
+          <input type="text" id="address" name="address" placeholder="العنوان" autocomplete="street-address" required class="border p-2 rounded" />
+
           <div class="border-t pt-4 mt-2">
-            <h4 class="font-bold text-primary mb-3">
-              بيانات التوكيل (اختياري)
-            </h4>
+            <h4 class="font-bold text-primary mb-3">بيانات التوكيل (اختياري)</h4>
           </div>
-          <input
-            type="text"
-            id="attorney_number"
-            placeholder="رقم التوكيل"
-            class="border p-2 rounded"
-          />
 
-          <input
-            type="text"
-            id="attorney_type"
-            placeholder="نوع التوكيل"
-            class="border p-2 rounded"
-          />
+          <input type="text" id="attorney_number" name="attorney_number" placeholder="رقم التوكيل" class="border p-2 rounded" />
+          <input type="text" id="attorney_type" name="attorney_type" placeholder="نوع التوكيل" class="border p-2 rounded" />
+          <input type="text" id="issuing_office" name="issuing_office" placeholder="جهة الإصدار" class="border p-2 rounded" />
+          <input type="file" id="attorney_file" name="attorney_file" accept=".pdf,.jpg,.jpeg,.png" class="border p-2 rounded" />
+          <textarea id="notes" name="notes" placeholder="ملاحظات" class="border p-2 rounded min-h-25"></textarea>
 
-          <input
-            type="text"
-            id="issuing_office"
-            placeholder="جهة الإصدار"
-            class="border p-2 rounded"
-          />
-
-          <input type="file" id="attorney_file" class="border p-2 rounded" />
-
-          <textarea
-            id="notes"
-            placeholder="ملاحظات"
-            class="border p-2 rounded min-h-25"
-          ></textarea>
-          <button
-            type="submit"
-            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
-          >
+          <button type="submit" class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary">
             إضافة موكل
           </button>
         </form>
       </div>
     </div>
+
     <script src="../assets/js/pages/clients.js"></script>
-    <div
-      id="editModal"
-      class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50"
-    >
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-xl">
         <h3 class="text-xl font-bold mb-4">تعديل بيانات الموكل</h3>
 
-        <input
-          id="edit_full_name"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="الاسم الكامل"
-        />
-
-        <input
-          id="edit_client_code"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="كود الموكل"
-        />
-
-        <input
-          id="edit_national_id"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="الرقم القومي"
-        />
-
-        <input
-          id="edit_phone"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="رقم الهاتف"
-        />
-
-        <input
-          id="edit_address"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="العنوان"
-        />
-
-        <textarea
-          id="edit_notes"
-          class="w-full border rounded p-3 mb-3"
-          placeholder="ملاحظات"
-        ></textarea>
+        <input type="text" id="edit_full_name" autocomplete="name" required class="w-full border rounded p-3 mb-3" placeholder="الاسم الكامل" />
+        <input type="text" id="edit_client_code" autocomplete="off" class="w-full border rounded p-3 mb-3" placeholder="كود الموكل" />
+        <input type="text" id="edit_national_id" inputmode="numeric" maxlength="14" minlength="14" pattern="[0-9]{14}" required class="w-full border rounded p-3 mb-3" placeholder="الرقم القومي" />
+        <input type="tel" id="edit_phone" inputmode="tel" autocomplete="tel" required class="w-full border rounded p-3 mb-3" placeholder="رقم الهاتف" />
+        <input type="text" id="edit_address" autocomplete="street-address" required class="w-full border rounded p-3 mb-3" placeholder="العنوان" />
+        <textarea id="edit_notes" class="w-full border rounded p-3 mb-3" placeholder="ملاحظات"></textarea>
 
         <div class="flex justify-end gap-3 mt-4">
-          <button
-            id="saveEditBtn"
-            class="bg-primary text-white px-5 py-2 rounded"
-          >
-            حفظ
-          </button>
-
-          <button
-            id="closeEditModalButton"
-            class="bg-gray-300 px-5 py-2 rounded"
-          >
-            إلغاء
-          </button>
+          <button type="button" id="saveEditBtn" class="bg-primary text-white px-5 py-2 rounded">حفظ</button>
+          <button type="button" id="closeEditModalButton" class="bg-gray-300 px-5 py-2 rounded">إلغاء</button>
         </div>
       </div>
     </div>
