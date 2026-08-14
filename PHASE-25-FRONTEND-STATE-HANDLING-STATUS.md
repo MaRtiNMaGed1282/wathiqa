@@ -6,39 +6,74 @@
 
 Every frozen page must have:
 
-- Initial loading
-- Button loading where needed
-- Arabic empty state
-- Useful empty-state action where applicable
-- User-friendly error message
-- No stack traces shown to users
-- Success feedback
-- Data refresh/update after successful mutations
-- Required validation
-- Correct input types
-- Duplicate-submission prevention
-- Destructive-action confirmation
+- [x] Shared initial API loading indication
+- [x] Shared mutation button busy-state protection
+- [x] Shared duplicate in-flight mutation prevention
+- [ ] Page-specific loading presentation where needed
+- [ ] Arabic empty state
+- [ ] Useful empty-state action where applicable
+- [ ] User-friendly error message
+- [ ] No stack traces shown to users
+- [ ] Success feedback
+- [ ] Refresh/update data after successful mutations
+- [ ] Required validation
+- [ ] Correct input types
+- [x] Destructive-action confirmation where already present
 
-## Completed — Shared API Foundation
+## Shared Foundation — Completed
 
-- [x] Added a shared global API loading indicator.
-- [x] Added request-state events through `wathiqa:api-state`.
-- [x] Added automatic busy-state handling for active mutation buttons/submit controls.
-- [x] Added duplicate in-flight mutation protection.
-- [x] Preserved the existing API endpoint/method contract.
-- [x] Preserved existing Arabic API error messages.
+Updated `frontend/assets/js/api.js`:
+
+- [x] Global API loading indicator.
+- [x] Request-state tracking through `wathiqa:api-state`.
+- [x] Automatic busy/disabled state for active mutation controls.
+- [x] Duplicate in-flight mutation protection.
+- [x] Existing API endpoint/method contract preserved.
+- [x] Existing authorization/error behavior preserved.
+
+## Page Progress
+
+### Clients — IN PROGRESS
+
+- [x] Required HTML fields added.
+- [x] Correct input types added (`search`, `tel`, numeric input mode).
+- [x] National ID length/pattern enforced in HTML.
+- [x] Attorney file accept types added.
+- [x] Search/summary regions marked for live updates.
+- [x] Existing Arabic empty state retained.
+- [x] Existing success feedback retained.
+- [x] Existing delete confirmation retained.
+- [ ] Page-specific initial error state.
+- [ ] Page-specific retry action.
+- [ ] Full state test.
+
+### Cases — NOT STARTED
+### Case Profile — NOT STARTED
+### Change Password — NOT STARTED
+### Client Profile — NOT STARTED
+### Dashboard — NOT STARTED
+### Calendar — NOT STARTED
+### Services — NOT STARTED
+### Service Profile — NOT STARTED
+### Notifications — NOT STARTED
+### Legal Library — NOT STARTED
+### Law Viewer — NOT STARTED
+### Office Profile — NOT STARTED
+### Revenues — NOT STARTED
+### Reports — NOT STARTED
+### Login — NOT STARTED
+### Activation — NOT STARTED
+### Users — repository page currently absent; do not invent during this phase
 
 ## Remaining
 
-- [ ] Audit and complete loading states page-by-page.
-- [ ] Audit and complete empty states page-by-page.
-- [ ] Audit and complete error feedback page-by-page.
-- [ ] Audit and complete success feedback/data refresh page-by-page.
-- [ ] Audit required form validation and input types.
-- [ ] Audit destructive-action confirmations.
-- [ ] Test every frozen page.
+- [ ] Complete every frozen page.
+- [ ] Audit all form validation and input types.
+- [ ] Audit all empty states.
+- [ ] Audit all page-level errors and retry behavior.
 - [ ] Test every mutation for duplicate submission.
 - [ ] Test backend-offline/error recovery without broken UI state.
+- [ ] Run final Phase 25 regression.
 
 ## Frozen Pages
 
@@ -48,20 +83,20 @@ Every frozen page must have:
 4. `cases.html`
 5. `change-password.html`
 6. `client-profile.html`
-7. `clients.html`
-8. `dashboard.html`
-9. `law-viewer.html`
-10. `laws.html`
-11. `library.html`
-12. `login.html`
-13. `notifications.html`
-14. `office-profile.html`
-15. `reports.html`
-16. `revenues.html`
-17. `service-profile.html`
-18. `services.html`
-19. `users.html`
+7. `dashboard.html`
+8. `law-viewer.html`
+9. `laws.html`
+10. `library.html`
+11. `login.html`
+12. `notifications.html`
+13. `office-profile.html`
+14. `reports.html`
+15. `revenues.html`
+16. `service-profile.html`
+17. `services.html`
+18. `users.html`
+19. `clients.html`
 
 ## Rule
 
-Do not mark Phase 25 complete until all applicable items above are implemented and tested against the frozen page scope.
+Do not mark Phase 25 complete until all applicable items above are implemented and tested. The frozen architecture and page scope must not be changed.
