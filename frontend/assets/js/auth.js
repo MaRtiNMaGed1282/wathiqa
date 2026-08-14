@@ -112,7 +112,8 @@
   }
 
   // Frozen architecture: destructive deletion of clients/cases/services/files
-  // is Admin-only. Other modules keep their own explicit backend permissions.
+  // is Admin-only unless the page-specific frozen permission explicitly allows
+  // Lawyer deletion (service files are Admin/Lawyer deletable).
   function canDelete() {
     return isAdmin();
   }
@@ -258,4 +259,16 @@
   }
 
   applyRoleVisibility();
+
+  // service-profile.html currently contains legacy case-file JavaScript.
+  // Load the frozen service-file subsystem after that legacy script has run;
+  // the subsystem replaces the input listener and uses the service-file API.
+  if (global.location.pathname.endsWith("service-profile.html")) {
+    global.setTimeout(() => {
+      const script = global.document.createElement("script");
+      script.src = "../assets/js/service-files.js";
+      script.defer = true;
+      global.document.head.appendChild(script);
+    }, 0);
+  }
 })(window);
