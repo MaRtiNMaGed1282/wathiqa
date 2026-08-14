@@ -7,6 +7,6 @@ const {
 } = require("../controllers/calendar.controller");
 
 router.post("/", auth, createSession);
-router.get("/", getAllSessions);
+router.get("/", auth, getAllSessions);
 
 module.exports = router;
