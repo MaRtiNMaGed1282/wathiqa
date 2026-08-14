@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="إدارة مستخدمي نظام وثيقة" />
+    <title>المستخدمون | وثيقة</title>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/core/app.js"></script>
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+    <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/css/input.css" />
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+  </head>
+
+  <body class="font-cairo bg-light text-primary">
+    <div id="app-shell">
+      <div id="sidebar-container"></div>
+      <div id="app">
+        <div id="navbar-container"></div>
+
+        <main class="page-content p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+            <div>
+              <h1 class="text-3xl font-bold">إدارة المستخدمين</h1>
+              <p class="text-gray-500 mt-2">إدارة مستخدمي النظام والصلاحيات وحالة الحسابات.</p>
+            </div>
+            <button id="openCreateBtn" type="button" class="bg-primary text-white px-5 py-3 rounded-xl hover:bg-secondary">إضافة مستخدم</button>
+          </div>
+
+          <div id="accessDenied" class="hidden bg-white border border-red-100 rounded-2xl shadow-sm p-8 text-center">
+            <h2 class="text-xl font-bold text-red-700">غير مصرح</h2>
+            <p class="text-gray-500 mt-2">هذه الصفحة متاحة لمدير النظام فقط.</p>
+          </div>
+
+          <div id="usersContent">
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <p class="text-sm text-gray-500">إجمالي المستخدمين</p>
+                <p id="totalUsers" class="text-3xl font-bold mt-2">0</p>
+              </div>
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <p class="text-sm text-gray-500">المستخدمون النشطون</p>
+                <p id="activeUsers" class="text-3xl font-bold mt-2">0</p>
+              </div>
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <p class="text-sm text-gray-500">مديرو النظام</p>
+                <p id="adminUsers" class="text-3xl font-bold mt-2">0</p>
+              </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+                <div>
+                  <h2 class="text-xl font-bold">المستخدمون</h2>
+                  <p class="text-sm text-gray-500 mt-1">إدارة الحسابات وحالتها وكلمات المرور.</p>
+                </div>
+                <input id="searchInput" type="search" placeholder="بحث بالاسم أو البريد الإلكتروني" class="border rounded-xl px-4 py-3 w-full md:w-80" />
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-right">
+                  <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th class="px-5 py-4">المستخدم</th>
+                      <th class="px-5 py-4">الدور</th>
+                      <th class="px-5 py-4">آخر دخول</th>
+                      <th class="px-5 py-4">الحالة</th>
+                      <th class="px-5 py-4 text-center">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="userModal" class="hidden fixed inset-0 z-50 bg-black/40 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 id="modalTitle" class="text-xl font-bold">إضافة مستخدم</h2>
+            <p class="text-sm text-gray-500 mt-1">أدخل بيانات الحساب الجديد.</p>
+          </div>
+          <button id="closeModalBtn" type="button" class="text-gray-500 text-2xl" aria-label="إغلاق">×</button>
+        </div>
+
+        <form id="createUserForm" class="space-y-4">
+          <div>
+            <label for="fullName" class="block font-semibold mb-2">الاسم الكامل</label>
+            <input id="fullName" required class="w-full border rounded-xl p-3" />
+          </div>
+          <div>
+            <label for="username" class="block font-semibold mb-2">اسم المستخدم</label>
+            <input id="username" required minlength="3" autocomplete="username" class="w-full border rounded-xl p-3" />
+          </div>
+          <div>
+            <label for="password" class="block font-semibold mb-2">كلمة المرور</label>
+            <input id="password" required minlength="6" type="password" autocomplete="new-password" class="w-full border rounded-xl p-3" />
+          </div>
+          <div>
+            <label for="role" class="block font-semibold mb-2">الدور</label>
+            <select id="role" required class="w-full border rounded-xl p-3">
+              <option value="admin">مدير النظام</option>
+              <option value="lawyer">محامي</option>
+              <option value="assistant">مساعد</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-3 pt-3">
+            <button id="cancelModalBtn" type="button" class="px-5 py-3 rounded-xl border">إلغاء</button>
+            <button id="createUserBtn" type="submit" class="bg-primary text-white px-5 py-3 rounded-xl">إنشاء المستخدم</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      "use strict";
+
+      const currentUser = auth.getUser() || {};
+      const isAdmin = currentUser.role === "admin";
+      const state = { users: [] };
+
+      const $ = (id) => document.getElementById(id);
+
+      function toast(message, success = true) {
+        if (window.Toastify) {
+          Toastify({ text: message, duration: 3000, gravity: "top", position: "left", close: true }).showToast();
+        } else {
+          alert(message);
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function roleLabel(role) {
+        return { admin: "مدير النظام", lawyer: "محامي", assistant: "مساعد" }[role] || role || "—";
+      }
+
+      function formatDate(value) {
+        if (!value) return "لم يسجل";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      function openModal() {
+        $("userModal").classList.remove("hidden");
+        $("userModal").classList.add("flex");
+        $("fullName").focus();
+      }
+
+      function closeModal() {
+        $("userModal").classList.add("hidden");
+        $("userModal").classList.remove("flex");
+        $("createUserForm").reset();
+        $("role").value = "assistant";
+      }
+
+      function renderStats(users) {
+        $("totalUsers").textContent = users.length.toLocaleString("ar-EG");
+        $("activeUsers").textContent = users.filter((user) => Number(user.is_active) === 1).length.toLocaleString("ar-EG");
+        $("adminUsers").textContent = users.filter((user) => user.role === "admin").length.toLocaleString("ar-EG");
+      }
+
+      function renderUsers() {
+        const query = $("searchInput").value.trim().toLowerCase();
+        const users = state.users.filter((user) => {
+          const haystack = `${user.full_name || ""} ${user.email || ""}`.toLowerCase();
+          return !query || haystack.includes(query);
+        });
+
+        const body = $("usersTableBody");
+        body.replaceChildren();
+
+        if (!users.length) {
+          body.innerHTML = `<tr><td colspan="5" class="px-5 py-12 text-center text-gray-500">لا توجد نتائج.</td></tr>`;
+          return;
+        }
+
+        users.forEach((user) => {
+          const active = Number(user.is_active) === 1;
+          const isSelf = Number(user.id) === Number(currentUser.id);
+          const row = document.createElement("tr");
+          row.className = "border-t border-gray-100 hover:bg-gray-50";
+          row.innerHTML = `
+            <td class="px-5 py-4">
+              <div class="font-semibold">${escapeHtml(user.full_name)}</div>
+              <div class="text-sm text-gray-500 mt-1">${escapeHtml(user.email)}</div>
+            </td>
+            <td class="px-5 py-4"><span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">${escapeHtml(roleLabel(user.role))}</span></td>
+            <td class="px-5 py-4 text-sm text-gray-500">${escapeHtml(formatDate(user.last_login))}</td>
+            <td class="px-5 py-4"><span class="px-3 py-1 rounded-full text-sm ${active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}">${active ? "نشط" : "غير نشط"}</span></td>
+            <td class="px-5 py-4">
+              <div class="flex flex-wrap justify-center gap-2">
+                <button type="button" data-action="status" data-id="${user.id}" data-active="${active ? 1 : 0}" class="px-3 py-2 rounded-lg border text-sm">${active ? "تعطيل" : "تفعيل"}</button>
+                <button type="button" data-action="password" data-id="${user.id}" class="px-3 py-2 rounded-lg border text-sm">إعادة تعيين كلمة المرور</button>
+                <button type="button" data-action="delete" data-id="${user.id}" class="px-3 py-2 rounded-lg border border-red-200 text-red-700 text-sm ${isSelf ? "opacity-50 cursor-not-allowed" : ""}" ${isSelf ? "disabled" : ""}>حذف</button>
+              </div>
+            </td>`;
+          body.appendChild(row);
+        });
+      }
+
+      async function loadUsers() {
+        try {
+          const users = await api.get("/users");
+          state.users = Array.isArray(users) ? users : [];
+          renderStats(state.users);
+          renderUsers();
+        } catch (error) {
+          toast(error?.message || "فشل تحميل المستخدمين", false);
+        }
+      }
+
+      async function toggleStatus(id, currentActive) {
+        try {
+          await api.put(`/users/${encodeURIComponent(id)}/status`, { is_active: currentActive ? 0 : 1 });
+          toast(currentActive ? "تم تعطيل المستخدم" : "تم تفعيل المستخدم");
+          await loadUsers();
+        } catch (error) { toast(error?.message || "فشل تحديث حالة المستخدم", false); }
+      }
+
+      async function resetPassword(id) {
+        const result = await Swal.fire({
+          title: "إعادة تعيين كلمة المرور",
+          input: "password",
+          inputLabel: "كلمة المرور الجديدة",
+          inputAttributes: { minlength: "6", autocomplete: "new-password" },
+          showCancelButton: true,
+          confirmButtonText: "حفظ",
+          cancelButtonText: "إلغاء",
+          inputValidator: (value) => value && value.length >= 6 ? undefined : "كلمة المرور يجب ألا تقل عن 6 أحرف.",
+        });
+        if (!result.isConfirmed) return;
+        try {
+          await api.put(`/users/${encodeURIComponent(id)}/password`, { password: result.value });
+          toast("تم إعادة تعيين كلمة المرور بنجاح");
+        } catch (error) { toast(error?.message || "فشل إعادة تعيين كلمة المرور", false); }
+      }
+
+      async function deleteUser(id) {
+        const user = state.users.find((item) => Number(item.id) === Number(id));
+        if (!user || Number(id) === Number(currentUser.id)) return;
+        const result = await Swal.fire({
+          title: "حذف المستخدم؟",
+          text: `سيتم حذف ${user.full_name || "هذا المستخدم"} نهائياً.`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "حذف",
+          cancelButtonText: "إلغاء",
+          confirmButtonColor: "#dc2626",
+        });
+        if (!result.isConfirmed) return;
+        try {
+          await api.delete(`/users/${encodeURIComponent(id)}`);
+          toast("تم حذف المستخدم بنجاح");
+          await loadUsers();
+        } catch (error) { toast(error?.message || "فشل حذف المستخدم", false); }
+      }
+
+      $("createUserForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = $("createUserBtn");
+        button.disabled = true;
+        try {
+          await api.post("/users", {
+            full_name: $("fullName").value.trim(),
+            username: $("username").value.trim(),
+            password: $("password").value,
+            role: $("role").value,
+          });
+          closeModal();
+          toast("تم إنشاء المستخدم بنجاح");
+          await loadUsers();
+        } catch (error) { toast(error?.message || "فشل إنشاء المستخدم", false); }
+        finally { button.disabled = false; }
+      });
+
+      $("usersTableBody").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const id = button.dataset.id;
+        if (button.dataset.action === "status") toggleStatus(id, button.dataset.active === "1");
+        if (button.dataset.action === "password") resetPassword(id);
+        if (button.dataset.action === "delete") deleteUser(id);
+      });
+
+      $("searchInput").addEventListener("input", renderUsers);
+      $("openCreateBtn").addEventListener("click", openModal);
+      $("closeModalBtn").addEventListener("click", closeModal);
+      $("cancelModalBtn").addEventListener("click", closeModal);
+      $("userModal").addEventListener("click", (event) => { if (event.target === $("userModal")) closeModal(); });
+
+      if (!isAdmin) {
+        $("usersContent").classList.add("hidden");
+        $("openCreateBtn").classList.add("hidden");
+        $("accessDenied").classList.remove("hidden");
+      } else {
+        loadUsers();
+      }
+    </script>
+  </body>
+</html>
