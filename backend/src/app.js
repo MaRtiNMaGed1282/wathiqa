@@ -20,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 // Register before route handlers so the finish listener can observe req.user after
-authentication/authorization middleware has executed inside each route.
+// authentication/authorization middleware has executed inside each route.
 app.use(activityAuditMiddleware);
 
 app.use("/api/auth", authRoutes);
@@ -59,7 +59,10 @@ app.use(
 
 /* Test Route */
 app.get("/", (req, res) => {
-  res.json({ status: "success", message: "Lawyer Case Management API is running" });
+  res.json({
+    status: "success",
+    message: "Lawyer Case Management API is running",
+  });
 });
 
 module.exports = app;
