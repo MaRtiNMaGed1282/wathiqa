@@ -1,14 +1,2 @@
+@import url("./tailwind.min.css");
 @import url("./dashboard-shell.css");
-
-/* ==========================================================
-   01. DESIGN TOKENS
-   ========================================================== */
-
-:root {
-  /* ===== Brand Colors ===== */
-
-  --color-primary: #293040;
-  --color-primary-dark: #1f2634;
-  --color-primary-light: #3d475b;
-
-  /* ===== Brand Colors ===== */
