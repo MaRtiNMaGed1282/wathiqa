@@ -11,6 +11,7 @@ const app = express();
 const authRoutes = require("./routes/auth.routes");
 const attorneyRoutes = require("./routes/attorneys.routes");
 const serviceRoutes = require("./routes/services.routes");
+const serviceFileRoutes = require("./routes/service-files.routes");
 const expensesRoutes = require("./routes/expenses.routes");
 const caseExpensesRoutes = require("./routes/case-expenses.routes");
 
@@ -37,6 +38,7 @@ app.use("/api/cases", require("./routes/cases.routes"));
 app.use("/api/case-expenses", caseExpensesRoutes);
 
 app.use("/api/services", serviceRoutes);
+app.use("/api/service-files", serviceFileRoutes);
 
 app.use("/api/expenses", expensesRoutes);
 
