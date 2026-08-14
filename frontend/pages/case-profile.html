@@ -929,8 +929,7 @@
 
       async function loadCase() {
         try {
-          const res = await api(`/cases/${caseId}`);
-          const data = await res.json();
+          const data = await api.get(`/cases/${caseId}`);
           currentCase = data;
           renderCase(data);
         } catch (err) {
@@ -1069,24 +1068,16 @@
             final_result: currentCase.final_result || null,
           };
 
-          const res = await api(`/cases/${caseId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(caseData),
-          });
+          const data = await api.put(`/cases/${caseId}`, caseData);
 
-          const data = await res.json();
-
-          if (res.ok) {
+          if (data) {
             showToast("تم تعديل القضية بنجاح", true);
 
             closeEditCaseModal();
 
             await loadCase();
           } else {
-            showToast(data.message || "فشل تعديل القضية", false);
+            showToast("فشل تعديل القضية", false);
           }
         } catch (err) {
           console.error(err);
@@ -1117,20 +1108,16 @@
         if (!result.isConfirmed) return;
 
         try {
-          const res = await api(`/cases/${caseId}`, {
-            method: "DELETE",
-          });
+          const data = await api.delete(`/cases/${caseId}`);
 
-          const data = await res.json();
-
-          if (res.ok) {
+          if (data) {
             showToast("تم حذف القضية بنجاح", true);
 
             setTimeout(() => {
               window.location.href = "cases.html";
             }, 1000);
           } else {
-            showToast(data.message, false);
+            showToast("فشل حذف القضية", false);
           }
         } catch (err) {
           console.error(err);
@@ -1392,7 +1379,7 @@
 
           loadPayments();
         } else {
-          showToast(data.message, false);
+          showToast("فشل حذف الدفعة", false);
         }
       }
 
@@ -1556,7 +1543,7 @@
 
             loadHearings();
           } else {
-            showToast(data.message, false);
+            showToast("فشل حفظ الجلسة", false);
           }
         } catch (err) {
           console.error(err);
@@ -1591,11 +1578,9 @@
 
         await api.delete(`${HEARINGS_API}/${id}`);
 
-        if (true) {
-          showToast("تم حذف الجلسة", true);
+        showToast("تم حذف الجلسة", true);
 
-          loadHearings();
-        }
+        loadHearings();
       }
 
       async function loadFiles() {
@@ -1717,7 +1702,7 @@
         }
 
         try {
-          const data = await api.post(`${TEMPLATES_API}/attach-to-case`, {
+          await api.post(`${TEMPLATES_API}/attach-to-case`, {
             case_id: caseId,
             template_id: templateId,
           });
@@ -1752,7 +1737,7 @@
         if (!result.isConfirmed) return;
 
         try {
-          const data = await api.delete(`${TEMPLATES_API}/case/${id}`);
+          await api.delete(`${TEMPLATES_API}/case/${id}`);
 
           await loadCaseTemplates();
 
@@ -1822,6 +1807,7 @@
                     </div>
                    
 
+
                   </div>
 
                 `,
@@ -1846,11 +1832,9 @@
 
         await api.delete(`${FILES_API}/${id}`);
 
-        if (true) {
-          showToast("تم حذف الملف", true);
+        showToast("تم حذف الملف", true);
 
-          loadFiles();
-        }
+        loadFiles();
       }
 
       document
@@ -1876,7 +1860,7 @@
 
             loadFiles();
           } else {
-            showToast(data.message, false);
+            showToast("Upload failed", false);
           }
         } catch (err) {
           console.error(err);
@@ -2007,7 +1991,7 @@
             document.getElementById("expense_amount").value = "";
             document.getElementById("expense_notes").value = "";
           } else {
-            showToast(data.message, false);
+            showToast("فشل إضافة المصروف", false);
           }
         } catch (err) {
           console.error(err);
@@ -2035,7 +2019,7 @@
 
             loadExpenses();
           } else {
-            showToast(data.message, false);
+            showToast("فشل حذف المصروف", false);
           }
         } catch (err) {
           console.error(err);
