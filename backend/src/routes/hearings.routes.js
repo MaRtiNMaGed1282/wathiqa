@@ -11,12 +11,14 @@ const {
   deleteHearing,
   getAllHearings,
   getUpcomingHearings,
+  getCalendarEvents,
 } = require("../controllers/hearings.controller");
 
 const allRoles = authorize("admin", "lawyer", "assistant");
 
 router.post("/", auth, allRoles, createHearing);
 router.get("/case/:caseId", auth, allRoles, getHearingsByCase);
+router.get("/calendar", auth, allRoles, getCalendarEvents);
 router.get("/", auth, allRoles, getAllHearings);
 router.get("/upcoming", auth, allRoles, getUpcomingHearings);
 router.get("/:id", auth, allRoles, getHearingById);
