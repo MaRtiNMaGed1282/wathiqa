@@ -134,4 +134,9 @@
   phase25Script.src = "../assets/js/phase25-state.js";
   phase25Script.defer = false;
   global.document.head.appendChild(phase25Script);
+
+  const uiFixesScript = global.document.createElement("script");
+  uiFixesScript.src = "../assets/js/ui-fixes.js";
+  uiFixesScript.defer = false;
+  global.document.head.appendChild(uiFixesScript);
 })(window);
