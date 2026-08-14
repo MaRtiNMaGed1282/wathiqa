@@ -19,9 +19,28 @@ const FINANCIAL_KEYS = new Set([
   "overduePayments",
 ]);
 
+const FINANCIAL_TEXT = /مالية|مستحقات|إيراد|مدفوعات|مصروفات|أتعاب|revenue|payment|expense|profit|fee/i;
+
 function redact(value) {
   if (Array.isArray(value)) {
-    return value.map(redact);
+    return value
+      .map((item) => {
+        if (
+          item &&
+          typeof item === "object" &&
+          typeof item.message === "string" &&
+          FINANCIAL_TEXT.test(item.message)
+        ) {
+          return null;
+        }
+
+        return redact(item);
+      })
+      .filter((item) => item !== null);
+  }
+
+  if (typeof value === "string") {
+    return FINANCIAL_TEXT.test(value) ? undefined : value;
   }
 
   if (!value || typeof value !== "object") {
@@ -32,7 +51,10 @@ function redact(value) {
 
   for (const [key, child] of Object.entries(value)) {
     if (!FINANCIAL_KEYS.has(key) && key !== "financial") {
-      result[key] = redact(child);
+      const redactedChild = redact(child);
+      if (redactedChild !== undefined) {
+        result[key] = redactedChild;
+      }
     }
   }
 
