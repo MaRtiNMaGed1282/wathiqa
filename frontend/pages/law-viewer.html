@@ -1,93 +1,85 @@
 <!doctype html>
-
 <html lang="ar" dir="rtl">
   <head>
     <link rel="icon" type="image/png" href="../assets/faviconw.png" />
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>عرض القانون</title>
-
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
-
-    <!-- Cairo -->
     <link rel="stylesheet" href="../assets/css/fonts.css" />
-    <!-- Tailwind -->
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
-
-    <style>
-      body {
-        font-family: "Cairo", sans-serif;
-      }
-    </style>
+    <style>body { font-family: "Cairo", sans-serif; }</style>
   </head>
 
   <body class="bg-light text-primary min-h-screen flex font-cairo">
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <main class="flex-1 flex flex-col">
-      <div class="bg-white shadow p-4 flex justify-between items-center">
+    <main class="flex-1 flex flex-col min-h-screen">
+      <div class="bg-white shadow-sm p-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div>
           <h1 id="lawTitle" class="text-2xl font-bold">جاري التحميل...</h1>
-
           <p id="lawCategory" class="text-gray-600 mt-1"></p>
         </div>
-
         <div class="flex gap-2">
-          <button
-            id="downloadBtn"
-            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            تحميل القانون
-          </button>
-
-          <button
-            onclick="history.back()"
-            class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
-          >
-            رجوع
-          </button>
+          <button id="downloadBtn" type="button" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">تحميل القانون</button>
+          <button id="backBtn" type="button" class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary">رجوع</button>
         </div>
       </div>
 
-      <iframe id="pdfViewer" class="flex-1 w-full"></iframe>
+      <div id="viewerState" class="hidden p-10 text-center text-gray-500"></div>
+      <iframe id="pdfViewer" title="عارض القانون" class="flex-1 w-full min-h-[calc(100vh-110px)] border-0"></iframe>
     </main>
 
     <script>
+      "use strict";
+
+      let pdfObjectUrl = null;
+      let pdfBlob = null;
+
+      function setState(message, visible = true) {
+        const node = document.getElementById("viewerState");
+        node.textContent = message || "";
+        node.classList.toggle("hidden", !visible);
+      }
+
       async function loadLaw() {
+        const id = new URLSearchParams(window.location.search).get("id");
+        if (!id) { setState("معرّف القانون غير موجود."); return; }
+
         try {
-          const params = new URLSearchParams(window.location.search);
+          setState("جاري تحميل القانون...", true);
+          const law = await api.get(`/library/laws/${encodeURIComponent(id)}`);
 
-          const id = params.get("id");
+          document.getElementById("lawTitle").textContent = law.title || "القانون";
+          document.getElementById("lawCategory").textContent = law.category || "";
 
-          const law = await api.get(`/library/laws/${id}`);
-
-          document.getElementById("lawTitle").textContent = law.title;
-
-          document.getElementById("lawCategory").textContent =
-            law.category || "";
-
-          const pdfUrl = `/laws-files/${law.pdf_path}`;
-
-          document.getElementById("pdfViewer").src = pdfUrl;
+          pdfBlob = await api.download(`/library/laws/${encodeURIComponent(id)}/file`);
+          pdfObjectUrl = URL.createObjectURL(pdfBlob);
+          document.getElementById("pdfViewer").src = pdfObjectUrl;
+          setState("", false);
 
           document.getElementById("downloadBtn").onclick = () => {
-            window.open(pdfUrl, "_blank");
+            if (!pdfBlob) return;
+            const url = URL.createObjectURL(pdfBlob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `${law.title || "law"}.pdf`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
           };
         } catch (error) {
           console.error(error);
-
-          document.body.innerHTML = `
-        <div class="p-10 text-center text-red-600">
-          فشل تحميل القانون
-        </div>
-      `;
+          document.getElementById("pdfViewer").removeAttribute("src");
+          setState(error?.message || "فشل تحميل القانون.", true);
         }
       }
 
+      document.getElementById("backBtn").addEventListener("click", () => history.back());
+      window.addEventListener("beforeunload", () => { if (pdfObjectUrl) URL.revokeObjectURL(pdfObjectUrl); });
       loadLaw();
     </script>
 
