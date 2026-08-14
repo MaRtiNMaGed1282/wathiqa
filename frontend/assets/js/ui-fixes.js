@@ -82,16 +82,29 @@
 
   function applyAdminNavigation() {
     const usersLink = document.querySelector('[data-page="users"][data-admin-only]');
-    if (!usersLink) return;
+    if (!usersLink) return false;
     const isAdmin = global.auth?.getUser?.()?.role === "admin";
     usersLink.hidden = !isAdmin;
     usersLink.setAttribute("aria-hidden", String(!isAdmin));
+    return true;
+  }
+
+  function initializeShellData() {
+    if (!document.getElementById("sidebar")) return false;
+    applyAdminNavigation();
+    loadOfficeInformation();
+    return true;
   }
 
   function initialize() {
     initCasesFilter();
-    applyAdminNavigation();
-    loadOfficeInformation();
+
+    if (initializeShellData()) return;
+
+    const observer = new MutationObserver(() => {
+      if (initializeShellData()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === "loading") {
