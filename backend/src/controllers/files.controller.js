@@ -23,6 +23,20 @@ function removeStoredFile(filePath) {
   }
 }
 
+function sendStoredFile(res, filePath, originalName) {
+  const absolutePath = path.resolve(__dirname, "../../", filePath);
+
+  if (!fs.existsSync(absolutePath)) {
+    return res.status(404).json({ message: "ملف التخزين غير موجود" });
+  }
+
+  return res.sendFile(absolutePath, {
+    headers: {
+      "Content-Disposition": `inline; filename="${encodeURIComponent(originalName)}"`,
+    },
+  });
+}
+
 /**
  * Upload case file
  */
@@ -99,6 +113,33 @@ exports.getFilesByCase = (req, res) => {
       }
 
       return res.json(rows);
+    },
+  );
+};
+
+/**
+ * Download/open a case file through the authenticated API.
+ */
+exports.downloadCaseFile = (req, res) => {
+  const { caseId, id } = req.params;
+
+  db.get(
+    `
+    SELECT file_path, original_name
+    FROM case_files
+    WHERE file_id = ? AND case_id = ?
+    `,
+    [id, caseId],
+    (err, file) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+
+      if (!file) {
+        return res.status(404).json({ message: "الملف غير موجود" });
+      }
+
+      return sendStoredFile(res, file.file_path, file.original_name);
     },
   );
 };
@@ -272,17 +313,7 @@ exports.downloadServiceFile = (req, res) => {
         return res.status(404).json({ message: "الملف غير موجود" });
       }
 
-      const absolutePath = path.resolve(__dirname, "../../", file.file_path);
-
-      if (!fs.existsSync(absolutePath)) {
-        return res.status(404).json({ message: "ملف التخزين غير موجود" });
-      }
-
-      res.sendFile(absolutePath, {
-        headers: {
-          "Content-Disposition": `inline; filename="${encodeURIComponent(file.original_name)}"`,
-        },
-      });
+      return sendStoredFile(res, file.file_path, file.original_name);
     },
   );
 };
