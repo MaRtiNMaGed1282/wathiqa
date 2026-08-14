@@ -4,6 +4,7 @@
   const ROUTES = Object.freeze({
     LOGIN: "login.html",
     DASHBOARD: "dashboard.html",
+    CHANGE_PASSWORD: "change-password.html",
   });
   const STORAGE_KEYS = Object.freeze({
     TOKEN: "token",
@@ -112,6 +113,7 @@
     getToken,
     setToken,
     removeToken,
+    removeUser,
     getUser,
     setUser,
     clearSession,
@@ -122,12 +124,26 @@
     logout,
   });
 
-  const isLoginPage = global.location.pathname.endsWith(ROUTES.LOGIN);
+  const pageName = (global.location.pathname.split("/").pop() || "").toLowerCase();
+  const isLoginPage = pageName === ROUTES.LOGIN;
+  const isChangePasswordPage = pageName === ROUTES.CHANGE_PASSWORD;
 
   if (isLoginPage) {
-    if (isAuthenticated()) global.location.replace(ROUTES.DASHBOARD);
+    if (isAuthenticated()) {
+      const user = getUser();
+      global.location.replace(
+        user?.must_change_password ? ROUTES.CHANGE_PASSWORD : ROUTES.DASHBOARD,
+      );
+    }
+  } else if (!requireAuth()) {
+    // Redirect handled by requireAuth().
   } else {
-    requireAuth();
+    const user = getUser();
+    if (user?.must_change_password && !isChangePasswordPage) {
+      global.location.replace(ROUTES.CHANGE_PASSWORD);
+    } else if (isChangePasswordPage && !user?.must_change_password) {
+      global.location.replace(ROUTES.DASHBOARD);
+    }
   }
 
   const phase25Script = global.document.createElement("script");
