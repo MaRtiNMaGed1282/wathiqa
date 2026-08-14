@@ -1,3 +1,4 @@
 /* Wathiqa frozen frontend stylesheet entrypoint. */
 @import url("./input.css");
 @import url("./tailwind.compat.css");
+@import url("./rtl-layout.css");
