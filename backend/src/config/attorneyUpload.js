@@ -1,18 +1,21 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-let uploadDir;
 
-try {
-  const { app } = require("electron");
+function getUploadDir() {
+  try {
+    const { app } = require("electron");
 
-  uploadDir =
-    app && app.isPackaged
-      ? path.join(app.getPath("userData"), "attorneys")
-      : path.join(__dirname, "../../../database/attorneys");
-} catch {
-  uploadDir = path.join(__dirname, "../../../database/attorneys");
+    return
+      app && app.isPackaged
+        ? path.join(app.getPath("userData"), "attorneys")
+        : path.join(__dirname, "../../../database/attorneys");
+  } catch {
+    return path.join(__dirname, "../../../database/attorneys");
+  }
 }
+
+const uploadDir = getUploadDir();
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -35,3 +38,5 @@ const storage = multer.diskStorage({
 module.exports = multer({
   storage,
 });
+
+module.exports.getUploadDir = getUploadDir;
