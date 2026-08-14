@@ -9,7 +9,16 @@
       "navbar-notifications-badge",
     ]),
     lucidePath: "../assets/vendor/lucide/lucide.js",
+    canonicalCssPath: "../assets/css/dashboard-shell.css",
   });
+
+  function ensureCanonicalStylesheet() {
+    if (document.querySelector(`link[href="${CONFIG.canonicalCssPath}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = CONFIG.canonicalCssPath;
+    document.head.appendChild(link);
+  }
 
   function applyLegacyRtlShellFix() {
     const page = (global.location.pathname.split("/").pop() || "").split("?")[0].split("#")[0];
@@ -54,6 +63,9 @@
         min-width: 280px !important;
         height: 100vh !important;
         min-height: 100vh !important;
+        position: sticky !important;
+        top: 0 !important;
+        align-self: start !important;
       }
 
       body:has(> .flex > #sidebar-container) > .flex > #sidebar-container > #sidebar {
@@ -119,6 +131,7 @@
     document.head.appendChild(style);
   }
 
+  ensureCanonicalStylesheet();
   applyLegacyRtlShellFix();
 
   const state = {
