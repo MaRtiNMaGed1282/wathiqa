@@ -1,8 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 const db = require("../config/sqlite");
+const { getLawsRoot } = require("../utils/storagePaths");
 
-const LAWS_ROOT = path.resolve(__dirname, "../../../database/laws");
+const LAWS_ROOT = getLawsRoot();
 
 function safeLawFilePath(relativePath) {
   if (!relativePath || typeof relativePath !== "string") return null;
