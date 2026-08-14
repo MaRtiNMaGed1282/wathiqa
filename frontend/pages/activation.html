@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>تفعيل وثيقة</title>
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+    <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+
+  <body class="bg-slate-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-lg p-8">
+      <h1 class="text-3xl font-bold text-center mb-4">تفعيل نظام وثيقة</h1>
+      <p class="text-gray-600 text-center mb-8">اختر ملف الترخيص (.lic) الذي تم إرساله لك</p>
+
+      <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
+        <input type="file" id="licenseFile" accept=".lic,.json,application/json" required class="hidden" />
+        <button type="button" onclick="document.getElementById('licenseFile').click()" class="bg-slate-200 hover:bg-slate-300 px-6 py-3 rounded-lg">اختيار ملف الترخيص</button>
+        <p id="fileName" class="mt-4 text-sm text-gray-500">لم يتم اختيار ملف</p>
+      </div>
+
+      <button id="activateButton" type="button" onclick="activateLicense()" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg">تفعيل النظام</button>
+      <div id="result" role="alert" class="mt-4 text-center font-bold"></div>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/phase25-state.js"></script>
+    <script src="../assets/vendor/toastify/toastify.js"></script>
+
+    <script>
+      let selectedLicense = null;
+      const fileInput = document.getElementById("licenseFile");
+      const activateButton = document.getElementById("activateButton");
+      const result = document.getElementById("result");
+
+      function showToast(message, success = true, duration = 2500) {
+        Toastify({ text: message, duration, gravity: "top", position: "center", close: true, stopOnFocus: true, style: { background: success ? "#16a34a" : "#dc2626" } }).showToast();
+      }
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        selectedLicense = null;
+        result.textContent = "";
+        if (!file) {
+          document.getElementById("fileName").textContent = "لم يتم اختيار ملف";
+          return;
+        }
+
+        document.getElementById("fileName").textContent = file.name;
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (!parsed?.payload || !parsed?.signature) throw new Error("invalid-license");
+          selectedLicense = parsed;
+        } catch {
+          result.textContent = "ملف الترخيص غير صالح";
+          result.className = "mt-4 text-center font-bold text-red-600";
+        }
+      });
+
+      async function activateLicense() {
+        result.textContent = "";
+        if (!fileInput.files.length || !selectedLicense) {
+          result.textContent = "يرجى اختيار ملف ترخيص صالح";
+          result.className = "mt-4 text-center font-bold text-red-600";
+          return;
+        }
+
+        try {
+          activateButton.disabled = true;
+          activateButton.textContent = "جاري التفعيل...";
+          const data = await api.post("/license/activate", { payload: selectedLicense.payload, signature: selectedLicense.signature }, { busyElement: activateButton });
+          result.textContent = data?.message || "تم تفعيل النظام بنجاح";
+          result.className = "mt-4 text-center font-bold text-green-600";
+          showToast(result.textContent, true);
+          setTimeout(() => { window.location.href = "login.html"; }, 2000);
+        } catch (error) {
+          result.textContent = error?.message || "فشل الاتصال بالخادم";
+          result.className = "mt-4 text-center font-bold text-red-600";
+          showToast(result.textContent, false);
+        } finally {
+          activateButton.disabled = false;
+          activateButton.textContent = "تفعيل النظام";
+        }
+      }
+    </script>
+  </body>
+</html>
