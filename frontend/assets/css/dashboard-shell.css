@@ -1,0 +1,180 @@
+/* ==========================================================
+   WATHIQA DASHBOARD SHELL COMPATIBILITY
+   All authenticated pages that still use the legacy direct-body
+   structure inherit the same frame as dashboard.html.
+   ========================================================== */
+
+/* ---------- Authenticated legacy pages ---------- */
+body:has(> #sidebar-container) {
+  display: grid !important;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--navbar-height) minmax(0, 1fr);
+  grid-template-areas:
+    "sidebar navbar"
+    "sidebar main";
+  min-height: 100vh !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+  direction: rtl !important;
+  background: var(--color-page) !important;
+  color: var(--color-text) !important;
+  font-family: var(--font-family) !important;
+}
+
+body:has(> #sidebar-container) > #sidebar-container {
+  grid-area: sidebar;
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  height: 100vh;
+  align-self: stretch;
+  direction: rtl;
+}
+
+body:has(> #sidebar-container) > #sidebar-container > #sidebar {
+  width: var(--sidebar-width) !important;
+  height: 100vh;
+  position: sticky !important;
+  top: 0 !important;
+  right: auto !important;
+  left: auto !important;
+}
+
+body:has(> #sidebar-container) > #navbar-container {
+  grid-area: navbar;
+  width: 100%;
+  min-width: 0;
+  height: var(--navbar-height);
+  position: sticky !important;
+  top: 0 !important;
+  z-index: var(--z-navbar);
+  direction: rtl;
+}
+
+body:has(> #sidebar-container) > #navbar-container > #navbar {
+  width: 100%;
+  height: var(--navbar-height);
+  direction: rtl;
+}
+
+body:has(> #sidebar-container) > main {
+  grid-area: main;
+  width: 100% !important;
+  min-width: 0;
+  max-width: none !important;
+  min-height: calc(100vh - var(--navbar-height));
+  margin: 0 !important;
+  padding: var(--space-8) !important;
+  overflow: visible !important;
+  direction: rtl !important;
+  text-align: right;
+  background: var(--color-page);
+}
+
+/* ---------- Dashboard-equivalent page spacing ---------- */
+body:has(> #sidebar-container) > main > * {
+  direction: rtl;
+}
+
+body:has(> #sidebar-container) > main > h1,
+body:has(> #sidebar-container) > main > h2:first-child {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---------- Dashboard-equivalent surfaces ---------- */
+body:has(> #sidebar-container) > main .bg-white.rounded-lg,
+body:has(> #sidebar-container) > main .bg-white.rounded-xl,
+body:has(> #sidebar-container) > main .bg-white.rounded-2xl,
+body:has(> #sidebar-container) > main .bg-white.rounded-3xl {
+  border: 1px solid rgba(41, 48, 64, 0.08) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+body:has(> #sidebar-container) > main .bg-white.rounded-lg,
+body:has(> #sidebar-container) > main .bg-white.rounded-xl {
+  border-radius: var(--radius-lg) !important;
+}
+
+body:has(> #sidebar-container) > main .bg-white.rounded-2xl,
+body:has(> #sidebar-container) > main .bg-white.rounded-3xl {
+  border-radius: var(--radius-xl) !important;
+}
+
+/* ---------- Dashboard-equivalent controls ---------- */
+body:has(> #sidebar-container) > main button.bg-accent,
+body:has(> #sidebar-container) > main button[class*="bg-accent"] {
+  min-height: 46px;
+  border-radius: var(--radius-md) !important;
+  background: var(--color-accent) !important;
+  color: white !important;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+body:has(> #sidebar-container) > main button.bg-accent:hover,
+body:has(> #sidebar-container) > main button[class*="bg-accent"]:hover {
+  background: var(--color-accent-dark) !important;
+  box-shadow: var(--shadow-md);
+}
+
+body:has(> #sidebar-container) > main button.bg-gray-300 {
+  min-height: 46px;
+  border-radius: var(--radius-md) !important;
+}
+
+/* ---------- RTL tables ---------- */
+body:has(> #sidebar-container) > main table {
+  direction: rtl;
+}
+
+body:has(> #sidebar-container) > main th,
+body:has(> #sidebar-container) > main td {
+  text-align: right;
+  vertical-align: middle;
+}
+
+/* ---------- RTL forms ---------- */
+body:has(> #sidebar-container) > main input,
+body:has(> #sidebar-container) > main textarea,
+body:has(> #sidebar-container) > main select {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ---------- Keep fixed overlays independent from the page grid ---------- */
+body:has(> #sidebar-container) > .fixed,
+body:has(> #sidebar-container) > [id$="Modal"],
+body:has(> #sidebar-container) > [id*="modal" i] {
+  grid-area: unset;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  body:has(> #sidebar-container) {
+    display: block !important;
+    min-height: 100vh !important;
+  }
+
+  body:has(> #sidebar-container) > #sidebar-container {
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+
+  body:has(> #sidebar-container) > #sidebar-container > #sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+  }
+
+  body:has(> #sidebar-container) > #navbar-container {
+    height: var(--navbar-height);
+  }
+
+  body:has(> #sidebar-container) > main {
+    min-height: calc(100vh - var(--navbar-height));
+    padding: var(--space-6) !important;
+  }
+}
