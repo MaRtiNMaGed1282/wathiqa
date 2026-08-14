@@ -1,170 +1,183 @@
 # Phase 25 — Frontend State Handling
 
-**Status:** IN PROGRESS
+**Status:** IN PROGRESS — FINAL REGRESSION PENDING
 
-## Frozen Scope
-
-Every frozen page must have:
-
-- [x] Shared initial API loading indication
-- [x] Shared mutation button busy-state protection
-- [x] Shared duplicate in-flight mutation prevention
-- [x] Case Profile page-level loading/error handling foundation
-- [x] Client Profile page-level loading/error handling foundation
-- [x] Arabic empty states retained on audited pages
-- [x] Success feedback retained on audited pages
-- [x] Validation attributes and input types normalized on audited forms
-- [x] Assistant financial UI hidden on Case Profile, Client Profile, Dashboard, and Service Profile
-- [x] Change Password required/minimum-length validation normalized
-- [x] Destructive confirmations retained where already present
-- [ ] Complete remaining page-by-page audits
-
-## Shared Foundation — Completed
-
-Updated `frontend/assets/js/api.js`:
+## Shared Foundation
 
 - [x] Global API loading indicator.
-- [x] Request-state tracking through `wathiqa:api-state`.
-- [x] Automatic busy/disabled state for active mutation controls.
-- [x] Duplicate in-flight mutation protection.
-- [x] API success/error state events.
-- [x] Last API error state retained for late page-state initialization.
+- [x] Request-state tracking.
+- [x] Mutation busy-state protection.
+- [x] Duplicate in-flight mutation prevention.
+- [x] API success/error events.
+- [x] Last API error retained for late state initialization.
+- [x] Shared Arabic GET-error banner with retry for all frozen pages.
 - [x] Existing API endpoint/method contract preserved.
 - [x] Existing authorization/error behavior preserved.
 
-Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
+`frontend/assets/js/phase25-state.js` is loaded through `auth.js`; Login and Activation load it directly because they do not use the authenticated shell.
 
-## Page Progress
+## Page Audit
 
-### Clients — IN PROGRESS
+### Clients
+- [x] Required fields/input types.
+- [x] Arabic empty state.
+- [x] Success feedback.
+- [x] Delete confirmation.
+- [x] Shared GET error/retry handling.
+- [ ] Browser/API regression.
 
-- [x] Required HTML fields added.
-- [x] Correct input types added.
-- [x] National ID length/pattern enforced in HTML.
-- [x] Attorney file accept types added.
-- [x] Search/summary regions marked for live updates.
-- [x] Existing Arabic empty state retained.
-- [x] Existing success feedback retained.
-- [x] Existing delete confirmation retained.
-- [ ] Page-specific initial error state.
-- [ ] Page-specific retry action.
-- [ ] Full state test.
+### Cases
+- [x] Required fields/input types audited.
+- [x] Arabic empty state.
+- [x] Success feedback.
+- [x] Shared GET error/retry handling.
+- [x] Shared duplicate-submission protection.
+- [ ] Browser/API regression.
 
-### Cases — IN PROGRESS
+### Case Profile
+- [x] Loading foundation.
+- [x] Arabic empty states for hearings/files/payments/expenses.
+- [x] GET error/retry handling.
+- [x] Success feedback.
+- [x] Required validation.
+- [x] Numeric financial input normalization.
+- [x] Assistant financial visibility hidden.
+- [x] Destructive confirmations retained.
+- [ ] Browser/API regression.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Arabic empty state retained.
-- [x] Existing success feedback retained.
-- [x] Required-field/input-type audit performed.
-- [ ] Page-specific initial error state.
-- [ ] Page-specific retry action.
-- [ ] Full state test.
+### Change Password
+- [x] Required fields.
+- [x] Minimum password length 8.
+- [x] New-password autocomplete.
+- [x] Existing inline errors.
+- [x] Existing success/redirect.
+- [x] Shared duplicate-submission protection.
+- [ ] Browser/API regression.
 
-### Case Profile — IN PROGRESS
+### Client Profile
+- [x] Existing loading/empty states.
+- [x] GET error/retry handling.
+- [x] Attorney validation.
+- [x] Attorney file type restrictions.
+- [x] Assistant financial summary hidden.
+- [x] Existing destructive confirmation.
+- [ ] Browser/API regression.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Existing Arabic empty states retained for hearings/files/payments/expenses.
-- [x] GET API error state with Arabic retry banner added.
-- [x] Existing success feedback retained.
-- [x] Required validation applied to key edit/hearing/payment/expense inputs.
-- [x] Numeric input types and decimal input mode normalized for financial fields.
-- [x] Assistant financial sections/actions hidden by shared page-state handler.
-- [x] Existing destructive confirmations retained.
-- [ ] Full browser/API state test.
-
-### Change Password — IN PROGRESS
-
-- [x] Required validation retained and reinforced through shared state handler.
-- [x] Minimum password length of 8 enforced through HTML validation.
-- [x] New-password autocomplete normalized.
-- [x] Existing inline error feedback retained.
-- [x] Existing button loading feedback retained.
-- [x] Existing success feedback and redirect retained.
-- [ ] Full browser/API state test.
-
-### Client Profile — IN PROGRESS
-
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Existing Arabic loading/empty states retained for client data, cases, services, attorneys, and activity.
-- [x] GET API error state with Arabic retry banner added.
-- [x] Existing success feedback retained for attorney mutations.
-- [x] Required attorney form fields normalized.
-- [x] Attorney file accepted types normalized.
-- [x] Assistant financial summary hidden by shared page-state handler.
-- [x] Existing attorney destructive confirmation retained.
-- [ ] Full browser/API state test.
-
-### Dashboard — IN PROGRESS
-
-- [x] Shared loading/busy/duplicate-submission foundation applies.
+### Dashboard
+- [x] Shared loading/error handling.
 - [x] Assistant revenue KPI hidden.
-- [x] Assistant outstanding/receivables KPI hidden.
-- [x] Assistant financial chart section hidden.
-- [x] Assistant payment quick action hidden.
-- [ ] Page-specific loading/empty/error audit.
-- [ ] Full browser/API state test.
+- [x] Assistant outstanding KPI hidden.
+- [x] Assistant financial chart hidden.
+- [x] Assistant payment action hidden.
+- [ ] Browser/API regression.
 
-### Service Profile — IN PROGRESS
+### Calendar
+- [x] Loading foundation.
+- [x] Today's/upcoming empty states.
+- [x] GET error/retry handling.
+- [x] Hearing-form required validation.
+- [x] Date/time input types.
+- [x] Existing success/error feedback.
+- [ ] Browser/API regression.
+- [ ] **Known functional defect:** `eventDrop` currently throws unconditionally after a successful PUT and therefore reverts drag/drop changes. Must be corrected before Phase 25 completion.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Existing Arabic empty states retained for service files, payments, and expenses.
-- [x] GET API error state with Arabic retry banner added.
-- [x] Existing success feedback retained for uploads/deletions.
-- [x] Service-file input accepted types normalized.
-- [x] Existing financial visibility restriction retained for Assistant.
-- [x] Financial API calls are skipped for Assistant by the page implementation.
-- [x] Existing destructive confirmations retained.
-- [ ] Full browser/API state test.
+### Services
+- [x] Loading foundation.
+- [x] Arabic empty state.
+- [x] GET error/retry handling.
+- [x] Required service/client/date fields.
+- [x] Numeric fee input.
+- [x] Existing success feedback.
+- [ ] Browser/API regression.
 
-### Services — IN PROGRESS
+### Service Profile
+- [x] Loading foundation.
+- [x] Empty states for files/payments/expenses.
+- [x] GET error/retry handling.
+- [x] Service-file input types.
+- [x] Assistant financial visibility.
+- [x] Assistant financial API calls skipped by page implementation.
+- [x] Destructive confirmations.
+- [ ] Browser/API regression.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Existing Arabic empty state retained.
-- [x] GET API error state with Arabic retry banner added.
-- [x] Existing success feedback retained.
-- [x] Required service/client/date fields normalized.
-- [x] Numeric fee input normalized.
-- [ ] Full browser/API state test.
+### Notifications
+- [x] Initial Arabic loading state.
+- [x] Existing NotificationCenter empty/error behavior.
+- [x] Refresh and mark-all-read actions.
+- [x] Shared GET error/retry handling.
+- [x] Duplicate-submission protection.
+- [ ] Browser/API regression.
 
-### Calendar — IN PROGRESS
+### Legal Library / Laws / Law Viewer
+- [x] Existing loading states.
+- [x] Existing Arabic empty states.
+- [x] Existing GET error states.
+- [x] Search/download/view flows audited.
+- [x] Shared GET error/retry handling.
+- [ ] Browser/API regression.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Existing Arabic empty states retained for today's and upcoming hearings.
-- [x] GET API error state with Arabic retry banner added.
-- [x] Calendar hearing form required fields normalized.
-- [x] Date/time input types normalized.
-- [x] Existing success/error feedback retained.
-- [ ] Full browser/API state test.
-- [ ] Verify calendar drag/drop mutation success path; current page contains an unconditional error throw after the PUT response and must be corrected before Phase 25 completion.
+### Office Profile
+- [x] Existing page-state handling.
+- [x] Admin-only edit/asset/license controls.
+- [x] Existing loading/error feedback.
+- [x] Shared GET error/retry handling.
+- [ ] Browser/API regression.
 
-### Notifications — IN PROGRESS
+### Revenues
+- [x] Existing financial loading state.
+- [x] Existing financial error state.
+- [x] Existing filtering validation.
+- [x] Assistant access denied / financial content hidden.
+- [x] Shared GET error/retry handling.
+- [ ] Browser/API regression.
 
-- [x] Shared loading/busy/duplicate-submission foundation applies.
-- [x] Initial Arabic loading state added to the notification list container.
-- [x] NotificationCenter existing filtering/empty/error handling retained.
-- [x] Existing refresh and mark-all-read actions retained.
-- [ ] Full browser/API state test.
+### Reports
+- [x] Operational report available.
+- [x] Financial report restricted to Admin/Lawyer.
+- [x] Existing loading/error feedback.
+- [x] Existing custom-period validation.
+- [x] Shared GET error/retry handling.
+- [ ] Browser/API regression.
 
-### Remaining Pages
+### Login
+- [x] Required email/password validation.
+- [x] Password minimum length 8.
+- [x] Current-password autocomplete.
+- [x] Arabic error feedback.
+- [x] Button loading state.
+- [x] Duplicate-submission protection.
+- [ ] Browser/API regression.
 
-- [ ] Legal Library
-- [ ] Law Viewer
-- [ ] Office Profile
-- [ ] Revenues
-- [ ] Reports
-- [ ] Login
-- [ ] Activation
-- [ ] Users
+### Activation
+- [x] License file validation.
+- [x] Required license selection.
+- [x] Arabic validation/error feedback.
+- [x] Button loading state.
+- [x] Duplicate-submission protection.
+- [x] Success redirect.
+- [ ] Browser/API regression.
 
-## Remaining
+### Users
+- [x] Admin-only access state.
+- [x] Required create-user fields.
+- [x] Search/empty state.
+- [x] Status/reset/delete actions.
+- [x] Self-delete protection.
+- [x] Destructive confirmation.
+- [x] Success/error feedback.
+- [x] Duplicate-submission protection.
+- [ ] Browser/API regression.
 
-- [ ] Complete every frozen page.
-- [ ] Audit all form validation and input types.
-- [ ] Audit all empty states.
-- [ ] Audit all page-level errors and retry behavior.
-- [ ] Test every mutation for duplicate submission.
-- [ ] Test backend-offline/error recovery without broken UI state.
-- [ ] Run final Phase 25 regression.
+## Remaining Before Phase 25 Completion
+
+1. Fix Calendar `eventDrop` unconditional error throw.
+2. Run browser/API regression across all 19 frozen pages.
+3. Verify loading → empty → error → success transitions.
+4. Verify duplicate mutation prevention.
+5. Verify destructive confirmations.
+6. Verify Assistant financial invisibility.
+7. Verify backend-offline/error recovery.
+8. Freeze Phase 25 only after all regression checks pass.
 
 ## Frozen Pages
 
@@ -174,20 +187,18 @@ Added `frontend/assets/js/phase25-state.js` and loaded it through `auth.js`.
 4. `cases.html`
 5. `change-password.html`
 6. `client-profile.html`
-7. `dashboard.html`
-8. `law-viewer.html`
-9. `laws.html`
-10. `library.html`
-11. `login.html`
-12. `notifications.html`
-13. `office-profile.html`
-14. `reports.html`
-15. `revenues.html`
-16. `service-profile.html`
-17. `services.html`
-18. `users.html`
-19. `clients.html`
+7. `clients.html`
+8. `dashboard.html`
+9. `law-viewer.html`
+10. `laws.html`
+11. `library.html`
+12. `login.html`
+13. `notifications.html`
+14. `office-profile.html`
+15. `reports.html`
+16. `revenues.html`
+17. `service-profile.html`
+18. `services.html`
+19. `users.html`
 
-## Rule
-
-Do not mark Phase 25 complete until all applicable items above are implemented and tested. The frozen architecture and page scope must not be changed.
+**Phase 25 is not complete until the known Calendar defect is fixed and the final regression is passed.**
