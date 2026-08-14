@@ -1,6 +1,7 @@
 (function (global) {
   const DEFAULT_BASE_URL = "/api";
   const FORBIDDEN_MESSAGE = "ليس لديك صلاحية لتنفيذ هذا الإجراء";
+  const DUPLICATE_REQUEST_MESSAGE = "هذا الطلب قيد التنفيذ بالفعل";
   const HTTP_STATUS = Object.freeze({
     OK: 200,
     NO_CONTENT: 204,
@@ -11,6 +12,165 @@
     NETWORK_ERROR: 0,
   });
   const DEFAULT_TIMEOUT = 30000;
+  const activeMutationKeys = new Set();
+  const busyElements = new Map();
+  let activeRequestCount = 0;
+  let loadingBar = null;
+
+  function ensureLoadingBar() {
+    if (loadingBar || !global.document?.body) {
+      return loadingBar;
+    }
+
+    loadingBar = global.document.createElement("div");
+    loadingBar.id = "wathiqa-api-loading";
+    loadingBar.setAttribute("aria-hidden", "true");
+    loadingBar.style.cssText = [
+      "position:fixed",
+      "top:0",
+      "right:0",
+      "left:0",
+      "height:3px",
+      "z-index:99999",
+      "background:linear-gradient(90deg,transparent,#0f766e,transparent)",
+      "background-size:200% 100%",
+      "animation:wathiqaApiLoading 1s linear infinite",
+      "display:none",
+      "pointer-events:none",
+    ].join(";");
+
+    if (!global.document.getElementById("wathiqa-api-loading-style")) {
+      const style = global.document.createElement("style");
+      style.id = "wathiqa-api-loading-style";
+      style.textContent =
+        "@keyframes wathiqaApiLoading{0%{background-position:200% 0}100%{background-position:-200% 0}}";
+      global.document.head?.appendChild(style);
+    }
+
+    global.document.body.appendChild(loadingBar);
+    return loadingBar;
+  }
+
+  function setRequestLoading(active) {
+    activeRequestCount = Math.max(0, activeRequestCount + (active ? 1 : -1));
+
+    const bar = ensureLoadingBar();
+    if (bar) {
+      bar.style.display = activeRequestCount > 0 ? "block" : "none";
+    }
+
+    try {
+      global.dispatchEvent(
+        new CustomEvent("wathiqa:api-state", {
+          detail: {
+            loading: activeRequestCount > 0,
+            activeRequests: activeRequestCount,
+          },
+        }),
+      );
+    } catch {}
+  }
+
+  function markElementBusy(element) {
+    if (!element || !(element instanceof global.HTMLElement)) {
+      return;
+    }
+
+    const count = busyElements.get(element) || 0;
+    busyElements.set(element, count + 1);
+
+    if (count === 0) {
+      element.dataset.wathiqaBusy = "true";
+      element.setAttribute("aria-busy", "true");
+      element.dataset.wathiqaOriginalDisabled = element.disabled ? "true" : "false";
+      element.disabled = true;
+    }
+  }
+
+  function unmarkElementBusy(element) {
+    if (!element) {
+      return;
+    }
+
+    const count = busyElements.get(element) || 0;
+
+    if (count <= 1) {
+      busyElements.delete(element);
+      element.removeAttribute("aria-busy");
+      delete element.dataset.wathiqaBusy;
+
+      if (element.dataset.wathiqaOriginalDisabled !== "true") {
+        element.disabled = false;
+      }
+
+      delete element.dataset.wathiqaOriginalDisabled;
+      return;
+    }
+
+    busyElements.set(element, count - 1);
+  }
+
+  function findBusyElement() {
+    const active = global.document?.activeElement;
+
+    if (active instanceof global.HTMLButtonElement) {
+      return active;
+    }
+
+    if (active instanceof global.HTMLInputElement && active.type === "submit") {
+      return active;
+    }
+
+    return null;
+  }
+
+  function findFormSubmitButton() {
+    const active = global.document?.activeElement;
+    const form = active?.form || active?.closest?.("form");
+
+    if (!form) {
+      return null;
+    }
+
+    return form.querySelector('button[type="submit"], input[type="submit"]');
+  }
+
+  function getBusyElement(options) {
+    if (options?.busyElement instanceof global.HTMLElement) {
+      return options.busyElement;
+    }
+
+    return findBusyElement() || findFormSubmitButton();
+  }
+
+  function serializeMutationBody(body) {
+    if (body instanceof FormData) {
+      const entries = [];
+      body.forEach((value, key) => {
+        if (value instanceof File) {
+          entries.push([key, value.name, value.size, value.lastModified]);
+        } else {
+          entries.push([key, String(value)]);
+        }
+      });
+      return JSON.stringify(entries);
+    }
+
+    if (body === undefined || body === null) {
+      return "";
+    }
+
+    try {
+      return JSON.stringify(body);
+    } catch {
+      return String(body);
+    }
+  }
+
+  function getMutationKey(method, requestUrl, body) {
+    return `${method}:${requestUrl}:${serializeMutationBody(body)}`;
+  }
+
   function isLiveServerEnvironment() {
     try {
       const location = global.location;
@@ -75,6 +235,7 @@
 
     return `${normalizedBase}${normalizedUrl}`;
   }
+
   function appendQueryParams(url, params) {
     if (!params || typeof params !== "object") {
       return url;
@@ -98,6 +259,7 @@
 
     return `${url}${url.includes("?") ? "&" : "?"}${query}`;
   }
+
   function isFormData(value) {
     return value instanceof FormData;
   }
@@ -201,6 +363,30 @@
     const requestBody = shouldSerializeJson ? JSON.stringify(body) : body;
     const headers = buildHeaders(options, body);
     const controller = new AbortController();
+    const isMutation = method !== "GET" && method !== "HEAD";
+    const mutationKey = isMutation
+      ? getMutationKey(method, requestUrl, body)
+      : null;
+    const busyElement = isMutation ? getBusyElement(options) : null;
+
+    if (mutationKey && activeMutationKeys.has(mutationKey)) {
+      throw createError(
+        DUPLICATE_REQUEST_MESSAGE,
+        409,
+        null,
+        requestUrl,
+      );
+    }
+
+    if (mutationKey) {
+      activeMutationKeys.add(mutationKey);
+    }
+
+    if (busyElement) {
+      markElementBusy(busyElement);
+    }
+
+    setRequestLoading(true);
 
     const timeout = setTimeout(() => {
       controller.abort();
@@ -238,9 +424,19 @@
       }
 
       throw error;
+    } finally {
+      clearTimeout(timeout);
+      setRequestLoading(false);
+
+      if (busyElement) {
+        unmarkElementBusy(busyElement);
+      }
+
+      if (mutationKey) {
+        activeMutationKeys.delete(mutationKey);
+      }
     }
 
-    clearTimeout(timeout);
     if (response.status === HTTP_STATUS.UNAUTHORIZED) {
       try {
         localStorage.removeItem("token");
