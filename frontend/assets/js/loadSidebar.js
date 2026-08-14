@@ -11,6 +11,116 @@
     lucidePath: "../assets/vendor/lucide/lucide.js",
   });
 
+  function applyLegacyRtlShellFix() {
+    const page = (global.location.pathname.split("/").pop() || "").split("?")[0].split("#")[0];
+    if (page !== "revenues.html" && page !== "reports.html") return;
+    if (document.getElementById("wathiqa-legacy-rtl-shell-fix")) return;
+
+    const style = document.createElement("style");
+    style.id = "wathiqa-legacy-rtl-shell-fix";
+    style.textContent = `
+      html { direction: rtl !important; }
+      body { direction: rtl !important; text-align: right !important; }
+
+      body:has(> .flex > #sidebar-container) > .flex {
+        direction: ltr !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 280px !important;
+        grid-template-rows: 72px minmax(0, 1fr) !important;
+        grid-template-areas: "navbar sidebar" "main sidebar" !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #f8f6f2 !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > #navbar-container {
+        grid-area: navbar !important;
+        direction: rtl !important;
+        width: 100% !important;
+        height: 72px !important;
+        min-width: 0 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 300 !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > #sidebar-container {
+        grid-area: sidebar !important;
+        direction: rtl !important;
+        width: 280px !important;
+        min-width: 280px !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > #sidebar-container > #sidebar {
+        direction: rtl !important;
+        width: 280px !important;
+        height: 100vh !important;
+        position: sticky !important;
+        top: 0 !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > main {
+        grid-area: main !important;
+        direction: rtl !important;
+        text-align: right !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        min-height: calc(100vh - 72px) !important;
+        margin: 0 !important;
+        background: #f8f6f2 !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > main table {
+        direction: rtl !important;
+        width: 100% !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > main th,
+      body:has(> .flex > #sidebar-container) > .flex > main td {
+        direction: rtl !important;
+        text-align: right !important;
+        vertical-align: middle !important;
+      }
+
+      body:has(> .flex > #sidebar-container) > .flex > main input,
+      body:has(> .flex > #sidebar-container) > .flex > main textarea,
+      body:has(> .flex > #sidebar-container) > .flex > main select {
+        direction: rtl !important;
+        text-align: right !important;
+      }
+
+      @media (max-width: 768px) {
+        body:has(> .flex > #sidebar-container) > .flex {
+          display: block !important;
+          min-height: 100vh !important;
+        }
+        body:has(> .flex > #sidebar-container) > .flex > #sidebar-container {
+          width: 0 !important;
+          min-width: 0 !important;
+        }
+        body:has(> .flex > #sidebar-container) > .flex > main {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-height: 100vh !important;
+        }
+        body:has(> .flex > #sidebar-container) > .flex > #sidebar-container > #sidebar {
+          position: fixed !important;
+          top: 0 !important;
+          right: 0 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  applyLegacyRtlShellFix();
+
   const state = {
     sidebarHtml: null,
     loadingPromise: null,
