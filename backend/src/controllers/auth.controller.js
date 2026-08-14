@@ -130,11 +130,11 @@ exports.login = (req, res) => {
  * email is never accepted as an identity selector for this operation.
  */
 exports.changePassword = async (req, res) => {
-  const { currentPassword, newPassword } = req.body || {};
+  const { newPassword } = req.body || {};
 
-  if (!currentPassword || !newPassword) {
+  if (!newPassword) {
     return res.status(400).json({
-      message: "كلمة المرور الحالية والجديدة مطلوبتان",
+      message: "كلمة المرور الجديدة مطلوبة",
     });
   }
 
@@ -148,7 +148,7 @@ exports.changePassword = async (req, res) => {
 
   db.get(
     `
-    SELECT id, password_hash, must_change_password
+    SELECT id
     FROM users
     WHERE id = ?
     `,
@@ -167,17 +167,6 @@ exports.changePassword = async (req, res) => {
       }
 
       try {
-        const validCurrentPassword = await bcrypt.compare(
-          currentPassword,
-          user.password_hash,
-        );
-
-        if (!validCurrentPassword) {
-          return res.status(401).json({
-            message: "كلمة المرور الحالية غير صحيحة",
-          });
-        }
-
         const hash = await bcrypt.hash(newPassword, 10);
 
         db.run(
