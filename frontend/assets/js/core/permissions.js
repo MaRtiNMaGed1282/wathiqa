@@ -2,7 +2,7 @@
   "use strict";
 
   function role() {
-    return global.auth?.getCurrentRole?.() || null;
+    return global.auth?.getUser?.()?.role || null;
   }
 
   function isAdmin() {
