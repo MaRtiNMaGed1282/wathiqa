@@ -100,7 +100,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
       return;
     }
 
-    // Existing users receive role-based defaults once. Explicit user overrides are preserved.
     db.all(`SELECT id, role FROM users`, [], (usersErr, users) => {
       if (usersErr) {
         console.error("Failed to initialize user permissions:", usersErr.message);
@@ -119,20 +118,28 @@ const db = new sqlite3.Database(dbPath, (err) => {
           const defaults = getRoleDefaults(user.role);
           MODULES.forEach(({ key }) => {
             const permission = defaults[key] || {};
-            insert.run(
-              user.id,
-              key,
-              Number(permission.view) || 0,
-              Number(permission.create) || 0,
-              Number(permission.edit) || 0,
-              Number(permission.delete) || 0,
-            );
+            insert.run(user.id, key, Number(permission.view) || 0, Number(permission.create) || 0, Number(permission.edit) || 0, Number(permission.delete) || 0);
           });
         });
-
         insert.finalize();
       });
     });
+  });
+
+  db.run(`CREATE TABLE IF NOT EXISTS user_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    jti TEXT NOT NULL UNIQUE,
+    token_hash TEXT NOT NULL UNIQUE,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    revoked_at DATETIME,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (tableErr) => {
+    if (tableErr) console.error("Failed to create user_sessions table:", tableErr.message);
   });
 });
 
