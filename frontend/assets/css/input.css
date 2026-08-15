@@ -1,2 +1,5 @@
+/* Wathiqa frozen frontend stylesheet entrypoint. */
 @import url("./tailwind.min.css");
+@import url("./tailwind.compat.css");
 @import url("./dashboard-shell.css");
+@import url("./rtl-layout.css");
