@@ -35,6 +35,7 @@ app.use(activityAuditMiddleware);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", require("./routes/users.routes"));
+app.use("/api/permissions", require("./routes/permissions.routes"));
 app.use("/api/office", require("./routes/office.routes"));
 app.use("/api/license", require("./routes/license.routes"));
 app.use("/api/library", require("./routes/library.routes"));
