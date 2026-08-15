@@ -1,45 +1,59 @@
 const db = require("../config/sqlite");
 
-function isPositiveInteger(value) {
-  return /^\d+$/.test(String(value)) && Number(value) > 0;
+function normalizePositiveInteger(value, fallback) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? fallback).trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const number = Number(normalized);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
 }
 
-function isNonNegativeInteger(value) {
-  return /^\d+$/.test(String(value)) && Number(value) >= 0;
+function normalizeNonNegativeInteger(value, fallback) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? fallback).trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const number = Number(normalized);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
+}
+
+function validatePagination(req, res) {
+  const limit = normalizePositiveInteger(req.query.limit, 20);
+  const offset = normalizeNonNegativeInteger(req.query.offset, 0);
+
+  if (limit === null) {
+    res.status(400).json({ message: "Invalid limit" });
+    return null;
+  }
+
+  if (offset === null) {
+    res.status(400).json({ message: "Invalid offset" });
+    return null;
+  }
+
+  return { limit, offset };
 }
 
 exports.getActivity = (req, res) => {
-  const { limit = "20", offset = "0", module, user_id } = req.query;
+  const { module } = req.query;
+  const pagination = validatePagination(req, res);
+  if (!pagination) return;
 
+  const { limit, offset } = pagination;
   const conditions = [];
   const params = [];
 
   if (module) {
     conditions.push("module = ?");
-    params.push(module);
+    params.push(Array.isArray(module) ? module[0] : module);
   }
 
-  if (user_id) {
-    if (!isPositiveInteger(user_id)) {
-      return res.status(400).json({
-        message: "Invalid user_id",
-      });
+  if (req.query.user_id != null) {
+    const userId = normalizePositiveInteger(req.query.user_id);
+    if (userId === null) {
+      return res.status(400).json({ message: "Invalid user_id" });
     }
-
     conditions.push("user_id = ?");
-    params.push(user_id);
-  }
-
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
+    params.push(userId);
   }
 
   let query = `
@@ -52,9 +66,7 @@ exports.getActivity = (req, res) => {
   `;
 
   if (conditions.length > 0) {
-    query += `
-    WHERE ${conditions.join(" AND ")}
-    `;
+    query += ` WHERE ${conditions.join(" AND ")}`;
   }
 
   query += `
@@ -63,13 +75,11 @@ exports.getActivity = (req, res) => {
     LIMIT ?
     OFFSET ?
   `;
-  params.push(Number(limit), Number(offset));
+  params.push(limit, offset);
 
   db.all(query, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({
-        message: err.message,
-      });
+      return res.status(500).json({ message: err.message });
     }
 
     res.json(rows);
@@ -78,25 +88,15 @@ exports.getActivity = (req, res) => {
 
 exports.getCaseActivity = (req, res) => {
   const { id } = req.params;
-  const { limit = "20", offset = "0" } = req.query;
+  const pagination = validatePagination(req, res);
+  if (!pagination) return;
 
-  if (!isPositiveInteger(id)) {
-    return res.status(400).json({
-      message: "Invalid case id",
-    });
+  const caseId = normalizePositiveInteger(id);
+  if (caseId === null) {
+    return res.status(400).json({ message: "Invalid case id" });
   }
 
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
-  }
+  const { limit, offset } = pagination;
 
   db.all(
     `
@@ -113,12 +113,10 @@ exports.getCaseActivity = (req, res) => {
     LIMIT ?
     OFFSET ?
     `,
-    ["case", id, Number(limit), Number(offset)],
+    ["case", caseId, limit, offset],
     (err, rows) => {
       if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
+        return res.status(500).json({ message: err.message });
       }
 
       res.json(rows);
@@ -128,25 +126,15 @@ exports.getCaseActivity = (req, res) => {
 
 exports.getClientActivity = (req, res) => {
   const { id } = req.params;
-  const { limit = "20", offset = "0" } = req.query;
+  const pagination = validatePagination(req, res);
+  if (!pagination) return;
 
-  if (!isPositiveInteger(id)) {
-    return res.status(400).json({
-      message: "Invalid client id",
-    });
+  const clientId = normalizePositiveInteger(id);
+  if (clientId === null) {
+    return res.status(400).json({ message: "Invalid client id" });
   }
 
-  if (!isPositiveInteger(limit)) {
-    return res.status(400).json({
-      message: "Invalid limit",
-    });
-  }
-
-  if (!isNonNegativeInteger(offset)) {
-    return res.status(400).json({
-      message: "Invalid offset",
-    });
-  }
+  const { limit, offset } = pagination;
 
   db.all(
     `
@@ -163,12 +151,10 @@ exports.getClientActivity = (req, res) => {
     LIMIT ?
     OFFSET ?
     `,
-    ["client", id, Number(limit), Number(offset)],
+    ["client", clientId, limit, offset],
     (err, rows) => {
       if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
+        return res.status(500).json({ message: err.message });
       }
 
       res.json(rows);
