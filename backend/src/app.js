@@ -8,7 +8,6 @@ require("./config/sqlite");
 const { startDeadlineReminderScheduler } = require("./services/deadlineReminder.service");
 
 const app = express();
-
 const authRoutes = require("./routes/auth.routes");
 const attorneyRoutes = require("./routes/attorneys.routes");
 const serviceRoutes = require("./routes/services.routes");
@@ -31,6 +30,7 @@ app.use(activityAuditMiddleware);
 app.use(archiveResponseMiddleware);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/sessions", require("./routes/sessions.routes"));
 app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/permissions", require("./routes/permissions.routes"));
 app.use("/api/office", require("./routes/office.routes"));
@@ -57,10 +57,7 @@ app.use("/api/attorneys", attorneyRoutes);
 app.use("/api/backup", require("./routes/backup.routes"));
 app.use("/api/archive", require("./routes/archive.routes"));
 
-app.get("/", (req, res) => {
-  res.json({ status: "success", message: "Lawyer Case Management API is running" });
-});
-
+app.get("/", (req, res) => res.json({ status: "success", message: "Lawyer Case Management API is running" }));
 startDeadlineReminderScheduler();
 
 app.use((err, req, res, next) => {
