@@ -21,6 +21,22 @@ function configureSession() {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
   });
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = { ...(details.responseHeaders || {}) };
+    responseHeaders["Content-Security-Policy"] = [
+      "default-src 'self' file:; " +
+      "script-src 'self' 'unsafe-inline'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' file: data: blob:; " +
+      "font-src 'self' file: data:; " +
+      "connect-src 'self' http://localhost:5000; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "frame-src 'none';",
+    ];
+    callback({ responseHeaders });
+  });
 }
 
 function configureNavigation(win) {
