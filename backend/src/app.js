@@ -48,6 +48,7 @@ app.use("/api/hearings", require("./routes/hearings.routes"));
 app.use("/api/calendar", require("./routes/calendar.routes"));
 app.use("/api/files", require("./routes/files.routes"));
 app.use("/api/payments", require("./routes/payments.routes"));
+app.use("/api/invoices", require("./routes/invoices.routes"));
 app.use("/api/activity", require("./routes/activity.routes"));
 app.use("/api/audit", require("./routes/audit.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
