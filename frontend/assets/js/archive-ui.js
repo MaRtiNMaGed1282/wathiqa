@@ -3,7 +3,7 @@
 (function (global) {
   const ENTITY_LABELS = Object.freeze({ client: "الموكل", case: "القضية", service: "الخدمة" });
   const LIST_ROUTES = Object.freeze({ client: "clients.html", case: "cases.html", service: "services.html" });
-  const state = { modal: null, activeType: "" };
+  const state = { modal: null, activeType: "", observer: null };
 
   function getPageContext() {
     const page = (global.location.pathname.split("/").pop() || "").toLowerCase();
@@ -70,8 +70,7 @@
   }
 
   function initialize() { addArchiveLinkToSidebar(); addProfileArchiveButton(); }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true }); else initialize();
-  const sidebarContainer = document.getElementById("sidebar-container");
-  if (sidebarContainer) new MutationObserver(() => { addArchiveLinkToSidebar(); addProfileArchiveButton(); }).observe(sidebarContainer, { childList: true, subtree: true });
+  function observeShell() { if (state.observer || !document.body) return; state.observer = new MutationObserver(() => { addArchiveLinkToSidebar(); addProfileArchiveButton(); }); state.observer.observe(document.body, { childList: true, subtree: true }); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { initialize(); observeShell(); }, { once: true }); else { initialize(); observeShell(); }
   global.WathiqaArchiveUI = Object.freeze({ archiveRecord, openArchiveModal, closeArchiveModal, initialize });
 })(window);
