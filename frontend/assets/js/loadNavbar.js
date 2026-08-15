@@ -19,6 +19,7 @@
     globalSearchInitialized: false,
     dashboardObserver: null,
     legacyCleanupObserver: null,
+    searchIconObserver: null,
     elements: Object.seal({
       navbar: null,
       userButton: null,
@@ -80,6 +81,32 @@
     if (state.dashboardObserver) state.dashboardObserver.disconnect();
     state.dashboardObserver = new MutationObserver(() => ensureDashboardQuickActions());
     state.dashboardObserver.observe($("dashboard-quick-actions"), {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  function removeSearchHistoryIcons() {
+    const container = state.elements.searchResults;
+    if (!container) return;
+
+    container.querySelectorAll(
+      'i[data-lucide="history"], svg[data-lucide="history"]',
+    ).forEach((icon) => icon.remove());
+  }
+
+  function initializeSearchHistoryIconCleanup() {
+    if (!state.elements.searchResults) return;
+
+    if (state.searchIconObserver) state.searchIconObserver.disconnect();
+
+    removeSearchHistoryIcons();
+
+    state.searchIconObserver = new MutationObserver(() => {
+      removeSearchHistoryIcons();
+    });
+
+    state.searchIconObserver.observe(state.elements.searchResults, {
       childList: true,
       subtree: true,
     });
@@ -216,6 +243,7 @@
     refreshUserInformation(global.__APP_DATA__);
     refreshNotificationBadge(global.__APP_DATA__?.dashboard?.summary?.notifications ?? 0);
     await initializeGlobalSearch();
+    initializeSearchHistoryIconCleanup();
     await initializeUserPermissions();
     initializeDashboardQuickActionRepair();
     initializeLegacyCleanup();
@@ -334,6 +362,10 @@
     if (state.legacyCleanupObserver) {
       state.legacyCleanupObserver.disconnect();
       state.legacyCleanupObserver = null;
+    }
+    if (state.searchIconObserver) {
+      state.searchIconObserver.disconnect();
+      state.searchIconObserver = null;
     }
     clearElements();
     if (state.container) state.container.innerHTML = "";
