@@ -1,0 +1,148 @@
+"use strict";
+
+(function (global) {
+  const ENTITY_LABELS = Object.freeze({
+    client: "الموكل",
+    case: "القضية",
+    service: "الخدمة",
+  });
+
+  const LIST_ROUTES = Object.freeze({
+    client: "clients.html",
+    case: "cases.html",
+    service: "services.html",
+  });
+
+  function getPageContext() {
+    const page = (global.location.pathname.split("/").pop() || "").toLowerCase();
+    const params = new URLSearchParams(global.location.search);
+    const id = params.get("id") || params.get("record_id") || params.get("case_id") || params.get("service_id");
+    if (!id || !/^\d+$/.test(id)) return null;
+    if (page === "client-profile.html") return { type: "client", id: Number(id) };
+    if (page === "case-profile.html") return { type: "case", id: Number(id) };
+    if (page === "service-profile.html") return { type: "service", id: Number(id) };
+    return null;
+  }
+
+  function isAdmin() {
+    try {
+      return String(global.auth?.getUser?.()?.role || "").toLowerCase() === "admin";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function toast(message, success = true) {
+    if (typeof global.Toastify === "function") {
+      global.Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "left",
+        close: true,
+        stopOnFocus: true,
+        style: { background: success ? "#16a34a" : "#dc2626" },
+      }).showToast();
+      return;
+    }
+    global.alert(message);
+  }
+
+  async function confirmArchive(label) {
+    const text = `سيتم نقل ${label} إلى الأرشيف ولن يظهر ضمن السجلات النشطة.`;
+    if (typeof global.Swal === "object" && typeof global.Swal.fire === "function") {
+      const result = await global.Swal.fire({
+        title: "تأكيد الأرشفة",
+        text,
+        input: "textarea",
+        inputLabel: "سبب الأرشفة (اختياري)",
+        inputPlaceholder: "اكتب سبب الأرشفة...",
+        showCancelButton: true,
+        confirmButtonText: "أرشفة",
+        cancelButtonText: "إلغاء",
+        confirmButtonColor: "#b45309",
+        reverseButtons: true,
+      });
+      return result.isConfirmed ? String(result.value || "").trim() : null;
+    }
+
+    if (!global.confirm(text)) return null;
+    return "";
+  }
+
+  async function archiveRecord(type, id, label) {
+    const reason = await confirmArchive(label);
+    if (reason === null) return;
+
+    try {
+      const result = await global.api.post("/archive", {
+        entityType: type,
+        recordId: id,
+        reason: reason || null,
+      });
+      toast(result?.message || "تمت الأرشفة بنجاح", true);
+      setTimeout(() => {
+        global.location.href = LIST_ROUTES[type];
+      }, 450);
+    } catch (error) {
+      console.error("Archive failed:", error);
+      toast(error?.message || "فشل تنفيذ الأرشفة", false);
+    }
+  }
+
+  function addProfileArchiveButton() {
+    if (!isAdmin()) return;
+    const context = getPageContext();
+    if (!context || document.getElementById("archive-record-button")) return;
+
+    const button = document.createElement("button");
+    button.id = "archive-record-button";
+    button.type = "button";
+    button.className = "bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition";
+    button.textContent = `أرشفة ${ENTITY_LABELS[context.type]}`;
+    button.addEventListener("click", () => archiveRecord(context.type, context.id, ENTITY_LABELS[context.type]));
+
+    const heading = document.querySelector("h1");
+    const header = heading?.parentElement;
+    if (header && header.classList.contains("flex")) {
+      header.appendChild(button);
+      return;
+    }
+
+    button.style.position = "fixed";
+    button.style.top = "18px";
+    button.style.left = "18px";
+    button.style.zIndex = "9999";
+    document.body.appendChild(button);
+  }
+
+  function addArchiveLinkToSidebar() {
+    if (!isAdmin()) return;
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar || sidebar.querySelector('[data-page="archive"]')) return;
+
+    const nav = sidebar.querySelector("nav") || sidebar.querySelector(".sidebar-nav");
+    if (!nav) return;
+
+    const link = document.createElement("a");
+    link.href = "archive.html";
+    link.dataset.page = "archive";
+    link.className = "sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg transition";
+    link.innerHTML = '<i data-lucide="archive"></i><span>الأرشيف</span>';
+    nav.appendChild(link);
+    if (global.lucide?.createIcons) global.lucide.createIcons();
+  }
+
+  function initialize() {
+    addArchiveLinkToSidebar();
+    addProfileArchiveButton();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
+  }
+
+  global.WathiqaArchiveUI = Object.freeze({ archiveRecord, initialize });
+})(window);
