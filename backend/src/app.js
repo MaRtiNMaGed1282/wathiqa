@@ -45,6 +45,7 @@ app.use("/api/case-expenses", caseExpensesRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api/hearings", require("./routes/hearings.routes"));
+app.use("/api/calendar", require("./routes/calendar.routes"));
 app.use("/api/files", require("./routes/files.routes"));
 app.use("/api/payments", require("./routes/payments.routes"));
 app.use("/api/activity", require("./routes/activity.routes"));
