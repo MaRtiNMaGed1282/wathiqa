@@ -81,6 +81,59 @@ const db = new sqlite3.Database(dbPath, (err) => {
   )`, (tableErr) => {
     if (tableErr) console.error("Failed to create notifications table:", tableErr.message);
   });
+
+  db.run(`CREATE TABLE IF NOT EXISTS user_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    module TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_create INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_delete INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, module),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (tableErr) => {
+    if (tableErr) {
+      console.error("Failed to create user_permissions table:", tableErr.message);
+      return;
+    }
+
+    // Existing users receive role-based defaults once. Explicit user overrides are preserved.
+    db.all(`SELECT id, role FROM users`, [], (usersErr, users) => {
+      if (usersErr) {
+        console.error("Failed to initialize user permissions:", usersErr.message);
+        return;
+      }
+
+      const { MODULES, getRoleDefaults } = require("./permissions");
+      db.serialize(() => {
+        const insert = db.prepare(`
+          INSERT OR IGNORE INTO user_permissions
+            (user_id, module, can_view, can_create, can_edit, can_delete)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+
+        users.forEach((user) => {
+          const defaults = getRoleDefaults(user.role);
+          MODULES.forEach(({ key }) => {
+            const permission = defaults[key] || {};
+            insert.run(
+              user.id,
+              key,
+              Number(permission.view) || 0,
+              Number(permission.create) || 0,
+              Number(permission.edit) || 0,
+              Number(permission.delete) || 0,
+            );
+          });
+        });
+
+        insert.finalize();
+      });
+    });
+  });
 });
 
 module.exports = db;
