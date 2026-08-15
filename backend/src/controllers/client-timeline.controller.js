@@ -9,11 +9,7 @@ function isNonNegativeInteger(value) {
 }
 
 /**
- * Returns a unified client timeline made from the client's own activity and
- * activity belonging to records directly related to that client.
- *
- * The existing activity endpoint remains unchanged. This endpoint is additive
- * and is intentionally read-only.
+ * Unified, read-only timeline for a client and records directly related to it.
  */
 exports.getClientTimeline = (req, res) => {
   const { id } = req.params;
@@ -22,11 +18,9 @@ exports.getClientTimeline = (req, res) => {
   if (!isPositiveInteger(id)) {
     return res.status(400).json({ message: "Invalid client id" });
   }
-
   if (!isPositiveInteger(limit)) {
     return res.status(400).json({ message: "Invalid limit" });
   }
-
   if (!isNonNegativeInteger(offset)) {
     return res.status(400).json({ message: "Invalid offset" });
   }
@@ -36,9 +30,7 @@ exports.getClientTimeline = (req, res) => {
   const pageOffset = Number(offset);
 
   const query = `
-    SELECT
-      al.*,
-      u.full_name AS user_name
+    SELECT al.*, u.full_name AS user_name
     FROM activity_logs al
     LEFT JOIN users u ON u.id = al.user_id
     WHERE
@@ -58,7 +50,7 @@ exports.getClientTimeline = (req, res) => {
       OR (
         al.module = 'hearing'
         AND al.record_id IN (
-          SELECT h.id
+          SELECT h.hearing_id
           FROM hearings h
           INNER JOIN legal_cases lc ON lc.case_id = h.case_id
           WHERE lc.client_id = ?
@@ -69,8 +61,9 @@ exports.getClientTimeline = (req, res) => {
         AND al.record_id IN (
           SELECT p.id
           FROM payments p
-          INNER JOIN legal_cases lc ON lc.case_id = p.case_id
-          WHERE lc.client_id = ?
+          LEFT JOIN legal_cases lc ON lc.case_id = p.case_id
+          LEFT JOIN legal_services ls ON ls.service_id = p.service_id
+          WHERE lc.client_id = ? OR ls.client_id = ?
         )
       )
       OR (
@@ -113,6 +106,7 @@ exports.getClientTimeline = (req, res) => {
     clientId,
     clientId,
     clientId,
+    clientId,
     pageLimit,
     pageOffset,
   ];
@@ -122,7 +116,6 @@ exports.getClientTimeline = (req, res) => {
       console.error("Client timeline query failed:", err.message);
       return res.status(500).json({ message: "فشل تحميل سجل الموكل" });
     }
-
     return res.json(rows);
   });
 };
