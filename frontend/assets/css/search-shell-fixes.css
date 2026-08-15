@@ -13,6 +13,11 @@ body:has(> .flex > #sidebar-container) > .flex > #navbar-container .app-navbar {
   min-width: 0 !important;
 }
 
+#navbar-left,
+#navbar-right {
+  flex: 0 0 auto !important;
+}
+
 #navbar-center {
   flex: 1 1 auto !important;
   min-width: 0 !important;
