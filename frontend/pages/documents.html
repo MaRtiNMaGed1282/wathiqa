@@ -7,6 +7,7 @@
     <title>المستندات</title>
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/wathiqa-ui.js"></script>
     <link rel="stylesheet" href="../assets/css/fonts.css" />
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
   </head>
@@ -84,10 +85,10 @@
         rows.forEach((row) => {
           const tr = document.createElement("tr");
           tr.className = "border-b hover:bg-gray-50";
-          const relation = row.document_type === "case" ? (row.related_title || row.related_number || "قضية") : (row.related_title || row.related_number || "خدمة");
+          const relation = row.related_title || row.related_number || (row.document_type === "case" ? "قضية" : "خدمة");
           const download = row.document_type === "case" ? `/files/case/${encodeURIComponent(row.case_id)}/${encodeURIComponent(row.id)}/download` : `/files/service/${encodeURIComponent(row.id)}/download`;
           const openTarget = row.document_type === "case" ? `case-profile.html?id=${encodeURIComponent(row.case_id)}` : `service-profile.html?id=${encodeURIComponent(row.service_id)}`;
-          tr.innerHTML = `<td class="p-4 font-semibold">${escapeHtml(row.original_name || row.file_name)}</td><td class="p-4">${row.document_type === "case" ? "قضية" : "خدمة"}</td><td class="p-4">${escapeHtml(row.client_name || "—")}</td><td class="p-4">${escapeHtml(relation)}</td><td class="p-4 text-sm text-gray-500">${escapeHtml(dateText(row.uploaded_at))}</td><td class="p-4"><div class="flex flex-wrap gap-2"><button type="button" data-download="${escapeHtml(download)}" class="px-3 py-2 rounded-lg bg-primary text-white">تحميل</button><button type="button" data-open="${escapeHtml(openTarget)}" class="px-3 py-2 rounded-lg border">فتح</button>${row.document_type === "case" || row.document_type === "service" ? `<button type="button" data-delete-type="${row.document_type}" data-delete-id="${escapeHtml(row.id)}" class="px-3 py-2 rounded-lg border border-red-200 text-red-700">حذف</button>` : ""}</div></td>`;
+          tr.innerHTML = `<td class="p-4 font-semibold">${escapeHtml(row.original_name || row.file_name)}</td><td class="p-4">${row.document_type === "case" ? "قضية" : "خدمة"}</td><td class="p-4">${escapeHtml(row.client_name || "—")}</td><td class="p-4">${escapeHtml(relation)}</td><td class="p-4 text-sm text-gray-500">${escapeHtml(dateText(row.uploaded_at))}</td><td class="p-4"><div class="flex flex-wrap gap-2"><button type="button" data-download="${escapeHtml(download)}" data-download-name="${escapeHtml(row.original_name || row.file_name || "document")}" class="px-3 py-2 rounded-lg bg-primary text-white">تحميل</button><button type="button" data-open="${escapeHtml(openTarget)}" class="px-3 py-2 rounded-lg border">فتح</button><button type="button" data-delete-type="${row.document_type}" data-delete-id="${escapeHtml(row.id)}" class="px-3 py-2 rounded-lg border border-red-200 text-red-700">حذف</button></div></td>`;
           body.appendChild(tr);
         });
       }
@@ -97,29 +98,46 @@
         try {
           const rows = await api.get("/files", { params: { search: search.value.trim(), type: type.value } });
           render(Array.isArray(rows) ? rows : []);
-        } catch (error) { body.replaceChildren(); setState(error?.message || "تعذر تحميل المستندات."); }
+        } catch (error) {
+          body.replaceChildren();
+          setState(error?.message || "تعذر تحميل المستندات.");
+          WathiqaUI.toast(error?.message || "تعذر تحميل المستندات.", false);
+        }
       }
 
-      async function downloadFile(url) {
+      async function downloadFile(url, filename) {
         try {
           const blob = await api.download(url);
+          if (!blob || blob.size === 0) throw new Error("الملف فارغ أو غير موجود");
           const objectUrl = URL.createObjectURL(blob);
-          const a = document.createElement("a"); a.href = objectUrl; a.download = "document"; document.body.appendChild(a); a.click(); a.remove();
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = filename || "document";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
           setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-        } catch (error) { setState(error?.message || "تعذر تحميل الملف."); }
+          WathiqaUI.toast("تم تحميل المستند بنجاح");
+        } catch (error) {
+          WathiqaUI.toast(error?.message || "تعذر تحميل الملف.", false);
+        }
       }
 
       async function deleteFile(documentType, id) {
-        if (!confirm("هل أنت متأكد من حذف المستند؟")) return;
+        const confirmed = await WathiqaUI.confirm("هل أنت متأكد من حذف المستند؟");
+        if (!confirmed) return;
         try {
           await api.delete(documentType === "case" ? `/files/${encodeURIComponent(id)}` : `/files/service/${encodeURIComponent(id)}`);
+          WathiqaUI.toast("تم حذف المستند بنجاح");
           await load();
-        } catch (error) { setState(error?.message || "تعذر حذف المستند."); }
+        } catch (error) {
+          WathiqaUI.toast(error?.message || "تعذر حذف المستند.", false);
+        }
       }
 
       body.addEventListener("click", (event) => {
         const download = event.target.closest("[data-download]");
-        if (download) return downloadFile(download.dataset.download);
+        if (download) return downloadFile(download.dataset.download, download.dataset.downloadName);
         const open = event.target.closest("[data-open]");
         if (open) return (window.location.href = open.dataset.open);
         const remove = event.target.closest("[data-delete-id]");
