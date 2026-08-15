@@ -12,9 +12,7 @@
   function toast(message, success = true) {
     if (global.Toastify) {
       global.Toastify({ text: message, duration: 3200, gravity: 'top', position: 'left', close: true }).showToast();
-    } else if (!success) {
-      global.alert(message);
-    }
+    } else if (!success) global.alert(message);
   }
 
   function escapeHtml(value) {
@@ -26,18 +24,11 @@
     modal = document.createElement('div');
     modal.id = 'userPermissionsModal';
     modal.className = 'hidden fixed inset-0 z-[70] bg-black/40 items-center justify-center p-4';
-    modal.innerHTML = `
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
-        <div class="p-6 border-b flex items-center justify-between">
-          <div><h2 class="text-xl font-bold">صلاحيات المستخدم</h2><p id="permissionsUserLabel" class="text-sm text-gray-500 mt-1"></p></div>
-          <button type="button" id="closePermissionsModal" class="text-gray-500 text-2xl" aria-label="إغلاق">×</button>
-        </div>
-        <div id="permissionsBody" class="p-6 overflow-auto"></div>
-        <div class="p-5 border-t flex justify-end gap-3">
-          <button type="button" id="cancelPermissions" class="px-5 py-3 rounded-xl border">إلغاء</button>
-          <button type="button" id="savePermissions" class="bg-primary text-white px-5 py-3 rounded-xl">حفظ الصلاحيات</button>
-        </div>
-      </div>`;
+    modal.innerHTML = `<div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+      <div class="p-6 border-b flex items-center justify-between"><div><h2 class="text-xl font-bold">صلاحيات المستخدم</h2><p id="permissionsUserLabel" class="text-sm text-gray-500 mt-1"></p></div><button type="button" id="closePermissionsModal" class="text-gray-500 text-2xl" aria-label="إغلاق">×</button></div>
+      <div id="permissionsBody" class="p-6 overflow-auto"></div>
+      <div class="p-5 border-t flex justify-end gap-3"><button type="button" id="cancelPermissions" class="px-5 py-3 rounded-xl border">إلغاء</button><button type="button" id="savePermissions" class="bg-primary text-white px-5 py-3 rounded-xl">حفظ الصلاحيات</button></div>
+    </div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click', (event) => {
       if (event.target === modal || event.target.closest('#closePermissionsModal, #cancelPermissions')) closeModal();
@@ -53,17 +44,9 @@
     selectedUserId = null;
   }
 
-  async function apiGet(path) {
-    return global.api.get(path);
-  }
-
-  async function apiPut(path, body) {
-    return global.api.put(path, body);
-  }
-
   async function loadDefinitions() {
     if (definitions) return definitions;
-    definitions = await apiGet('/permissions/definitions');
+    definitions = await global.api.get('/permissions/definitions');
     (definitions.modules || []).forEach((item) => { MODULE_LABELS[item.key] = item.label; });
     return definitions;
   }
@@ -78,21 +61,8 @@
     modal.classList.add('flex');
 
     try {
-      const [defs, current] = await Promise.all([loadDefinitions(), apiGet(`/permissions/users/${encodeURIComponent(userId)}`)]);
-      body.innerHTML = `
-        <div class="overflow-x-auto border rounded-xl">
-          <table class="w-full text-right min-w-[760px]">
-            <thead class="bg-gray-50"><tr><th class="p-4">الوحدة</th>${defs.actions.map((action) => `<th class="p-4 text-center">${escapeHtml(ACTION_LABELS[action.key] || action.label || action.key)}</th>`).join('')}</tr></thead>
-            <tbody>
-              ${defs.modules.map((module) => `<tr class="border-t"><td class="p-4 font-semibold">${escapeHtml(module.label)}</td>${defs.actions.map((action) => {
-                const checked = current.permissions?.[module.key]?.[action.key] ? 'checked' : '';
-                const disabled = current.role === 'admin' ? 'disabled' : '';
-                return `<td class="p-4 text-center"><input type="checkbox" class="permission-check h-5 w-5" data-module="${escapeHtml(module.key)}" data-action="${escapeHtml(action.key)}" ${checked} ${disabled}></td>`;
-              }).join('')}</tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-        ${current.role === 'admin' ? '<p class="text-sm text-gray-500 mt-4">مدير النظام لديه جميع الصلاحيات ولا يمكن تقييده من هذه الشاشة.</p>' : '<p class="text-sm text-gray-500 mt-4">الصلاحيات تطبق من الخادم، وليس من واجهة المستخدم فقط.</p>'}`;
+      const [defs, current] = await Promise.all([loadDefinitions(), global.api.get(`/permissions/users/${encodeURIComponent(userId)}`)]);
+      body.innerHTML = `<div class="overflow-x-auto border rounded-xl"><table class="w-full text-right min-w-[760px]"><thead class="bg-gray-50"><tr><th class="p-4">الوحدة</th>${defs.actions.map((action) => `<th class="p-4 text-center">${escapeHtml(ACTION_LABELS[action.key] || action.label || action.key)}</th>`).join('')}</tr></thead><tbody>${defs.modules.map((module) => `<tr class="border-t"><td class="p-4 font-semibold">${escapeHtml(module.label)}</td>${defs.actions.map((action) => { const checked = current.permissions?.[module.key]?.[action.key] ? 'checked' : ''; const disabled = current.role === 'admin' ? 'disabled' : ''; return `<td class="p-4 text-center"><input type="checkbox" class="permission-check h-5 w-5" data-module="${escapeHtml(module.key)}" data-action="${escapeHtml(action.key)}" ${checked} ${disabled}></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>${current.role === 'admin' ? '<p class="text-sm text-gray-500 mt-4">مدير النظام لديه جميع الصلاحيات ولا يمكن تقييده من هذه الشاشة.</p>' : '<p class="text-sm text-gray-500 mt-4">الصلاحيات تطبق من الخادم.</p>'}`;
     } catch (error) {
       body.innerHTML = `<div class="py-12 text-center text-red-600">${escapeHtml(error?.message || 'تعذر تحميل الصلاحيات')}</div>`;
     }
@@ -110,14 +80,12 @@
         permissions[module] ||= {};
         permissions[module][action] = input.checked;
       });
-      await apiPut(`/permissions/users/${encodeURIComponent(selectedUserId)}`, { permissions });
+      await global.api.put(`/permissions/users/${encodeURIComponent(selectedUserId)}`, { permissions });
       toast('تم حفظ الصلاحيات بنجاح');
       closeModal();
     } catch (error) {
       toast(error?.message || 'تعذر حفظ الصلاحيات', false);
-    } finally {
-      button.disabled = false;
-    }
+    } finally { button.disabled = false; }
   }
 
   function enhanceUsersTable() {
@@ -131,9 +99,7 @@
       const name = row.querySelector('td .font-semibold')?.textContent?.trim() || `المستخدم #${id}`;
       const container = deleteButton.parentElement;
       const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'px-3 py-2 rounded-lg border text-sm';
-      button.textContent = 'الصلاحيات';
+      button.type = 'button'; button.className = 'px-3 py-2 rounded-lg border text-sm'; button.textContent = 'الصلاحيات';
       button.addEventListener('click', () => openPermissions(id, name));
       container.insertBefore(button, deleteButton);
       row.dataset.permissionsEnhanced = '1';
@@ -141,12 +107,14 @@
   }
 
   function init() {
-    if (!global.auth?.getUser?.()?.role || global.auth.getUser().role !== 'admin') return;
+    if (global.auth?.getUser?.()?.role !== 'admin') return;
     ensureModal();
-    const observer = new MutationObserver(enhanceUsersTable);
-    observer.observe(document.getElementById('usersTableBody') || document.body, { childList: true, subtree: true });
+    const target = document.getElementById('usersTableBody') || document.body;
+    new MutationObserver(enhanceUsersTable).observe(target, { childList: true, subtree: true });
     enhanceUsersTable();
+    global.__WATHIQA_USER_PERMISSIONS_LOADED__ = true;
   }
 
-  document.addEventListener('DOMContentLoaded', init, { once: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })(window);
