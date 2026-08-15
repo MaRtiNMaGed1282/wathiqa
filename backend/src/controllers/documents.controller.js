@@ -54,11 +54,24 @@ exports.getAllDocuments = (req, res) => {
     params.push(search, like, like, like, like);
   }
 
-  const sql = `${sources.join(' UNION ALL ')} ORDER BY datetime(uploaded_at) DESC, id DESC`;
+  if (sources.length === 0) {
+    return res.json([]);
+  }
+
+  const sql = `
+    SELECT *
+    FROM (
+      ${sources.join(' UNION ALL ')}
+    ) AS documents
+    ORDER BY datetime(uploaded_at) DESC, id DESC
+  `;
 
   db.all(sql, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({ message: 'تعذر تحميل المستندات', error: err.message });
+      return res.status(500).json({
+        message: 'تعذر تحميل المستندات',
+        error: err.message,
+      });
     }
 
     return res.json(rows || []);
