@@ -39,18 +39,29 @@ async function removeArchived(rows, type, idKey = 'id') {
   return result;
 }
 
+async function removeArchivedDeadlines(rows) {
+  const result = [];
+  for (const row of rows || []) {
+    const type = row?.type === 'hearing' ? 'case' : 'service';
+    if (row?.record_id == null || !(await isArchived(type, Number(row.record_id)))) result.push(row);
+  }
+  return result;
+}
+
 async function sanitizeDashboard(payload) {
   if (!payload?.dashboard) return payload;
 
   const dashboard = payload.dashboard;
-  const [clientStats, caseStats, serviceStats, caseFees, serviceFees, paid, expenses, caseDistribution] = await Promise.all([
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+
+  const [clientStats, caseStats, caseFees, serviceFees, paid, expenses, caseDistribution] = await Promise.all([
     dbGet(`SELECT COUNT(*) AS total,
                   SUM(CASE WHEN date(created_at) >= date(?) THEN 1 ELSE 0 END) AS this_month
            FROM clients c
            WHERE NOT EXISTS (
              SELECT 1 FROM archived_records ar
              WHERE ar.entity_type = 'client' AND ar.record_id = c.id AND ar.restored_at IS NULL
-           )`, [new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)]),
+           )`, [monthStart]),
     dbGet(`SELECT
              SUM(CASE WHEN case_status NOT IN ('مغلقة', 'مغلق', 'closed', 'Closed') OR case_status IS NULL THEN 1 ELSE 0 END) AS active,
              SUM(CASE WHEN date(created_at) >= date(?) THEN 1 ELSE 0 END) AS new_this_month
@@ -58,20 +69,13 @@ async function sanitizeDashboard(payload) {
            WHERE NOT EXISTS (
              SELECT 1 FROM archived_records ar
              WHERE ar.entity_type = 'case' AND ar.record_id = lc.case_id AND ar.restored_at IS NULL
-           )`, [new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)]),
-    dbGet(`SELECT COUNT(*) AS total FROM legal_services ls
-           WHERE NOT EXISTS (
-             SELECT 1 FROM archived_records ar
-             WHERE ar.entity_type = 'service' AND ar.record_id = ls.service_id AND ar.restored_at IS NULL
-           )`),
+           )`, [monthStart]),
     dbGet(`SELECT COALESCE(SUM(total_fees), 0) AS value FROM legal_cases lc
            WHERE NOT EXISTS (SELECT 1 FROM archived_records ar WHERE ar.entity_type='case' AND ar.record_id=lc.case_id AND ar.restored_at IS NULL)`),
     dbGet(`SELECT COALESCE(SUM(total_fees), 0) AS value FROM legal_services ls
            WHERE NOT EXISTS (SELECT 1 FROM archived_records ar WHERE ar.entity_type='service' AND ar.record_id=ls.service_id AND ar.restored_at IS NULL)`),
     dbGet(`SELECT COALESCE(SUM(p.amount), 0) AS value
            FROM payments p
-           LEFT JOIN legal_cases lc ON lc.case_id = p.case_id
-           LEFT JOIN legal_services ls ON ls.service_id = p.service_id
            WHERE (p.case_id IS NULL OR NOT EXISTS (SELECT 1 FROM archived_records ar WHERE ar.entity_type='case' AND ar.record_id=p.case_id AND ar.restored_at IS NULL))
              AND (p.service_id IS NULL OR NOT EXISTS (SELECT 1 FROM archived_records ar WHERE ar.entity_type='service' AND ar.record_id=p.service_id AND ar.restored_at IS NULL))`),
     dbGet(`SELECT COALESCE(SUM(ce.amount), 0) AS value
@@ -92,8 +96,8 @@ async function sanitizeDashboard(payload) {
   dashboard.caseDistribution = caseDistribution;
   dashboard.recentClients = await removeArchived(dashboard.recentClients, 'client', 'id');
   dashboard.recentCases = await removeArchived(dashboard.recentCases, 'case', 'case_id');
-  dashboard.upcomingDeadlines = await removeArchived(dashboard.upcomingDeadlines, 'service', 'record_id');
-  dashboard.deadlines = await removeArchived(dashboard.deadlines, 'service', 'record_id');
+  dashboard.upcomingDeadlines = await removeArchivedDeadlines(dashboard.upcomingDeadlines);
+  dashboard.deadlines = await removeArchivedDeadlines(dashboard.deadlines);
 
   if (dashboard.financial) {
     const totalFees = Number(caseFees.value || 0) + Number(serviceFees.value || 0);
@@ -124,7 +128,8 @@ module.exports = function archiveResponseMiddleware(req, res, next) {
 
       const id = getPathId(req.path);
       if (id && payload && typeof payload === 'object' && await isArchived(context.type, id)) {
-        return res.status(404).json({ message: 'السجل غير موجود' });
+        res.status(404);
+        return originalJson({ message: 'السجل غير موجود' });
       }
 
       return originalJson(payload);
