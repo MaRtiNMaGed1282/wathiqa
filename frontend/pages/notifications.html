@@ -116,6 +116,12 @@
     <script src="../assets/js/loadSidebar.js"></script>
     <script src="../assets/js/loadNavbar.js"></script>
     <script>
+      function refreshNotificationBadgeSafely() {
+        if (typeof window.refreshNotificationBadge === "function") {
+          window.refreshNotificationBadge();
+        }
+      }
+
       function toggleFilterButtons(activeFilter) {
         document.querySelectorAll(".filter-button").forEach((button) => {
           const filter = button.dataset.filter;
@@ -156,15 +162,15 @@
           pageSize: 20,
           filter: "all",
           onLoaded: () => {
-            window.refreshNotificationBadge();
+            refreshNotificationBadgeSafely();
             updateStats();
           },
           onItemRead: () => {
-            window.refreshNotificationBadge();
+            refreshNotificationBadgeSafely();
             updateStats();
           },
           onError: () => {
-            window.refreshNotificationBadge();
+            refreshNotificationBadgeSafely();
           },
         });
 
@@ -203,7 +209,7 @@
             try {
               await api.put("/notifications/read-all", {});
               center.reload();
-              window.refreshNotificationBadge();
+              refreshNotificationBadgeSafely();
               updateStats();
             } catch (error) {
               console.error(
