@@ -1,7 +1,7 @@
 # Phase 51 — Archive System
 
 ## Status
-Implemented.
+Implemented and integrated into active views.
 
 ## Scope
 - Added a persistent `archived_records` table created automatically by the archive service.
@@ -14,9 +14,14 @@ Implemented.
 - Activity logging for archive/restore actions.
 - Notification generated for archive actions.
 - Added Admin-only Archive page and sidebar entry.
+- Active Clients/Cases/Services GET responses now exclude actively archived records.
+- Individual archived Client/Case/Service GET requests return 404.
+- Global Search excludes archived Clients/Cases/Services.
+- Dashboard client/case counts, recent records, case distribution, deadlines, and financial aggregates exclude archived records where applicable.
+- Restoring a record removes its active archive state, making it visible to normal active views again.
 
-## Important implementation boundary
-The archive layer is intentionally separate from the source tables to avoid destructive schema changes. Existing active-list/search/dashboard queries were not rewritten in this phase; therefore the next integration pass should make archived records disappear from active views and search by default while preserving explicit access from the Archive page.
+## Implementation approach
+The archive layer remains separate from the source tables. A response-level integration middleware applies the archive state to existing GET endpoints and Dashboard output, avoiding destructive schema changes and avoiding duplicated record tables.
 
 ## Testing
 Not performed. Full project testing remains deferred until all planned feature additions are complete.
