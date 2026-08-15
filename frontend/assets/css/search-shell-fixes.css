@@ -1,8 +1,13 @@
-/* Wathiqa shared shell/search fixes — verification-phase only. */
+/* Wathiqa shared shell/search fixes. */
 
 /* Keep the authenticated content visually separated from the fixed right sidebar. */
 #app-shell > #app > main {
   padding-inline: 24px !important;
+}
+
+/* Give every page a consistent gap between the shared navbar and page content. */
+#navbar-container {
+  margin-bottom: 24px !important;
 }
 
 /* Make the navbar search use the full available header width. */
@@ -68,7 +73,26 @@ body:has(> .flex > #sidebar-container) > .flex > #navbar-container .app-navbar {
   box-shadow: 0 0 0 4px #d3ac2b26 !important;
 }
 
-/* Legacy page content already has its own padding; preserve the cases.html spacing model. */
+/* Dashboard quick actions: fill the available content width instead of reserving fixed columns. */
+#dashboard-quick-actions > .grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+}
+
+#dashboard-quick-actions > .grid > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  cursor: pointer !important;
+}
+
+#dashboard-quick-actions > .grid > button:focus-visible {
+  outline: 3px solid #d3ac2b66 !important;
+  outline-offset: 3px !important;
+}
+
+/* Legacy page content already has its own horizontal padding; preserve the cases.html spacing model. */
 body:has(> #sidebar-container) > main,
 body:has(> .flex > #sidebar-container) > .flex > main {
   padding-inline: 32px !important;
@@ -86,7 +110,15 @@ body:has(> .flex > #sidebar-container) > .flex > main {
     padding-inline: 16px !important;
   }
 
+  #navbar-container {
+    margin-bottom: 16px !important;
+  }
+
   #navbar-center .navbar-search {
     max-width: none !important;
+  }
+
+  #dashboard-quick-actions > .grid {
+    grid-template-columns: 1fr !important;
   }
 }
