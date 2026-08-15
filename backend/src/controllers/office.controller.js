@@ -28,7 +28,7 @@ function validateOfficePayload(body = {}) {
   if (values.office_name && values.office_name.length > 255) errors.push("اسم المكتب طويل جداً");
   if (values.owner_name.length > 255) errors.push("اسم المحامي المسؤول طويل جداً");
   if (values.phone.length > 50 || values.secondary_phone.length > 50) errors.push("رقم الهاتف غير صالح");
-  if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errors.push("البريد الإلكتروني غير صالح");
+  if (values.email && !/^\S+@\S+\.\S+$/.test(values.email)) errors.push("البريد الإلكتروني غير صالح");
   if (values.address.length > 1000) errors.push("العنوان طويل جداً");
   if (values.tax_number.length > 100) errors.push("الرقم الضريبي غير صالح");
   if (values.commercial_register.length > 100) errors.push("رقم السجل التجاري غير صالح");
@@ -41,10 +41,30 @@ function getOfficeRow(callback) {
   db.get(`SELECT * FROM office_settings LIMIT 1`, [], callback);
 }
 
+function existingAssetFilename(filename) {
+  if (!filename || path.basename(filename) !== filename || filename.includes("..")) {
+    return null;
+  }
+
+  const filePath = path.resolve(UPLOADS_ROOT, filename);
+  if (!filePath.startsWith(`${UPLOADS_ROOT}${path.sep}`) || !fs.existsSync(filePath)) {
+    return null;
+  }
+
+  return filename;
+}
+
 exports.getOfficeSettings = (req, res) => {
   getOfficeRow((err, row) => {
     if (err) return res.status(500).json({ message: err.message });
-    res.json(row || {});
+
+    if (!row) return res.json({});
+
+    res.json({
+      ...row,
+      logo_path: existingAssetFilename(row.logo_path),
+      stamp_path: existingAssetFilename(row.stamp_path),
+    });
   });
 };
 
@@ -170,16 +190,12 @@ exports.getOfficeAsset = (req, res) => {
     if (err) return res.status(500).json({ message: err.message });
     if (!row) return res.status(404).json({ message: "بيانات المكتب غير موجودة" });
 
-    const filename = row[type === "logo" ? "logo_path" : "stamp_path"];
-    if (!filename || path.basename(filename) !== filename || filename.includes("..")) {
+    const filename = existingAssetFilename(row[type === "logo" ? "logo_path" : "stamp_path"]);
+    if (!filename) {
       return res.status(404).json({ message: "الملف غير موجود" });
     }
 
     const filePath = path.resolve(UPLOADS_ROOT, filename);
-    if (!filePath.startsWith(`${UPLOADS_ROOT}${path.sep}`) || !fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "الملف غير موجود" });
-    }
-
     res.sendFile(filePath);
   });
 };
