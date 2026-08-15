@@ -9,127 +9,137 @@ function escapeLikeValue(value) {
 }
 
 function buildLikePattern(query) {
-  const trimmed = query.trim();
-  const escaped = escapeLikeValue(trimmed);
-  return `%${escaped}%`;
+  return `%${escapeLikeValue(query.trim())}%`;
 }
 
 function runSearchQuery(sql, params) {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(rows);
+      if (err) return reject(err);
+      resolve(rows || []);
     });
   });
 }
 
 function searchClients(query) {
-  const sql = `
-      SELECT id,
-             full_name,
-             national_id,
-             phone
-      FROM clients
-      WHERE full_name LIKE ? ESCAPE '\\'
-         OR national_id LIKE ? ESCAPE '\\'
-         OR phone LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern, pattern, pattern]);
+  return runSearchQuery(
+    `SELECT id, full_name, client_code, national_id, phone, address
+     FROM clients
+     WHERE full_name LIKE ? ESCAPE '\\'
+        OR client_code LIKE ? ESCAPE '\\'
+        OR national_id LIKE ? ESCAPE '\\'
+        OR phone LIKE ? ESCAPE '\\'
+        OR address LIKE ? ESCAPE '\\'
+     ORDER BY created_at DESC
+     LIMIT 10`,
+    [pattern, pattern, pattern, pattern, pattern],
+  );
 }
 
 function searchCases(query) {
-  const sql = `
-      SELECT case_id AS id,
-             case_number,
-             case_title AS title,
-             case_type
-      FROM legal_cases
-      WHERE case_number LIKE ? ESCAPE '\\'
-         OR case_title LIKE ? ESCAPE '\\'
-         OR case_type LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern, pattern, pattern]);
+  return runSearchQuery(
+    `SELECT case_id AS id, case_number, case_title AS title, case_type,
+            court_name, court_branch
+     FROM legal_cases
+     WHERE case_number LIKE ? ESCAPE '\\'
+        OR case_title LIKE ? ESCAPE '\\'
+        OR case_type LIKE ? ESCAPE '\\'
+        OR court_name LIKE ? ESCAPE '\\'
+        OR court_branch LIKE ? ESCAPE '\\'
+     ORDER BY created_at DESC
+     LIMIT 10`,
+    [pattern, pattern, pattern, pattern, pattern],
+  );
 }
 
 function searchServices(query) {
-  const sql = `
-      SELECT service_id AS id,
-             service_title AS service_name,
-             description
-      FROM legal_services
-      WHERE service_title LIKE ? ESCAPE '\\'
-         OR description LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern, pattern]);
+  return runSearchQuery(
+    `SELECT service_id AS id, service_title AS service_name, description
+     FROM legal_services
+     WHERE service_title LIKE ? ESCAPE '\\'
+        OR description LIKE ? ESCAPE '\\'
+     ORDER BY created_at DESC
+     LIMIT 10`,
+    [pattern, pattern],
+  );
 }
 
 function searchHearings(query) {
-  const sql = `
-      SELECT hearing_id AS id,
-             session_number,
-             courtroom AS court_name,
-             hearing_date
-      FROM hearings
-      WHERE session_number LIKE ? ESCAPE '\\'
-         OR courtroom LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern, pattern]);
+  return runSearchQuery(
+    `SELECT h.hearing_id AS id,
+            h.session_number,
+            h.courtroom AS court_name,
+            h.hearing_date,
+            lc.case_number,
+            lc.case_title
+     FROM hearings h
+     LEFT JOIN legal_cases lc ON lc.case_id = h.case_id
+     WHERE h.session_number LIKE ? ESCAPE '\\'
+        OR h.courtroom LIKE ? ESCAPE '\\'
+        OR lc.case_number LIKE ? ESCAPE '\\'
+        OR lc.case_title LIKE ? ESCAPE '\\'
+     ORDER BY h.hearing_date DESC
+     LIMIT 10`,
+    [pattern, pattern, pattern, pattern],
+  );
 }
 
 function searchPayments(query) {
-  const sql = `
-      SELECT payment_id AS id,
-             payment_reference,
-             amount,
-             notes
-      FROM payments
-      WHERE payment_reference LIKE ? ESCAPE '\\'
-         OR notes LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern, pattern]);
+  return runSearchQuery(
+    `SELECT payment_id AS id, payment_reference, amount, notes
+     FROM payments
+     WHERE payment_reference LIKE ? ESCAPE '\\'
+        OR notes LIKE ? ESCAPE '\\'
+     ORDER BY payment_date DESC
+     LIMIT 10`,
+    [pattern, pattern],
+  );
 }
 
 function searchFiles(query) {
-  const sql = `
-      SELECT file_id AS id,
-             original_name
-      FROM case_files
-      WHERE original_name LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern]);
+  return runSearchQuery(
+    `SELECT cf.file_id AS id,
+            cf.original_name,
+            cf.case_id,
+            lc.case_number
+     FROM case_files cf
+     LEFT JOIN legal_cases lc ON lc.case_id = cf.case_id
+     WHERE cf.original_name LIKE ? ESCAPE '\\'
+     ORDER BY cf.file_id DESC
+     LIMIT 10`,
+    [pattern],
+  );
 }
 
 function searchTemplates(query) {
-  const sql = `
-      SELECT id,
-             title
-      FROM legal_templates
-      WHERE title LIKE ? ESCAPE '\\'
-      LIMIT 10
-    `;
-
   const pattern = buildLikePattern(query);
-  return runSearchQuery(sql, [pattern]);
+  return runSearchQuery(
+    `SELECT id, title, description
+     FROM legal_templates
+     WHERE title LIKE ? ESCAPE '\\'
+     ORDER BY id DESC
+     LIMIT 10`,
+    [pattern],
+  );
+}
+
+function searchLaws(query) {
+  const pattern = buildLikePattern(query);
+  return runSearchQuery(
+    `SELECT id, title, category
+     FROM laws
+     WHERE title LIKE ? ESCAPE '\\'
+        OR category LIKE ? ESCAPE '\\'
+     ORDER BY title COLLATE NOCASE ASC
+     LIMIT 10`,
+    [pattern, pattern],
+  );
 }
 
 exports.globalSearch = async (req, res) => {
@@ -142,7 +152,7 @@ exports.globalSearch = async (req, res) => {
   }
 
   try {
-    const [clients, cases, services, hearings, payments, files, templates] =
+    const [clients, cases, services, hearings, payments, files, templates, laws] =
       await Promise.all([
         searchClients(query),
         searchCases(query),
@@ -151,21 +161,12 @@ exports.globalSearch = async (req, res) => {
         searchPayments(query),
         searchFiles(query),
         searchTemplates(query),
+        searchLaws(query),
       ]);
 
-    res.json({
-      clients,
-      cases,
-      services,
-      hearings,
-      payments,
-      files,
-      templates,
-    });
+    res.json({ clients, cases, services, hearings, payments, files, templates, laws });
   } catch (error) {
     console.error("Global search failed:", error.message || error);
-    res.status(500).json({
-      message: "Failed to execute search",
-    });
+    res.status(500).json({ message: "Failed to execute search" });
   }
 };
