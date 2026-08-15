@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <link rel="icon" type="image/png" href="../assets/faviconw.png" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>المستندات</title>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <link rel="stylesheet" href="../assets/css/fonts.css" />
+    <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+  </head>
+  <body class="bg-light text-primary min-h-screen flex font-cairo">
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">المستندات</h1>
+          <p class="text-gray-500 mt-1">إدارة الملفات المرتبطة بالقضايا والخدمات</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="refreshButton" type="button" class="px-4 py-2 rounded-xl border bg-white">تحديث</button>
+        </div>
+      </div>
+
+      <section class="bg-white rounded-2xl shadow p-5 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2">
+            <label for="search" class="block font-semibold mb-2">البحث</label>
+            <input id="search" type="search" placeholder="اسم الملف، الموكل، القضية أو الخدمة..." class="w-full border rounded-xl px-4 py-3" />
+          </div>
+          <div>
+            <label for="type" class="block font-semibold mb-2">النوع</label>
+            <select id="type" class="w-full border rounded-xl px-4 py-3 bg-white">
+              <option value="all">كل المستندات</option>
+              <option value="case">مستندات القضايا</option>
+              <option value="service">مستندات الخدمات</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow p-5"><p class="text-gray-500">إجمالي المستندات</p><h2 id="totalCount" class="text-3xl font-bold mt-2">0</h2></div>
+        <div class="bg-white rounded-2xl shadow p-5"><p class="text-gray-500">مستندات القضايا</p><h2 id="caseCount" class="text-3xl font-bold mt-2">0</h2></div>
+        <div class="bg-white rounded-2xl shadow p-5"><p class="text-gray-500">مستندات الخدمات</p><h2 id="serviceCount" class="text-3xl font-bold mt-2">0</h2></div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow overflow-hidden">
+        <div id="state" class="hidden p-8 text-center text-gray-500"></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-right">
+            <thead class="bg-secondary text-white">
+              <tr><th class="p-4">اسم الملف</th><th class="p-4">النوع</th><th class="p-4">الموكل</th><th class="p-4">الارتباط</th><th class="p-4">تاريخ الرفع</th><th class="p-4">الإجراءات</th></tr>
+            </thead>
+            <tbody id="documentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      "use strict";
+      const state = { timer: null };
+      const body = document.getElementById("documentsBody");
+      const stateBox = document.getElementById("state");
+      const search = document.getElementById("search");
+      const type = document.getElementById("type");
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+      }
+      function setState(message) { stateBox.textContent = message || ""; stateBox.classList.toggle("hidden", !message); }
+      function dateText(value) { return value ? new Date(value).toLocaleString("ar-EG") : "—"; }
+
+      function render(rows) {
+        body.replaceChildren();
+        document.getElementById("totalCount").textContent = rows.length.toLocaleString("ar-EG");
+        document.getElementById("caseCount").textContent = rows.filter(r => r.document_type === "case").length.toLocaleString("ar-EG");
+        document.getElementById("serviceCount").textContent = rows.filter(r => r.document_type === "service").length.toLocaleString("ar-EG");
+        if (!rows.length) { setState("لا توجد مستندات مطابقة."); return; }
+        setState("");
+        rows.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.className = "border-b hover:bg-gray-50";
+          const relation = row.document_type === "case" ? (row.related_title || row.related_number || "قضية") : (row.related_title || row.related_number || "خدمة");
+          const download = row.document_type === "case" ? `/files/case/${encodeURIComponent(row.case_id)}/${encodeURIComponent(row.id)}/download` : `/files/service/${encodeURIComponent(row.id)}/download`;
+          const openTarget = row.document_type === "case" ? `case-profile.html?id=${encodeURIComponent(row.case_id)}` : `service-profile.html?id=${encodeURIComponent(row.service_id)}`;
+          tr.innerHTML = `<td class="p-4 font-semibold">${escapeHtml(row.original_name || row.file_name)}</td><td class="p-4">${row.document_type === "case" ? "قضية" : "خدمة"}</td><td class="p-4">${escapeHtml(row.client_name || "—")}</td><td class="p-4">${escapeHtml(relation)}</td><td class="p-4 text-sm text-gray-500">${escapeHtml(dateText(row.uploaded_at))}</td><td class="p-4"><div class="flex flex-wrap gap-2"><button type="button" data-download="${escapeHtml(download)}" class="px-3 py-2 rounded-lg bg-primary text-white">تحميل</button><button type="button" data-open="${escapeHtml(openTarget)}" class="px-3 py-2 rounded-lg border">فتح</button>${row.document_type === "case" || row.document_type === "service" ? `<button type="button" data-delete-type="${row.document_type}" data-delete-id="${escapeHtml(row.id)}" class="px-3 py-2 rounded-lg border border-red-200 text-red-700">حذف</button>` : ""}</div></td>`;
+          body.appendChild(tr);
+        });
+      }
+
+      async function load() {
+        setState("جاري تحميل المستندات...");
+        try {
+          const rows = await api.get("/files", { params: { search: search.value.trim(), type: type.value } });
+          render(Array.isArray(rows) ? rows : []);
+        } catch (error) { body.replaceChildren(); setState(error?.message || "تعذر تحميل المستندات."); }
+      }
+
+      async function downloadFile(url) {
+        try {
+          const blob = await api.download(url);
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = objectUrl; a.download = "document"; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        } catch (error) { setState(error?.message || "تعذر تحميل الملف."); }
+      }
+
+      async function deleteFile(documentType, id) {
+        if (!confirm("هل أنت متأكد من حذف المستند؟")) return;
+        try {
+          await api.delete(documentType === "case" ? `/files/${encodeURIComponent(id)}` : `/files/service/${encodeURIComponent(id)}`);
+          await load();
+        } catch (error) { setState(error?.message || "تعذر حذف المستند."); }
+      }
+
+      body.addEventListener("click", (event) => {
+        const download = event.target.closest("[data-download]");
+        if (download) return downloadFile(download.dataset.download);
+        const open = event.target.closest("[data-open]");
+        if (open) return (window.location.href = open.dataset.open);
+        const remove = event.target.closest("[data-delete-id]");
+        if (remove) return deleteFile(remove.dataset.deleteType, remove.dataset.deleteId);
+      });
+
+      search.addEventListener("input", () => { clearTimeout(state.timer); state.timer = setTimeout(load, 250); });
+      type.addEventListener("change", load);
+      document.getElementById("refreshButton").addEventListener("click", load);
+      load();
+    </script>
+    <script src="../assets/js/loadSidebar.js"></script>
+    <script src="../assets/js/loadNavbar.js"></script>
+  </body>
+</html>
