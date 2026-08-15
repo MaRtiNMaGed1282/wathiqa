@@ -47,6 +47,7 @@
     "phase25-state.js",
     "ui-fixes.js",
     "archive-ui.js",
+    "invoice-ui.js",
     "invoice-fixes.js",
   ].forEach((scriptName) => {
     const script = global.document.createElement("script");
