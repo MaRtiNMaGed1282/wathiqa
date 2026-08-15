@@ -114,6 +114,7 @@
     renderKPIs(data);
     renderHearings(data);
     renderNotifications(data);
+    renderDeadlines(data);
     if (typeof lucide !== "undefined") lucide.createIcons();
   }
 
@@ -157,6 +158,7 @@
       case "hearing": return "bg-blue-500";
       case "financial": return "bg-green-500";
       case "document": return "bg-orange-500";
+      case "deadline": return "bg-red-500";
       case "system": return "bg-purple-500";
       default: return "bg-gray-400";
     }
@@ -176,6 +178,71 @@
       element.innerHTML = `<div class="w-3 h-3 rounded-full mt-2 ${notificationColor(item.type)}"></div><div class="flex-1"><h3 class="font-semibold">${item.title}</h3><p class="mt-1 text-sm text-gray-500">${item.message}</p><p class="mt-2 text-xs text-gray-400">${item.time}</p></div>`;
       container.appendChild(element);
     });
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function deadlineLabel(item) {
+    if (item.daysRemaining === 0) return "اليوم";
+    if (item.daysRemaining === 1) return "غداً";
+    if (item.daysRemaining > 1) return `بعد ${item.daysRemaining} أيام`;
+    return "متأخر";
+  }
+
+  function renderDeadlines(data) {
+    const container = state.elements.deadlines;
+    if (!container) return;
+
+    const deadlines = data.dashboard?.deadlines || [];
+    if (!deadlines.length) {
+      container.innerHTML = `
+        <div class="card rounded-3xl bg-white border border-gray-100 shadow-sm p-6">
+          <h2 class="text-xl font-bold">المواعيد والمهام القادمة</h2>
+          <p class="mt-1 text-sm text-gray-500">لا توجد مواعيد مستحقة خلال الفترة القادمة.</p>
+        </div>`;
+      return;
+    }
+
+    const rows = deadlines.map((item) => {
+      const isHearing = item.type === "hearing";
+      const href = isHearing
+        ? "calendar.html"
+        : `service-profile.html?id=${encodeURIComponent(item.record_id)}`;
+      const label = isHearing ? "جلسة" : "خدمة";
+      const urgencyClass = item.due_date === new Date().toISOString().slice(0, 10)
+        ? "text-red-600 bg-red-50"
+        : "text-primary bg-gray-50";
+
+      return `<a href="${href}" class="block rounded-2xl border border-gray-100 p-4 hover:bg-gray-50 transition">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="rounded-full px-2 py-1 text-[11px] font-semibold ${isHearing ? "bg-blue-50 text-blue-700" : "bg-orange-50 text-orange-700"}">${label}</span>
+              <span class="text-xs text-gray-400">${escapeHtml(item.client_name || "")}</span>
+            </div>
+            <p class="mt-2 font-semibold truncate">${escapeHtml(item.title || label)}</p>
+            <p class="mt-1 text-xs text-gray-500">${escapeHtml(item.due_date)}${item.hearing_time ? ` · ${escapeHtml(String(item.hearing_time).slice(0, 5))}` : ""}</p>
+          </div>
+          <span class="shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${urgencyClass}">${deadlineLabel(item)}</span>
+        </div>
+      </a>`;
+    }).join("");
+
+    container.innerHTML = `
+      <div class="card rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div class="border-b border-gray-100 px-6 py-5">
+          <h2 class="text-xl font-bold">المواعيد والمهام القادمة</h2>
+          <p class="mt-1 text-sm text-gray-500">الجلسات ومواعيد الخدمات خلال الثلاثين يوماً القادمة</p>
+        </div>
+        <div class="space-y-3 p-4">${rows}</div>
+      </div>`;
   }
 
   function setKPI(id, value) {
