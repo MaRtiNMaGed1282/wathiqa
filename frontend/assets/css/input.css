@@ -1,3 +1,40 @@
 /* Wathiqa canonical stylesheet entrypoint. */
 @import url("./tailwind.min.css");
 @import url("./search-shell-fixes.css");
+
+/* Testing/UI fixes kept global so the authenticated pages share the same behavior. */
+#action-upload-document {
+  display: none !important;
+}
+
+#exportClientsButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 40px !important;
+  padding: 8px 16px !important;
+  border: 1px solid #15803d !important;
+  border-radius: 8px !important;
+  background: #16a34a !important;
+  color: #fff !important;
+  font-family: Cairo, sans-serif !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  cursor: pointer !important;
+}
+
+#exportClientsButton:hover {
+  background: #15803d !important;
+  color: #fff !important;
+}
+
+#sidebar .sidebar-nav {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#sidebar .sidebar-nav::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
