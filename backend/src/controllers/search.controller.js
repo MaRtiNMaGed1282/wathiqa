@@ -50,14 +50,18 @@ function searchClients(query) {
 function searchCases(query) {
   const pattern = buildLikePattern(query);
   return runSearchQuery(
-    `SELECT case_id AS id, case_number, case_title AS title, case_type,
-            court_name, court_branch
+    `SELECT case_id AS id,
+            court_case_number AS case_number,
+            case_title AS title,
+            case_type,
+            court_name,
+            court_chamber
      FROM legal_cases
-     WHERE case_number LIKE ? ESCAPE '\\'
+     WHERE court_case_number LIKE ? ESCAPE '\\'
         OR case_title LIKE ? ESCAPE '\\'
         OR case_type LIKE ? ESCAPE '\\'
         OR court_name LIKE ? ESCAPE '\\'
-        OR court_branch LIKE ? ESCAPE '\\'
+        OR court_chamber LIKE ? ESCAPE '\\'
      ORDER BY created_at DESC
      LIMIT 10`,
     [pattern, pattern, pattern, pattern, pattern],
@@ -81,33 +85,36 @@ function searchHearings(query) {
   const pattern = buildLikePattern(query);
   return runSearchQuery(
     `SELECT h.hearing_id AS id,
-            h.session_number,
+            h.hearing_type,
             h.courtroom AS court_name,
+            h.judge_name,
             h.hearing_date,
-            lc.case_number,
+            lc.court_case_number AS case_number,
             lc.case_title
      FROM hearings h
      LEFT JOIN legal_cases lc ON lc.case_id = h.case_id
-     WHERE h.session_number LIKE ? ESCAPE '\\'
+     WHERE h.hearing_type LIKE ? ESCAPE '\\'
         OR h.courtroom LIKE ? ESCAPE '\\'
-        OR lc.case_number LIKE ? ESCAPE '\\'
+        OR h.judge_name LIKE ? ESCAPE '\\'
+        OR lc.court_case_number LIKE ? ESCAPE '\\'
         OR lc.case_title LIKE ? ESCAPE '\\'
      ORDER BY h.hearing_date DESC
      LIMIT 10`,
-    [pattern, pattern, pattern, pattern],
+    [pattern, pattern, pattern, pattern, pattern],
   );
 }
 
 function searchPayments(query) {
   const pattern = buildLikePattern(query);
   return runSearchQuery(
-    `SELECT payment_id AS id, payment_reference, amount, notes
+    `SELECT payment_id AS id, amount, payment_method, notes
      FROM payments
-     WHERE payment_reference LIKE ? ESCAPE '\\'
+     WHERE payment_method LIKE ? ESCAPE '\\'
         OR notes LIKE ? ESCAPE '\\'
+        OR CAST(amount AS TEXT) LIKE ?
      ORDER BY payment_date DESC
      LIMIT 10`,
-    [pattern, pattern],
+    [pattern, pattern, pattern],
   );
 }
 
@@ -117,7 +124,7 @@ function searchFiles(query) {
     `SELECT cf.file_id AS id,
             cf.original_name,
             cf.case_id,
-            lc.case_number
+            lc.court_case_number AS case_number
      FROM case_files cf
      LEFT JOIN legal_cases lc ON lc.case_id = cf.case_id
      WHERE cf.original_name LIKE ? ESCAPE '\\'
@@ -152,7 +159,7 @@ exports.globalSearch = async (req, res) => {
   try {
     const includeFinancial = req.user?.role === "admin" || req.user?.role === "lawyer";
 
-    let [clients, cases, services, hearings, files, laws] = await Promise.all([
+    const [clients, cases, services, hearings, files, laws] = await Promise.all([
       searchClients(query),
       searchCases(query),
       searchServices(query),
@@ -163,13 +170,21 @@ exports.globalSearch = async (req, res) => {
 
     const payments = includeFinancial ? await searchPayments(query) : [];
 
-    [clients, cases, services] = await Promise.all([
+    const [visibleClients, visibleCases, visibleServices] = await Promise.all([
       removeArchived(clients, "client"),
       removeArchived(cases, "case"),
       removeArchived(services, "service"),
     ]);
 
-    res.json({ clients, cases, services, hearings, payments, files, laws });
+    res.json({
+      clients: visibleClients,
+      cases: visibleCases,
+      services: visibleServices,
+      hearings,
+      payments,
+      files,
+      laws,
+    });
   } catch (error) {
     console.error("Global search failed:", error.message || error);
     res.status(500).json({ message: "Failed to execute search" });
