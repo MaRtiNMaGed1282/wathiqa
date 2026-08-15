@@ -5,6 +5,7 @@ const multer = require("multer");
 const { CORS_ORIGINS } = require("./config/env");
 
 require("./config/sqlite");
+const { startDeadlineReminderScheduler } = require("./services/deadlineReminder.service");
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use("/api/payments", require("./routes/payments.routes"));
 app.use("/api/activity", require("./routes/activity.routes"));
 app.use("/api/audit", require("./routes/audit.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
+app.use("/api/deadlines", require("./routes/deadlines.routes"));
 app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
 app.use("/api/attorneys", attorneyRoutes);
@@ -55,6 +57,8 @@ app.use("/api/backup", require("./routes/backup.routes"));
 app.get("/", (req, res) => {
   res.json({ status: "success", message: "Lawyer Case Management API is running" });
 });
+
+startDeadlineReminderScheduler();
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
