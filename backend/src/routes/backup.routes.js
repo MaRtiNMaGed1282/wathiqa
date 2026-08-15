@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const { createBackup, listBackups, scheduleRestore, getBackupRoot } = require("../services/backup.service");
+const { verifyBackup } = require("../services/backup-verification.service");
 const requireAuth = require("../middlewares/auth.middleware");
 const requireAdmin = require("../middlewares/admin.middleware");
 
@@ -37,6 +38,15 @@ router.post("/restore", async (req, res) => {
     res.json({ success: true, message: "تم تجهيز الاستعادة. يجب إعادة تشغيل النظام لإكمالها.", restore: result });
   } catch (error) {
     res.status(400).json({ success: false, message: error?.message || "تعذر تجهيز الاستعادة" });
+  }
+});
+
+router.get("/:name/verify", async (req, res) => {
+  try {
+    const result = await verifyBackup(req.params.name);
+    res.json({ success: true, message: "النسخة الاحتياطية سليمة وقابلة للقراءة.", verification: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error?.message || "فشل التحقق من النسخة الاحتياطية" });
   }
 });
 
