@@ -43,7 +43,9 @@ router.get("/dashboard/notifications", auth, getDashboardNotifications);
 
 router.post("/import", auth, importClients);
 router.get("/:id", auth, idParam(), getClientById);
-router.post("/", auth, validateClient, upload.single("attorney_file"), createClient);
+
+// Multipart/form-data must be parsed before validateClient reads req.body.
+router.post("/", auth, upload.single("attorney_file"), validateClient, createClient);
 router.put("/:id", auth, idParam(), validateClient, updateClient);
 router.delete("/:id", auth, role("admin"), idParam(), deleteClient);
 
