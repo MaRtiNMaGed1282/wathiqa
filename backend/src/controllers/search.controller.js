@@ -1,4 +1,5 @@
 const db = require("../config/sqlite");
+const { isArchived } = require("../services/archive.service");
 
 function isSearchQueryValid(query) {
   return typeof query === "string" && query.trim().length >= 2;
@@ -19,6 +20,15 @@ function runSearchQuery(sql, params) {
       resolve(rows || []);
     });
   });
+}
+
+async function removeArchived(rows, type, idKey = "id") {
+  const result = [];
+  for (const row of rows || []) {
+    const id = row?.[idKey] ?? row?.id;
+    if (id == null || !(await isArchived(type, Number(id)))) result.push(row);
+  }
+  return result;
 }
 
 function searchClients(query) {
@@ -152,7 +162,7 @@ exports.globalSearch = async (req, res) => {
   }
 
   try {
-    const [clients, cases, services, hearings, payments, files, templates, laws] =
+    let [clients, cases, services, hearings, payments, files, templates, laws] =
       await Promise.all([
         searchClients(query),
         searchCases(query),
@@ -163,6 +173,12 @@ exports.globalSearch = async (req, res) => {
         searchTemplates(query),
         searchLaws(query),
       ]);
+
+    [clients, cases, services] = await Promise.all([
+      removeArchived(clients, "client"),
+      removeArchived(cases, "case"),
+      removeArchived(services, "service"),
+    ]);
 
     res.json({ clients, cases, services, hearings, payments, files, templates, laws });
   } catch (error) {
