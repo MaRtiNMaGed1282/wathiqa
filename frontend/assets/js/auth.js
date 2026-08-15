@@ -50,6 +50,7 @@
     "invoice-ui.js",
     "invoice-fixes.js",
     "invoice-modal-fix.js",
+    "invoice-runtime-fix.js",
   ].forEach((scriptName) => {
     const script = global.document.createElement("script");
     script.src = `../assets/js/${scriptName}`;
