@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config/env");
 const db = require("../config/sqlite");
+const { getActiveSession, touchSession } = require("../services/session.service");
 
 function isPasswordChangeRequest(req) {
   return req.originalUrl === "/api/auth/change-password";
@@ -9,7 +10,6 @@ function isPasswordChangeRequest(req) {
 function getPermissionTarget(req) {
   const path = String(req.originalUrl || "").split("?")[0].toLowerCase();
   let module = null;
-
   if (path.startsWith("/api/clients")) module = "clients";
   else if (path.startsWith("/api/cases")) module = "cases";
   else if (path.startsWith("/api/case-expenses")) module = "revenues";
@@ -29,28 +29,18 @@ function getPermissionTarget(req) {
 
 function checkPermission(req, user, next) {
   if (user.role === "admin") return next();
-
   const target = getPermissionTarget(req);
   if (!target) return next();
 
-  db.get(`
-    SELECT can_view, can_create, can_edit, can_delete
-    FROM user_permissions
-    WHERE user_id = ? AND module = ?
-  `, [user.id, target.module], (err, permission) => {
+  db.get(`SELECT can_view, can_create, can_edit, can_delete FROM user_permissions WHERE user_id = ? AND module = ?`, [user.id, target.module], (err, permission) => {
     if (err) return next({ status: 500, message: "تعذر التحقق من صلاحيات المستخدم" });
-
-    if (!permission || Number(permission[`can_${target.action}`]) !== 1) {
-      return next({ status: 403, code: "PERMISSION_DENIED", message: "ليس لديك صلاحية لتنفيذ هذا الإجراء" });
-    }
-
+    if (!permission || Number(permission[`can_${target.action}`]) !== 1) return next({ status: 403, code: "PERMISSION_DENIED", message: "ليس لديك صلاحية لتنفيذ هذا الإجراء" });
     next();
   });
 }
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader) return res.status(401).json({ message: "غير مصرح" });
 
   const [scheme, token] = authHeader.trim().split(/\s+/);
@@ -63,32 +53,28 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ message: "رمز الدخول غير صالح" });
   }
 
-  if (!decoded?.id) return res.status(401).json({ message: "رمز الدخول غير صالح" });
+  if (!decoded?.id || !decoded?.jti) return res.status(401).json({ message: "جلسة الدخول قديمة أو غير صالحة، يرجى تسجيل الدخول مرة أخرى" });
 
-  db.get(`SELECT id, full_name, email, role, is_active, must_change_password FROM users WHERE id = ?`, [decoded.id], (err, user) => {
-    if (err) return res.status(500).json({ message: "تعذر التحقق من المستخدم" });
-    if (!user || Number(user.is_active) !== 1) return res.status(401).json({ message: "الحساب غير نشط أو غير موجود" });
+  try {
+    const session = await getActiveSession(decoded.jti, token);
+    if (!session || Number(session.user_id) !== Number(decoded.id)) return res.status(401).json({ message: "جلسة الدخول منتهية أو تم إلغاؤها، يرجى تسجيل الدخول مرة أخرى" });
 
-    req.user = {
-      id: user.id,
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role,
-      must_change_password: Boolean(user.must_change_password),
-    };
+    db.get(`SELECT id, full_name, email, role, is_active, must_change_password FROM users WHERE id = ?`, [decoded.id], (err, user) => {
+      if (err) return res.status(500).json({ message: "تعذر التحقق من المستخدم" });
+      if (!user || Number(user.is_active) !== 1) return res.status(401).json({ message: "الحساب غير نشط أو غير موجود" });
 
-    if (req.user.must_change_password && !isPasswordChangeRequest(req)) {
-      return res.status(403).json({ message: "يجب تغيير كلمة المرور قبل استخدام النظام", code: "PASSWORD_CHANGE_REQUIRED" });
-    }
+      req.user = { id: user.id, full_name: user.full_name, email: user.email, role: user.role, must_change_password: Boolean(user.must_change_password) };
+      req.auth = { jti: decoded.jti, sessionId: session.id };
+      touchSession(decoded.jti);
 
-    checkPermission(req, req.user, (permissionError) => {
-      if (permissionError) {
-        return res.status(permissionError.status || 500).json({
-          message: permissionError.message || "حدث خطأ في التحقق من الصلاحيات",
-          ...(permissionError.code ? { code: permissionError.code } : {}),
-        });
-      }
-      next();
+      if (req.user.must_change_password && !isPasswordChangeRequest(req)) return res.status(403).json({ message: "يجب تغيير كلمة المرور قبل استخدام النظام", code: "PASSWORD_CHANGE_REQUIRED" });
+
+      checkPermission(req, req.user, (permissionError) => {
+        if (permissionError) return res.status(permissionError.status || 500).json({ message: permissionError.message || "حدث خطأ في التحقق من الصلاحيات", ...(permissionError.code ? { code: permissionError.code } : {}) });
+        next();
+      });
     });
-  });
+  } catch (error) {
+    return res.status(500).json({ message: "تعذر التحقق من جلسة الدخول" });
+  }
 };
