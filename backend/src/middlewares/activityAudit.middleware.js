@@ -23,6 +23,38 @@ const MODULE_MAP = [
   ["/api/backup", "backup"],
 ];
 
+const MODULE_LABELS = Object.freeze({
+  client: "الموكل",
+  case: "القضية",
+  hearing: "الجلسة",
+  service: "الخدمة",
+  payment: "الدفعة",
+  expense: "المصروف",
+  file: "الملف",
+  office: "بيانات المكتب",
+  user: "المستخدم",
+  permission: "الصلاحيات",
+  backup: "النسخة الاحتياطية",
+  license: "الترخيص",
+  notification: "الإشعار",
+  template: "النموذج",
+  revenue: "الإيراد",
+  report: "التقرير",
+});
+
+const ACTION_LABELS = Object.freeze({
+  create: "تم إنشاء",
+  update: "تم تعديل",
+  delete: "تم حذف",
+  upload: "تم رفع",
+  restore: "تم استعادة",
+  reset: "تم إعادة ضبط",
+  activate: "تم تفعيل",
+  verify: "تم التحقق من",
+  pay: "تم تسجيل",
+  expense: "تم تسجيل",
+});
+
 function resolveModule(pathname) {
   const entry = MODULE_MAP.find(([prefix]) => pathname.startsWith(prefix));
   return entry ? entry[1] : null;
@@ -45,8 +77,10 @@ function resolveRecordId(req) {
   return null;
 }
 
-function createDescription(req, module, action) {
-  return JSON.stringify({ source: "request-audit", method: req.method, route: req.originalUrl || req.url || "", module, action });
+function createDescription(module, action) {
+  const actionLabel = ACTION_LABELS[action] || "تم تنفيذ";
+  const moduleLabel = MODULE_LABELS[module] || "عملية";
+  return `${actionLabel} ${moduleLabel}`;
 }
 
 module.exports = function activityAuditMiddleware(req, res, next) {
@@ -57,7 +91,7 @@ module.exports = function activityAuditMiddleware(req, res, next) {
     const userId = req.user && req.user.id ? Number(req.user.id) : null;
     const recordId = resolveRecordId(req);
     const action = resolveAction(req.method, req.originalUrl || req.url || "");
-    const description = createDescription(req, module, action);
+    const description = createDescription(module, action);
     db.run(`INSERT INTO activity_logs (module, record_id, action, description, user_id) VALUES (?, ?, ?, ?, ?)`, [module, recordId, action, description, userId], (err) => {
       if (err) console.error("Activity Audit Error:", err.message);
     });
