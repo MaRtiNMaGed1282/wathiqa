@@ -16,17 +16,26 @@ function getStoredFilePath(filePath) {
   const filename = path.basename(String(filePath));
   if (!filename || filename === "." || filename === "..") return null;
 
-  const uploadDir = path.resolve(upload.getUploadDir());
-  const absolutePath = path.resolve(uploadDir, filename);
+  const configuredUploadDir = path.resolve(upload.getUploadDir());
+  const candidateDirs = [
+    configuredUploadDir,
+    path.resolve(__dirname, "../../uploads"),
+    path.resolve(process.cwd(), "uploads"),
+  ].filter((dir, index, list) => list.indexOf(dir) === index);
 
-  if (
-    absolutePath !== uploadDir &&
-    !absolutePath.startsWith(`${uploadDir}${path.sep}`)
-  ) {
-    return null;
+  for (const uploadDir of candidateDirs) {
+    const absolutePath = path.resolve(uploadDir, filename);
+
+    if (
+      absolutePath !== uploadDir &&
+      absolutePath.startsWith(`${uploadDir}${path.sep}`) &&
+      fs.existsSync(absolutePath)
+    ) {
+      return absolutePath;
+    }
   }
 
-  return absolutePath;
+  return null;
 }
 
 function removeStoredFile(filePath) {
@@ -45,7 +54,7 @@ function removeStoredFile(filePath) {
 function sendStoredFile(res, filePath, originalName) {
   const absolutePath = getStoredFilePath(filePath);
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!absolutePath) {
     return res.status(404).json({ message: "ملف التخزين غير موجود" });
   }
 
@@ -268,7 +277,7 @@ exports.uploadServiceFile = (req, res) => {
 
           createNotification({
             title: "Service file uploaded",
-            message: `A service file was uploaded: ${originalName}`,
+            message: `A file was uploaded: ${originalName}`,
             type: "info",
             module: "service_file",
             record_id: this.lastID,
