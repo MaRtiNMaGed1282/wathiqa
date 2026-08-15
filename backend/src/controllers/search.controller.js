@@ -127,18 +127,6 @@ function searchFiles(query) {
   );
 }
 
-function searchTemplates(query) {
-  const pattern = buildLikePattern(query);
-  return runSearchQuery(
-    `SELECT id, title, description
-     FROM legal_templates
-     WHERE title LIKE ? ESCAPE '\\'
-     ORDER BY id DESC
-     LIMIT 10`,
-    [pattern],
-  );
-}
-
 function searchLaws(query) {
   const pattern = buildLikePattern(query);
   return runSearchQuery(
@@ -162,17 +150,18 @@ exports.globalSearch = async (req, res) => {
   }
 
   try {
-    let [clients, cases, services, hearings, payments, files, templates, laws] =
-      await Promise.all([
-        searchClients(query),
-        searchCases(query),
-        searchServices(query),
-        searchHearings(query),
-        searchPayments(query),
-        searchFiles(query),
-        searchTemplates(query),
-        searchLaws(query),
-      ]);
+    const includeFinancial = req.user?.role === "admin" || req.user?.role === "lawyer";
+
+    let [clients, cases, services, hearings, files, laws] = await Promise.all([
+      searchClients(query),
+      searchCases(query),
+      searchServices(query),
+      searchHearings(query),
+      searchFiles(query),
+      searchLaws(query),
+    ]);
+
+    const payments = includeFinancial ? await searchPayments(query) : [];
 
     [clients, cases, services] = await Promise.all([
       removeArchived(clients, "client"),
@@ -180,7 +169,7 @@ exports.globalSearch = async (req, res) => {
       removeArchived(services, "service"),
     ]);
 
-    res.json({ clients, cases, services, hearings, payments, files, templates, laws });
+    res.json({ clients, cases, services, hearings, payments, files, laws });
   } catch (error) {
     console.error("Global search failed:", error.message || error);
     res.status(500).json({ message: "Failed to execute search" });
