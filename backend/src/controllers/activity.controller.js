@@ -16,6 +16,71 @@ function normalizeNonNegativeInteger(value, fallback) {
   return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
+const MODULE_LABELS = Object.freeze({
+  client: "الموكل",
+  case: "القضية",
+  hearing: "الجلسة",
+  service: "الخدمة",
+  payment: "الدفعة",
+  expense: "المصروف",
+  file: "الملف",
+  office: "بيانات المكتب",
+  user: "المستخدم",
+  permission: "الصلاحيات",
+  backup: "النسخة الاحتياطية",
+  license: "الترخيص",
+  notification: "الإشعار",
+  template: "النموذج",
+  revenue: "الإيراد",
+  report: "التقرير",
+});
+
+const ACTION_LABELS = Object.freeze({
+  create: "تم إنشاء",
+  created: "تم إنشاء",
+  update: "تم تعديل",
+  updated: "تم تعديل",
+  delete: "تم حذف",
+  deleted: "تم حذف",
+  upload: "تم رفع",
+  uploaded: "تم رفع",
+  restore: "تم استعادة",
+  reset: "تم إعادة ضبط",
+  activate: "تم تفعيل",
+  verify: "تم التحقق من",
+  pay: "تم تسجيل",
+  expense: "تم تسجيل",
+});
+
+function humanizeDescription(row) {
+  const raw = typeof row.description === "string" ? row.description.trim() : "";
+
+  if (!raw) {
+    return row.action || "نشاط";
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.source === "request-audit") {
+      const action = ACTION_LABELS[String(row.action || parsed.action || "").toLowerCase()];
+      const module = MODULE_LABELS[String(row.module || parsed.module || "").toLowerCase()];
+      if (action && module) return `${action} ${module}`;
+      if (action) return action;
+    }
+  } catch {
+    // Existing non-JSON activity descriptions are already human-readable.
+  }
+
+  return raw;
+}
+
+function normalizeActivityRows(rows) {
+  return rows.map((row) => ({
+    ...row,
+    description: humanizeDescription(row),
+  }));
+}
+
 function validatePagination(req, res) {
   const limit = normalizePositiveInteger(req.query.limit, 20);
   const offset = normalizeNonNegativeInteger(req.query.offset, 0);
@@ -82,7 +147,7 @@ exports.getActivity = (req, res) => {
       return res.status(500).json({ message: err.message });
     }
 
-    res.json(rows);
+    res.json(normalizeActivityRows(rows));
   });
 };
 
@@ -119,7 +184,7 @@ exports.getCaseActivity = (req, res) => {
         return res.status(500).json({ message: err.message });
       }
 
-      res.json(rows);
+      res.json(normalizeActivityRows(rows));
     },
   );
 };
@@ -157,7 +222,7 @@ exports.getClientActivity = (req, res) => {
         return res.status(500).json({ message: err.message });
       }
 
-      res.json(rows);
+      res.json(normalizeActivityRows(rows));
     },
   );
 };
