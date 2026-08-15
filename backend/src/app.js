@@ -53,6 +53,7 @@ app.use("/api/notifications", require("./routes/notifications.routes"));
 app.use("/api/search", require("./routes/search.routes"));
 app.use("/api/attorneys", attorneyRoutes);
 app.use("/api/backup", require("./routes/backup.routes"));
+app.use("/api/archive", require("./routes/archive.routes"));
 
 app.get("/", (req, res) => {
   res.json({ status: "success", message: "Lawyer Case Management API is running" });
