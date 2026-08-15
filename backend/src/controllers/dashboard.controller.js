@@ -27,6 +27,12 @@ function monthStartISO() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+function dateAfterISO(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function safeNumber(value) {
   return Number(value || 0);
 }
@@ -35,6 +41,8 @@ exports.getDashboard = async (req, res, next) => {
   try {
     const today = todayISO();
     const monthStart = monthStartISO();
+    const urgentThrough = dateAfterISO(3);
+    const deadlineThrough = dateAfterISO(30);
     const role = req.user?.role || "assistant";
     const canViewFinancials = role === "admin" || role === "lawyer";
 
@@ -50,6 +58,7 @@ exports.getDashboard = async (req, res, next) => {
       unreadNotifications,
       recentActivity,
       upcomingDeadlines,
+      urgentTasks,
       caseDistribution,
       license,
     ] = await Promise.all([
@@ -155,17 +164,55 @@ exports.getDashboard = async (req, res, next) => {
         LIMIT 8
       `),
       dbAll(`
+        SELECT * FROM (
+          SELECT
+            'service' AS type,
+            ls.service_id AS record_id,
+            ls.service_title AS title,
+            ls.due_date AS due_date,
+            ls.priority_level AS priority,
+            ls.service_status AS status,
+            c.full_name AS client_name
+          FROM legal_services ls
+          LEFT JOIN clients c ON c.id = ls.client_id
+          WHERE ls.due_date IS NOT NULL
+            AND date(ls.due_date) BETWEEN date(?) AND date(?)
+            AND lower(COALESCE(ls.service_status, '')) NOT IN ('completed', 'مكتملة', 'مكتمل')
+
+          UNION ALL
+
+          SELECT
+            'hearing' AS type,
+            h.hearing_id AS record_id,
+            COALESCE(lc.case_title, 'جلسة') AS title,
+            h.hearing_date AS due_date,
+            lc.priority_level AS priority,
+            CASE WHEN h.hearing_result IS NULL OR h.hearing_result = '' THEN 'scheduled' ELSE h.hearing_result END AS status,
+            c.full_name AS client_name
+          FROM hearings h
+          LEFT JOIN legal_cases lc ON lc.case_id = h.case_id
+          LEFT JOIN clients c ON c.id = lc.client_id
+          WHERE h.hearing_date IS NOT NULL
+            AND date(h.hearing_date) BETWEEN date(?) AND date(?)
+        )
+        ORDER BY date(due_date) ASC, record_id ASC
+        LIMIT 10
+      `, [today, deadlineThrough, today, deadlineThrough]),
+      dbGet(`
         SELECT
-          'service' AS type,
-          service_id AS record_id,
-          service_title AS title,
-          due_date AS due_date,
-          priority_level AS priority
-        FROM legal_services
-        WHERE due_date IS NOT NULL AND date(due_date) >= date(?)
-        ORDER BY date(due_date) ASC
-        LIMIT 6
-      `, [today]),
+          (
+            SELECT COUNT(*)
+            FROM legal_services
+            WHERE due_date IS NOT NULL
+              AND date(due_date) BETWEEN date(?) AND date(?)
+              AND lower(COALESCE(service_status, '')) NOT IN ('completed', 'مكتملة', 'مكتمل')
+          ) + (
+            SELECT COUNT(*)
+            FROM hearings
+            WHERE hearing_date IS NOT NULL
+              AND date(hearing_date) BETWEEN date(?) AND date(?)
+          ) AS total
+      `, [today, urgentThrough, today, urgentThrough]),
       dbAll(`
         SELECT case_type, COUNT(*) AS count
         FROM legal_cases
@@ -191,7 +238,7 @@ exports.getDashboard = async (req, res, next) => {
           hearingsToday: hearingsToday.length,
           appointmentsToday: 0,
           notifications: safeNumber(unreadNotifications.total),
-          urgentTasks: 0,
+          urgentTasks: safeNumber(urgentTasks.total),
         },
         statistics: {
           totalClients: safeNumber(clientStats.total),
