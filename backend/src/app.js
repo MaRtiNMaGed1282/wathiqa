@@ -15,6 +15,7 @@ const serviceRoutes = require("./routes/services.routes");
 const expensesRoutes = require("./routes/expenses.routes");
 const caseExpensesRoutes = require("./routes/case-expenses.routes");
 const activityAuditMiddleware = require("./middlewares/activityAudit.middleware");
+const archiveResponseMiddleware = require("./middlewares/archiveResponse.middleware");
 
 const corsOptions = {
   origin(origin, callback) {
@@ -27,6 +28,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "2mb" }));
 app.use(activityAuditMiddleware);
+app.use(archiveResponseMiddleware);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", require("./routes/users.routes"));
