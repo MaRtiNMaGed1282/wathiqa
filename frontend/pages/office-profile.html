@@ -145,17 +145,25 @@
         officeFields.forEach((id) => { document.getElementById(id).disabled = !isAdmin; });
       }
 
-      async function loadImage(type, previewId, emptyId) {
+      async function loadImage(type, previewId, emptyId, assetAvailable) {
+        const preview = document.getElementById(previewId);
+        const empty = document.getElementById(emptyId);
+        if (!assetAvailable) {
+          preview.classList.add("hidden");
+          empty.classList.remove("hidden");
+          return;
+        }
+
         try {
           const blob = await api.download(`/office/asset/${type}`);
           const url = URL.createObjectURL(blob);
           state[`${type}Url`] = url;
-          document.getElementById(previewId).src = url;
-          document.getElementById(previewId).classList.remove("hidden");
-          document.getElementById(emptyId).classList.add("hidden");
+          preview.src = url;
+          preview.classList.remove("hidden");
+          empty.classList.add("hidden");
         } catch {
-          document.getElementById(previewId).classList.add("hidden");
-          document.getElementById(emptyId).classList.remove("hidden");
+          preview.classList.add("hidden");
+          empty.classList.remove("hidden");
         }
       }
 
@@ -163,8 +171,14 @@
         try {
           const office = await api.get("/office");
           officeFields.forEach((id) => setValue(id, office[id]));
-          await Promise.all([loadImage("logo", "logoPreview", "logoEmpty"), loadImage("stamp", "stampPreview", "stampEmpty")]);
-        } catch (error) { setPageState(error?.message || "فشل تحميل بيانات المكتب."); }
+          await Promise.all([
+            loadImage("logo", "logoPreview", "logoEmpty", Boolean(office?.logo_path)),
+            loadImage("stamp", "stampPreview", "stampEmpty", Boolean(office?.stamp_path)),
+          ]);
+          setPageState("", false);
+        } catch (error) {
+          setPageState(error?.message || "فشل تحميل بيانات المكتب.");
+        }
       }
 
       async function loadLicense() {
@@ -210,7 +224,11 @@
         try {
           const result = await api.upload("/office/upload", formData);
           toast(result?.message || "تم حفظ الهوية البصرية");
-          await Promise.all([loadImage("logo", "logoPreview", "logoEmpty"), loadImage("stamp", "stampPreview", "stampEmpty")]);
+          const office = await api.get("/office");
+          await Promise.all([
+            loadImage("logo", "logoPreview", "logoEmpty", Boolean(office?.logo_path)),
+            loadImage("stamp", "stampPreview", "stampEmpty", Boolean(office?.stamp_path)),
+          ]);
           document.getElementById("office_logo").value = "";
           document.getElementById("office_stamp").value = "";
         } catch (error) { toast(error?.message || "فشل حفظ الهوية البصرية", false); }
