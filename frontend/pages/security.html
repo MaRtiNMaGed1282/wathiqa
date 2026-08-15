@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الأمان والجلسات | وثيقة</title>
+  <link rel="stylesheet" href="../assets/css/fonts.css" />
+  <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+  <link rel="stylesheet" href="../assets/css/input.css" />
+</head>
+<body class="font-cairo bg-light text-primary">
+  <div id="app-shell">
+    <div id="sidebar-container"></div>
+    <div class="app-main">
+      <div id="navbar-container"></div>
+      <main id="security-page" class="page p-4 md:p-6">
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold">الأمان والجلسات</h1>
+          <p class="text-gray-500 mt-1">إدارة جلسات الدخول وإنهاء الجلسات غير المعروفة.</p>
+        </div>
+
+        <section class="bg-white rounded-2xl shadow-sm border p-5 mb-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold">جلسات الدخول</h2>
+              <p class="text-sm text-gray-500">الجلسة الحالية تبقى فعالة، ويمكن إنهاء أي جلسة أخرى.</p>
+            </div>
+            <button id="logoutAllBtn" type="button" class="px-4 py-2 rounded-lg bg-primary text-white font-semibold">إنهاء كل الجلسات الأخرى</button>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <div id="sessionsState" class="p-5 text-gray-500">جاري تحميل الجلسات...</div>
+          <div class="overflow-x-auto">
+            <table id="sessionsTable" class="w-full hidden">
+              <thead class="bg-gray-50 text-right">
+                <tr>
+                  <th class="p-4">الحالة</th>
+                  <th class="p-4">الجهاز / المتصفح</th>
+                  <th class="p-4">عنوان الاتصال</th>
+                  <th class="p-4">آخر نشاط</th>
+                  <th class="p-4">تنتهي</th>
+                  <th class="p-4">الإجراء</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/core/permissions.js"></script>
+  <script src="../assets/js/components.js"></script>
+  <script>
+    const state = document.getElementById('sessionsState');
+    const table = document.getElementById('sessionsTable');
+    const body = document.getElementById('sessionsBody');
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
+    }
+
+    function formatDate(value) {
+      if (!value) return '—';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : date.toLocaleString('ar-EG');
+    }
+
+    async function loadSessions() {
+      state.textContent = 'جاري تحميل الجلسات...';
+      table.classList.add('hidden');
+      try {
+        const sessions = await api.get('/sessions');
+        if (!sessions.length) {
+          state.textContent = 'لا توجد جلسات دخول مسجلة.';
+          return;
+        }
+        body.innerHTML = sessions.map((session) => `
+          <tr class="border-t">
+            <td class="p-4"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${session.current ? 'bg-green-100 text-green-700' : session.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}">${session.current ? 'الجلسة الحالية' : session.active ? 'نشطة' : 'منتهية'}</span></td>
+            <td class="p-4 max-w-xs break-words">${escapeHtml(session.userAgent || 'غير معروف')}</td>
+            <td class="p-4 font-mono text-sm">${escapeHtml(session.ipAddress || 'غير معروف')}</td>
+            <td class="p-4">${formatDate(session.lastSeenAt)}</td>
+            <td class="p-4">${formatDate(session.expiresAt)}</td>
+            <td class="p-4">${session.active && !session.current ? `<button type="button" class="text-red-600 font-semibold" data-revoke="${session.id}">إنهاء</button>` : '—'}</td>
+          </tr>`).join('');
+        table.classList.remove('hidden');
+        state.textContent = '';
+      } catch (error) {
+        state.textContent = error.message || 'تعذر تحميل الجلسات.';
+      }
+    }
+
+    body.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-revoke]');
+      if (!button) return;
+      if (!confirm('هل تريد إنهاء جلسة الدخول هذه؟')) return;
+      try {
+        await api.delete(`/sessions/${button.dataset.revoke}`);
+        await loadSessions();
+      } catch (error) { alert(error.message || 'تعذر إنهاء الجلسة'); }
+    });
+
+    document.getElementById('logoutAllBtn').addEventListener('click', async () => {
+      if (!confirm('سيتم إنهاء جميع جلسات الدخول الأخرى. هل تريد المتابعة؟')) return;
+      try {
+        await api.post('/sessions/logout-all', {});
+        await loadSessions();
+      } catch (error) { alert(error.message || 'تعذر إنهاء الجلسات'); }
+    });
+
+    loadSessions();
+  </script>
+</body>
+</html>
