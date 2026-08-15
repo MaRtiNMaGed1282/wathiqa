@@ -146,6 +146,11 @@
     }
   }
 
+  const wathiqaUiScript = global.document.createElement("script");
+  wathiqaUiScript.src = "../assets/js/wathiqa-ui.js";
+  wathiqaUiScript.async = false;
+  global.document.head.appendChild(wathiqaUiScript);
+
   const phase25Script = global.document.createElement("script");
   phase25Script.src = "../assets/js/phase25-state.js";
   phase25Script.defer = false;
