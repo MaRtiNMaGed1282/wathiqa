@@ -6,43 +6,37 @@
   function toast(message, success = false) {
     if (typeof global.Toastify === "function") {
       global.Toastify({ text: message, duration: 3000, gravity: "top", position: "left", close: true, style: { background: success ? "#15803d" : "#b42318" } }).showToast();
-    } else if (message) {
-      global.alert(message);
-    }
+    } else if (message) global.alert(message);
+  }
+
+  function money(value) {
+    return `${Number(value || 0).toLocaleString("ar-EG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} جنيه`;
   }
 
   function recalculate(modal) {
     let subtotal = 0;
     modal.querySelectorAll(".invoice-item").forEach((row) => {
-      const quantity = Number(row.querySelector('[data-field="quantity"]')?.value || 0);
-      const price = Number(row.querySelector('[data-field="unit_price"]')?.value || 0);
-      subtotal += quantity * price;
+      subtotal += Number(row.querySelector('[data-field="quantity"]')?.value || 0) * Number(row.querySelector('[data-field="unit_price"]')?.value || 0);
     });
-
-    const discountInput = modal.querySelector("#invoiceDiscount");
-    const discount = Math.min(Math.max(0, Number(discountInput?.value || 0)), subtotal);
-    const total = subtotal - discount;
-
-    const money = (value) => `${Number(value || 0).toLocaleString("ar-EG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} جنيه`;
+    const discount = Math.min(Math.max(0, Number(modal.querySelector("#invoiceDiscount")?.value || 0)), subtotal);
     modal.querySelector("#invoiceSubtotal").textContent = money(subtotal);
     modal.querySelector("#invoiceDiscountTotal").textContent = money(discount);
-    modal.querySelector("#invoiceTotal").textContent = money(total);
+    modal.querySelector("#invoiceTotal").textContent = money(subtotal - discount);
   }
 
   function normalizeQuantities(modal) {
     modal.querySelectorAll('[data-field="quantity"]').forEach((input) => {
+      if (input.dataset.quantityFixInstalled === "true") return;
+      input.dataset.quantityFixInstalled = "true";
       input.min = "1";
       input.step = "1";
       input.value = String(Math.max(1, Math.round(Number(input.value) || 1)));
-      input.addEventListener("input", () => {
-        const value = Math.max(1, Math.round(Number(input.value) || 1));
-        if (String(value) !== input.value) input.value = String(value);
-        recalculate(modal);
-      });
-      input.addEventListener("change", () => {
+      const normalize = () => {
         input.value = String(Math.max(1, Math.round(Number(input.value) || 1)));
         recalculate(modal);
-      });
+      };
+      input.addEventListener("input", normalize);
+      input.addEventListener("change", normalize);
     });
   }
 
@@ -52,15 +46,11 @@
 
     const form = modal.querySelector("#invoiceCreateForm");
     const submitButton = form?.querySelector('button[type="submit"]');
-    const discount = modal.querySelector("#invoiceDiscount");
-
     if (!form || !submitButton) return;
 
     form.noValidate = true;
-
-    discount?.addEventListener("input", () => recalculate(modal));
-    discount?.addEventListener("change", () => recalculate(modal));
-
+    modal.querySelector("#invoiceDiscount")?.addEventListener("input", () => recalculate(modal));
+    modal.querySelector("#invoiceDiscount")?.addEventListener("change", () => recalculate(modal));
     modal.addEventListener("input", (event) => {
       if (event.target.matches('[data-field="unit_price"]')) recalculate(modal);
     });
@@ -93,9 +83,14 @@
         if (!Number.isFinite(price) || price < 0) return toast("سعر الوحدة غير صحيح");
       }
 
-      const event = new Event("submit", { bubbles: true, cancelable: true });
-      form.dispatchEvent(event);
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     });
+
+    const childObserver = new MutationObserver(() => {
+      normalizeQuantities(modal);
+      recalculate(modal);
+    });
+    childObserver.observe(modal.querySelector("#invoiceItems") || modal, { childList: true, subtree: true });
   }
 
   function scan() {
