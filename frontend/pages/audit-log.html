@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سجل النشاط</title>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <link rel="stylesheet" href="../assets/css/fonts.css" />
+  <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+</head>
+<body class="bg-light text-primary min-h-screen font-cairo">
+  <div id="navbar-container"></div><div id="sidebar-container"></div>
+  <main class="flex-1 p-4 md:p-6 overflow-auto">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+        <div><h1 class="text-3xl font-bold">سجل النشاط</h1><p class="text-gray-600 mt-1">سجل مركزي للعمليات التي تمت داخل النظام.</p></div>
+        <button id="refresh" class="border px-4 py-2 rounded-xl bg-white">تحديث</button>
+      </div>
+      <div id="denied" class="hidden bg-white rounded-2xl border p-8 text-center"><h2 class="text-xl font-bold">غير مصرح</h2><p class="text-gray-600 mt-2">هذه الصفحة متاحة لمدير النظام فقط.</p></div>
+      <div id="page" class="hidden">
+        <section class="bg-white rounded-2xl border shadow-sm p-5 mb-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+            <select id="module" class="border rounded-xl px-3 py-2"><option value="">كل الوحدات</option><option value="client">الموكلين</option><option value="case">القضايا</option><option value="service">الخدمات</option><option value="hearing">الجلسات</option><option value="payment">الدفعات</option><option value="revenue">الإيرادات</option><option value="expense">المصروفات</option><option value="user">المستخدمون</option><option value="office">المكتب</option><option value="backup">النسخ الاحتياطي</option></select>
+            <select id="action" class="border rounded-xl px-3 py-2"><option value="">كل العمليات</option><option value="create">إضافة</option><option value="update">تعديل</option><option value="delete">حذف</option><option value="activate">تفعيل</option><option value="upload">رفع</option><option value="reset">إعادة تعيين</option><option value="pay">دفع</option></select>
+            <input id="userId" type="number" min="1" placeholder="رقم المستخدم" class="border rounded-xl px-3 py-2" />
+            <input id="recordId" type="number" min="1" placeholder="رقم السجل" class="border rounded-xl px-3 py-2" />
+            <input id="from" type="date" class="border rounded-xl px-3 py-2" />
+            <input id="to" type="date" class="border rounded-xl px-3 py-2" />
+          </div>
+          <div class="flex justify-end mt-3"><button id="clear" class="text-sm text-gray-600">مسح الفلاتر</button></div>
+        </section>
+        <section class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+          <div class="overflow-x-auto"><table class="w-full text-right min-w-[950px]"><thead class="bg-gray-50"><tr><th class="p-4">التاريخ</th><th class="p-4">المستخدم</th><th class="p-4">الوحدة</th><th class="p-4">العملية</th><th class="p-4">السجل</th><th class="p-4">التفاصيل</th></tr></thead><tbody id="rows"></tbody></table></div>
+          <div class="p-4 border-t flex items-center justify-between gap-3"><span id="count" class="text-sm text-gray-500"></span><div class="flex gap-2"><button id="prev" class="border rounded-lg px-4 py-2">السابق</button><button id="next" class="border rounded-lg px-4 py-2">التالي</button></div></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="../assets/js/loadSidebar.js"></script>
+  <script>
+    "use strict";
+    const user = auth.getUser() || {};
+    const page = document.getElementById('page'); const denied = document.getElementById('denied');
+    const rows = document.getElementById('rows'); const count = document.getElementById('count');
+    const limit = 50; let offset = 0; let total = 0;
+    const labels = {client:'الموكلين',case:'القضايا',service:'الخدمات',hearing:'الجلسات',payment:'الدفعات',revenue:'الإيرادات',expense:'المصروفات',user:'المستخدمون',office:'المكتب',backup:'النسخ الاحتياطي',report:'التقارير',pdf:'PDF',file:'الملفات'};
+    const actionLabels = {create:'إضافة',update:'تعديل',delete:'حذف',activate:'تفعيل',upload:'رفع',reset:'إعادة تعيين',pay:'دفع',expense:'مصروف'};
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    function params() { const p = new URLSearchParams({limit,offset}); ['module','action','userId','recordId','from','to'].forEach(k => { const v=document.getElementById(k).value; if(v) p.set(k === 'userId' ? 'user_id' : k === 'recordId' ? 'record_id' : k,v); }); return p.toString(); }
+    function parseDetails(value) { try { const x=JSON.parse(value); return x.route ? `${x.method || ''} ${x.route}` : value; } catch { return value || ''; } }
+    async function load() {
+      rows.innerHTML='<tr><td colspan="6" class="p-10 text-center text-gray-500">جاري التحميل...</td></tr>';
+      try { const data=await api.get(`/audit?${params()}`); total=Number(data.total)||0; rows.innerHTML=(data.rows||[]).map(r=>`<tr class="border-t align-top"><td class="p-4 whitespace-nowrap">${esc(new Date(r.created_at).toLocaleString('ar-EG'))}</td><td class="p-4">${esc(r.user_name || r.username || 'النظام')}</td><td class="p-4">${esc(labels[r.module]||r.module||'-')}</td><td class="p-4">${esc(actionLabels[r.action]||r.action||'-')}</td><td class="p-4">${r.record_id ? `#${esc(r.record_id)}` : '-'}</td><td class="p-4 max-w-md break-words text-sm text-gray-600">${esc(parseDetails(r.description))}</td></tr>`).join('') || '<tr><td colspan="6" class="p-10 text-center text-gray-500">لا توجد نتائج.</td></tr>'; count.textContent=`${total} نتيجة`; document.getElementById('prev').disabled=offset===0; document.getElementById('next').disabled=offset+limit>=total; } catch(e) { rows.innerHTML=`<tr><td colspan="6" class="p-10 text-center text-red-600">${esc(e?.message||'تعذر تحميل السجل')}</td></tr>`; }
+    }
+    document.querySelectorAll('#module,#action,#userId,#recordId,#from,#to').forEach(e=>e.addEventListener('change',()=>{offset=0;load();}));
+    document.getElementById('clear').onclick=()=>{['module','action','userId','recordId','from','to'].forEach(id=>document.getElementById(id).value='');offset=0;load();};
+    document.getElementById('refresh').onclick=load; document.getElementById('prev').onclick=()=>{offset=Math.max(0,offset-limit);load();}; document.getElementById('next').onclick=()=>{if(offset+limit<total){offset+=limit;load();}};
+    if(user.role!=='admin') denied.classList.remove('hidden'); else {page.classList.remove('hidden');load();}
+  </script>
+</body>
+</html>
