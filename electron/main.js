@@ -40,7 +40,13 @@ function configureSession() {
 }
 
 function configureNavigation(win) {
-  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    // Invoice printing uses window.open("", "_blank") and writes the printable
+    // document into that window. Keep external navigation blocked while allowing
+    // this controlled about:blank child window.
+    if (!url || url === "about:blank") return { action: "allow" };
+    return { action: "deny" };
+  });
 
   win.webContents.on("will-navigate", (event, url) => {
     if (!url.startsWith("file://")) {
