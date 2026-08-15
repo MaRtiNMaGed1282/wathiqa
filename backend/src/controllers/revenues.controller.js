@@ -113,7 +113,6 @@ exports.getSummary = (req, res) => {
       (SELECT COALESCE(SUM(amount), 0) FROM service_expenses WHERE 1=1 ${serviceExpenseDate}) AS service_expenses
   `;
 
-  // Parameter order must exactly match the subquery order above.
   addRangeParams(params, range); // clients
   addRangeParams(params, range); // cases count
   addRangeParams(params, range); // services count
@@ -188,13 +187,14 @@ exports.getClientReceivables = (req, res) => {
     ORDER BY total_fees DESC, c.full_name COLLATE NOCASE ASC
   `;
 
-  // The same date range occurs five times in the query, so its parameters are repeated five times.
+  // SQLite binds parameters by placeholder order, not by logical query section.
+  // The client search placeholder is the first placeholder in the SQL when present.
+  if (search) params.push(`%${search}%`);
   addRangeParams(params, range); // case count
   addRangeParams(params, range); // service count
   addRangeParams(params, range); // case fees
   addRangeParams(params, range); // service fees
   addRangeParams(params, range); // payments
-  if (search) params.push(`%${search}%`);
 
   db.all(query, params, (err, rows) => {
     if (err) {
