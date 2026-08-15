@@ -1,27 +1,32 @@
 const db = require("../config/sqlite");
 
-function isPositiveInteger(value) {
-  return /^\d+$/.test(String(value)) && Number(value) > 0;
+function normalizePositiveInteger(value, fallback) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? fallback).trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const number = Number(normalized);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
 }
 
-function isNonNegativeInteger(value) {
-  return /^\d+$/.test(String(value)) && Number(value) >= 0;
+function normalizeNonNegativeInteger(value, fallback) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? fallback).trim();
+  if (!/^\d+$/.test(normalized)) return null;
+  const number = Number(normalized);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
 /**
  * Unified, read-only timeline for a client and records directly related to it.
  */
 exports.getClientTimeline = (req, res) => {
-  const { id } = req.params;
-  const { limit = "20", offset = "0" } = req.query;
+  const clientId = normalizePositiveInteger(req.params.id);
+  const pageLimit = normalizePositiveInteger(req.query.limit, 20);
+  const pageOffset = normalizeNonNegativeInteger(req.query.offset, 0);
 
-  if (!isPositiveInteger(id)) return res.status(400).json({ message: "Invalid client id" });
-  if (!isPositiveInteger(limit)) return res.status(400).json({ message: "Invalid limit" });
-  if (!isNonNegativeInteger(offset)) return res.status(400).json({ message: "Invalid offset" });
-
-  const clientId = Number(id);
-  const pageLimit = Number(limit);
-  const pageOffset = Number(offset);
+  if (clientId === null) return res.status(400).json({ message: "Invalid client id" });
+  if (pageLimit === null) return res.status(400).json({ message: "Invalid limit" });
+  if (pageOffset === null) return res.status(400).json({ message: "Invalid offset" });
 
   const query = `
     SELECT al.*, u.full_name AS user_name
@@ -74,8 +79,8 @@ exports.getClientTimeline = (req, res) => {
   db.all(query, params, (err, rows) => {
     if (err) {
       console.error("Client timeline query failed:", err.message);
-      return res.status(500).json({ message: "فشل تحميل سجل الموكل" });
+      return res.status(500).json({ message: "فشل تحميل سجل الموكل", error: err.message });
     }
-    return res.json(rows);
+    return res.json(rows || []);
   });
 };
