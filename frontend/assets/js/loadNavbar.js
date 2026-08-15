@@ -18,6 +18,7 @@
     abortController: null,
     globalSearchInitialized: false,
     dashboardObserver: null,
+    legacyCleanupObserver: null,
     elements: Object.seal({
       navbar: null,
       userButton: null,
@@ -84,9 +85,58 @@
     });
   }
 
+  function removeCancelledTemplatesUi() {
+    const selectors = [
+      'a[href*="templates.html"]',
+      '[data-template-id]',
+      '[data-template-action]',
+      '[data-action*="template"]',
+      '[data-action*="Template"]',
+    ];
+
+    document.querySelectorAll(selectors.join(",")).forEach((element) => element.remove());
+
+    const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    headings.forEach((heading) => {
+      const text = heading.textContent.replace(/\s+/g, " ").trim();
+      if (text !== "النماذج القانونية المرتبطة") return;
+
+      const container = heading.closest("section, article");
+      if (container) {
+        container.remove();
+      } else {
+        heading.parentElement?.remove();
+      }
+    });
+
+    document.querySelectorAll("button, a").forEach((element) => {
+      const text = element.textContent.replace(/\s+/g, " ").trim();
+      if (text === "إرفاق نموذج") element.remove();
+    });
+  }
+
+  function initializeLegacyCleanup() {
+    removeCancelledTemplatesUi();
+    if (state.legacyCleanupObserver) state.legacyCleanupObserver.disconnect();
+    if (!document.body) return;
+
+    state.legacyCleanupObserver = new MutationObserver(() => removeCancelledTemplatesUi());
+    state.legacyCleanupObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
   function handleDashboardQuickActionCapture(event) {
-    const action = event.target.closest("#action-search, #action-upload-document");
+    const action = event.target.closest(
+      "#action-new-client, #action-new-case, #action-new-hearing, #action-upload-document, #action-payment, #action-search"
+    );
     if (!action) return;
+
+    const routes = {
+      "action-new-client": "clients.html",
+      "action-new-case": "cases.html",
+      "action-new-hearing": "calendar.html",
+      "action-upload-document": "documents.html",
+      "action-payment": "revenues.html",
+    };
 
     if (action.id === "action-search") {
       event.preventDefault();
@@ -99,11 +149,11 @@
       return;
     }
 
-    if (action.id === "action-upload-document") {
-      event.preventDefault();
-      event.stopPropagation();
-      global.location.href = "documents.html";
-    }
+    const route = routes[action.id];
+    if (!route) return;
+    event.preventDefault();
+    event.stopPropagation();
+    global.location.href = route;
   }
 
   function cacheElements() {
@@ -168,6 +218,7 @@
     await initializeGlobalSearch();
     await initializeUserPermissions();
     initializeDashboardQuickActionRepair();
+    initializeLegacyCleanup();
   }
 
   function initializeIcons() { if (typeof lucide !== "undefined") lucide.createIcons(); }
@@ -279,6 +330,10 @@
     if (state.dashboardObserver) {
       state.dashboardObserver.disconnect();
       state.dashboardObserver = null;
+    }
+    if (state.legacyCleanupObserver) {
+      state.legacyCleanupObserver.disconnect();
+      state.legacyCleanupObserver = null;
     }
     clearElements();
     if (state.container) state.container.innerHTML = "";
