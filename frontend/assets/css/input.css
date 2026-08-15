@@ -1,2 +1,3 @@
 /* Wathiqa canonical stylesheet entrypoint. */
 @import url("./tailwind.min.css");
+@import url("./search-shell-fixes.css");
