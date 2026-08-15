@@ -1,9 +1,13 @@
 const logActivity = require("../utils/activityLogger");
 const db = require("../config/sqlite");
-const { isEmpty, isValidMoney } = require("../utils/validation");
+const { isEmpty, isValidMoney, isValidIntegerId, isValidDate } = require("../utils/validation");
 
 exports.getCaseExpenses = (req, res) => {
   const { id } = req.params;
+
+  if (!isValidIntegerId(id)) {
+    return res.status(400).json({ message: "Invalid case id" });
+  }
 
   db.all(
     `
@@ -39,47 +43,83 @@ exports.createExpense = (req, res) => {
     });
   }
 
+  if (!isValidIntegerId(case_id)) {
+    return res.status(400).json({
+      message: "Invalid case id",
+    });
+  }
+
   if (!isValidMoney(amount)) {
     return res.status(400).json({
       message: "Invalid amount",
     });
   }
 
-  db.run(
-    `
-    INSERT INTO case_expenses (
-      case_id,
-      expense_type,
-      amount,
-      expense_date,
-      notes
-    )
-    VALUES (?, ?, ?, ?, ?)
-    `,
-    [case_id, expense_type, amount, expense_date, notes],
-    function (err) {
-      if (err) {
+  if (!isValidDate(expense_date)) {
+    return res.status(400).json({
+      message: "Invalid expense date",
+    });
+  }
+
+  db.get(
+    `SELECT case_id FROM legal_cases WHERE case_id = ?`,
+    [case_id],
+    (caseErr, caseRow) => {
+      if (caseErr) {
         return res.status(500).json({
-          message: err.message,
+          message: caseErr.message,
         });
       }
-      logActivity({
-        module: "expense",
-        record_id: this.lastID,
-        action: "created",
-        description: "تم تسجيل مصروف جديد",
-        user_id: req.user.id,
-      });
-      res.status(201).json({
-        message: "Expense added successfully",
-        expense_id: this.lastID,
-      });
+
+      if (!caseRow) {
+        return res.status(404).json({
+          message: "Case not found",
+        });
+      }
+
+      db.run(
+        `
+        INSERT INTO case_expenses (
+          case_id,
+          expense_type,
+          amount,
+          expense_date,
+          notes
+        )
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [case_id, expense_type.trim(), Number(amount), expense_date, notes],
+        function (err) {
+          if (err) {
+            return res.status(500).json({
+              message: err.message,
+            });
+          }
+
+          logActivity({
+            module: "expense",
+            record_id: this.lastID,
+            action: "created",
+            description: "تم تسجيل مصروف جديد",
+            user_id: req.user.id,
+          });
+
+          res.status(201).json({
+            message: "Expense added successfully",
+            expense_id: this.lastID,
+          });
+        },
+      );
     },
   );
 };
 
 exports.deleteExpense = (req, res) => {
   const { id } = req.params;
+
+  if (!isValidIntegerId(id)) {
+    return res.status(400).json({ message: "Invalid expense id" });
+  }
 
   db.run(
     `
