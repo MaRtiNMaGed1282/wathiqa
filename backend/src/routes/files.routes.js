@@ -6,6 +6,7 @@ const db = require("../config/sqlite");
 const router = express.Router();
 const auth = require("../middlewares/auth.middleware");
 const role = require("../middlewares/role.middleware");
+const { getAllDocuments } = require("../controllers/documents.controller");
 
 const {
   uploadFile,
@@ -28,6 +29,9 @@ function sendStoredUpload(res, filename) {
 
   return res.sendFile(absolutePath);
 }
+
+// Unified document management read model
+router.get("/", auth, getAllDocuments);
 
 // Case files
 router.post("/upload", auth, upload.single("file"), uploadFile);
