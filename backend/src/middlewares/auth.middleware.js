@@ -7,7 +7,7 @@ function isPasswordChangeRequest(req) {
 }
 
 function getPermissionTarget(req) {
-  const path = String(req.path || req.originalUrl || "").toLowerCase();
+  const path = String(req.originalUrl || "").split("?")[0].toLowerCase();
   let module = null;
 
   if (path.startsWith("/api/clients")) module = "clients";
@@ -38,9 +38,7 @@ function checkPermission(req, user, next) {
     FROM user_permissions
     WHERE user_id = ? AND module = ?
   `, [user.id, target.module], (err, permission) => {
-    if (err) {
-      return resError(next, "تعذر التحقق من صلاحيات المستخدم");
-    }
+    if (err) return next({ status: 500, message: "تعذر التحقق من صلاحيات المستخدم" });
 
     if (!permission || Number(permission[`can_${target.action}`]) !== 1) {
       return next({ status: 403, code: "PERMISSION_DENIED", message: "ليس لديك صلاحية لتنفيذ هذا الإجراء" });
@@ -50,45 +48,26 @@ function checkPermission(req, user, next) {
   });
 }
 
-function resError(next, message) {
-  return next({ status: 500, message });
-}
-
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "غير مصرح" });
-  }
+  if (!authHeader) return res.status(401).json({ message: "غير مصرح" });
 
   const [scheme, token] = authHeader.trim().split(/\s+/);
-
-  if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ message: "صيغة رمز الدخول غير صالحة" });
-  }
+  if (scheme !== "Bearer" || !token) return res.status(401).json({ message: "صيغة رمز الدخول غير صالحة" });
 
   let decoded;
-
   try {
     decoded = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     return res.status(401).json({ message: "رمز الدخول غير صالح" });
   }
 
-  if (!decoded?.id) {
-    return res.status(401).json({ message: "رمز الدخول غير صالح" });
-  }
+  if (!decoded?.id) return res.status(401).json({ message: "رمز الدخول غير صالح" });
 
-  db.get(`
-    SELECT id, full_name, email, role, is_active, must_change_password
-    FROM users
-    WHERE id = ?
-  `, [decoded.id], (err, user) => {
+  db.get(`SELECT id, full_name, email, role, is_active, must_change_password FROM users WHERE id = ?`, [decoded.id], (err, user) => {
     if (err) return res.status(500).json({ message: "تعذر التحقق من المستخدم" });
-
-    if (!user || Number(user.is_active) !== 1) {
-      return res.status(401).json({ message: "الحساب غير نشط أو غير موجود" });
-    }
+    if (!user || Number(user.is_active) !== 1) return res.status(401).json({ message: "الحساب غير نشط أو غير موجود" });
 
     req.user = {
       id: user.id,
@@ -99,10 +78,7 @@ module.exports = (req, res, next) => {
     };
 
     if (req.user.must_change_password && !isPasswordChangeRequest(req)) {
-      return res.status(403).json({
-        message: "يجب تغيير كلمة المرور قبل استخدام النظام",
-        code: "PASSWORD_CHANGE_REQUIRED",
-      });
+      return res.status(403).json({ message: "يجب تغيير كلمة المرور قبل استخدام النظام", code: "PASSWORD_CHANGE_REQUIRED" });
     }
 
     checkPermission(req, req.user, (permissionError) => {
