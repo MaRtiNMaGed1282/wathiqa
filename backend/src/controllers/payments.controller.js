@@ -7,15 +7,22 @@ exports.createPayment = (req, res) => {
   const { case_id, service_id, amount, payment_date, payment_method, notes } =
     req.body;
 
+  const hasCase = !isEmpty(case_id);
+  const hasService = !isEmpty(service_id);
+
+  if ((!hasCase && !hasService) || (hasCase && hasService)) {
+    return res.status(400).json({
+      message: "يجب ربط الدفعة بقضية أو خدمة واحدة فقط",
+    });
+  }
+
   if (
-    isEmpty(case_id) ||
-    isEmpty(service_id) ||
     isEmpty(amount) ||
     isEmpty(payment_date) ||
     isEmpty(payment_method)
   ) {
     return res.status(400).json({
-      message: "Missing required fields",
+      message: "مبلغ الدفعة وتاريخها وطريقة الدفع مطلوبة",
     });
   }
 
@@ -25,48 +32,82 @@ exports.createPayment = (req, res) => {
     });
   }
 
-  db.run(
-    `
-INSERT INTO payments (
-  case_id,
-  service_id,
-  amount,
-  payment_date,
-  payment_method,
-  notes
-)
-VALUES (?, ?, ?, ?, ?, ?)
-    `,
-    [case_id, service_id, amount, payment_date, payment_method, notes],
-    function (err) {
-      if (err) {
+  const parentTable = hasCase ? "legal_cases" : "legal_services";
+  const parentColumn = hasCase ? "case_id" : "service_id";
+  const parentId = hasCase ? case_id : service_id;
+
+  db.get(
+    `SELECT ${parentColumn} FROM ${parentTable} WHERE ${parentColumn} = ?`,
+    [parentId],
+    (lookupErr, parent) => {
+      if (lookupErr) {
         return res.status(500).json({
-          message: err.message,
+          message: "فشل التحقق من السجل المرتبط بالدفعة",
+          error: lookupErr.message,
         });
       }
-      logActivity({
-        module: "payment",
-        record_id: this.lastID,
-        action: "created",
-        description: "تم تسجيل دفعة جديدة",
-        user_id: req.user.id,
-      });
 
-      createNotification({
-        title: "Payment received",
-        message: `A payment of ${amount} was received for case ${case_id}`,
-        type: "info",
-        module: "payment",
-        record_id: this.lastID,
-        user_id: req.user.id,
-      }).catch((err) => {
-        console.error("Notification error:", err.message);
-      });
+      if (!parent) {
+        return res.status(404).json({
+          message: hasCase ? "القضية غير موجودة" : "الخدمة غير موجودة",
+        });
+      }
 
-      res.status(201).json({
-        message: "تم تسجيل الدفعة بنجاح",
-        payment_id: this.lastID,
-      });
+      db.run(
+        `
+        INSERT INTO payments (
+          case_id,
+          service_id,
+          amount,
+          payment_date,
+          payment_method,
+          notes
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          hasCase ? case_id : null,
+          hasService ? service_id : null,
+          amount,
+          payment_date,
+          payment_method,
+          notes || null,
+        ],
+        function (err) {
+          if (err) {
+            return res.status(500).json({
+              message: err.message,
+            });
+          }
+
+          const paymentId = this.lastID;
+          const targetLabel = hasCase ? `case ${case_id}` : `service ${service_id}`;
+
+          logActivity({
+            module: "payment",
+            record_id: paymentId,
+            action: "created",
+            description: "تم تسجيل دفعة جديدة",
+            user_id: req.user.id,
+          });
+
+          createNotification({
+            title: "Payment received",
+            message: `A payment of ${amount} was received for ${targetLabel}`,
+            type: "info",
+            module: "payment",
+            record_id: paymentId,
+            user_id: req.user.id,
+          }).catch((notificationError) => {
+            console.error("Notification error:", notificationError.message);
+          });
+
+          return res.status(201).json({
+            message: "تم تسجيل الدفعة بنجاح",
+            payment_id: paymentId,
+          });
+        },
+      );
     },
   );
 };
@@ -130,6 +171,7 @@ exports.deletePayment = (req, res) => {
     },
   );
 };
+
 exports.getServicePayments = (req, res) => {
   const { id } = req.params;
 
