@@ -1,4 +1,7 @@
+const fs = require("fs");
+const path = require("path");
 const db = require("../config/sqlite");
+const { listBackups, getBackupRoot } = require("../services/backup.service");
 
 function dbGet(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -37,6 +40,78 @@ function safeNumber(value) {
   return Number(value || 0);
 }
 
+function formatActivityDescription(activity = {}) {
+  const raw = typeof activity.description === "string" ? activity.description.trim() : "";
+  if (!raw) return activity.action || "نشاط";
+
+  try {
+    const details = JSON.parse(raw);
+    if (details?.source !== "request-audit") return raw;
+
+    const moduleLabels = {
+      client: "الموكل",
+      case: "القضية",
+      service: "الخدمة",
+      hearing: "الجلسة",
+      payment: "الدفعة",
+      revenue: "الإيراد",
+      expense: "المصروف",
+      user: "المستخدم",
+      office: "بيانات المكتب",
+      backup: "النسخة الاحتياطية",
+      file: "الملف",
+      document: "المستند",
+    };
+
+    const action = String(details.action || activity.action || "").toLowerCase();
+    const module = String(details.module || activity.module || "").toLowerCase();
+    const label = moduleLabels[module] || "السجل";
+
+    const actionLabels = {
+      create: "إضافة",
+      created: "إضافة",
+      post: "إضافة",
+      update: "تعديل",
+      updated: "تعديل",
+      put: "تعديل",
+      delete: "حذف",
+      deleted: "حذف",
+      remove: "حذف",
+      patch: "تعديل",
+    };
+
+    const verb = actionLabels[action];
+    if (verb) return `تم ${verb} ${label}`;
+
+    return `تم تنفيذ عملية على ${label}`;
+  } catch {
+    return raw;
+  }
+}
+
+function normalizeRecentActivity(rows = []) {
+  return rows.map((activity) => ({
+    ...activity,
+    description: formatActivityDescription(activity),
+  }));
+}
+
+async function getLatestBackup(role) {
+  if (role !== "admin") return null;
+
+  try {
+    const names = await listBackups();
+    if (!names.length) return null;
+
+    const name = names[0];
+    const filePath = path.join(getBackupRoot(), name);
+    const stat = await fs.promises.stat(filePath);
+    return stat.mtime.toISOString();
+  } catch {
+    return null;
+  }
+}
+
 exports.getDashboard = async (req, res, next) => {
   try {
     const today = todayISO();
@@ -61,6 +136,7 @@ exports.getDashboard = async (req, res, next) => {
       urgentTasks,
       caseDistribution,
       license,
+      lastBackup,
     ] = await Promise.all([
       dbGet(`
         SELECT office_name, logo_path, stamp_path
@@ -225,13 +301,14 @@ exports.getDashboard = async (req, res, next) => {
         FROM license
         LIMIT 1
       `),
+      getLatestBackup(role),
     ]);
 
     const response = {
       office: {
         officeName: office.office_name || "مكتب المحاماة",
         logo: office.logo_path || null,
-        lastBackup: null,
+        lastBackup,
       },
       dashboard: {
         summary: {
@@ -265,7 +342,7 @@ exports.getDashboard = async (req, res, next) => {
           ...item,
           time: item.created_at,
         })),
-        recentActivity,
+        recentActivity: normalizeRecentActivity(recentActivity),
         deadlines: upcomingDeadlines,
         caseDistribution,
         system: {
