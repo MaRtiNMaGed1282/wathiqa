@@ -1,0 +1,87 @@
+/* Wathiqa shared shell/search fixes — verification-phase only. */
+
+/* Keep the authenticated content visually separated from the fixed right sidebar. */
+#app-shell > #app > main {
+  padding-inline: 24px !important;
+}
+
+/* Make the navbar search use the full available header width. */
+#app-shell #navbar-container .app-navbar,
+body:has(> #sidebar-container) > #navbar-container .app-navbar,
+body:has(> .flex > #sidebar-container) > .flex > #navbar-container .app-navbar {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#navbar-center {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+#navbar-center .navbar-search {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+#navbar-center .navbar-search input,
+#navbar-center .search-input {
+  width: 100% !important;
+}
+
+/* Search dropdown: expand below the full-width search without moving page content. */
+#headerSearchResults,
+.navbar-search .search-results {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  max-height: min(70vh, 620px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  z-index: 1000 !important;
+  background: #fff !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  text-align: right !important;
+}
+
+#headerSearchResults.hidden {
+  display: none !important;
+}
+
+/* Give the focused search a clear expanded state without changing its normal size. */
+#navbar-center .navbar-search:focus-within {
+  z-index: 1001 !important;
+}
+
+#navbar-center .navbar-search:focus-within input {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 4px #d3ac2b26 !important;
+}
+
+/* Legacy page content already has its own padding; preserve the cases.html spacing model. */
+body:has(> #sidebar-container) > main,
+body:has(> .flex > #sidebar-container) > .flex > main {
+  padding-inline: 32px !important;
+}
+
+/* The canonical app shell needs the same breathing room without affecting the navbar. */
+#app-shell > #app > main.page {
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+  #app-shell > #app > main,
+  body:has(> #sidebar-container) > main,
+  body:has(> .flex > #sidebar-container) > .flex > main {
+    padding-inline: 16px !important;
+  }
+
+  #navbar-center .navbar-search {
+    max-width: none !important;
+  }
+}
