@@ -58,6 +58,36 @@
     document.querySelectorAll('a[href*="documents.html"], a[href*="templates.html"]').forEach((element) => element.remove());
   }
 
+  function initializeDashboardInteractions() {
+    const routes = {
+      "action-new-client": "clients.html",
+      "action-new-case": "cases.html",
+      "action-new-hearing": "calendar.html",
+      "action-payment": "revenues.html",
+      "action-search": "reports.html",
+    };
+
+    Object.entries(routes).forEach(([id, route]) => {
+      const button = document.getElementById(id);
+      if (!button || button.dataset.interactionBound === "true") return;
+
+      button.dataset.interactionBound = "true";
+      button.type = "button";
+      button.addEventListener("click", () => {
+        global.location.href = route;
+      });
+    });
+
+    const viewAllHearingsButton = document.getElementById("view-all-hearings");
+    if (viewAllHearingsButton && viewAllHearingsButton.dataset.interactionBound !== "true") {
+      viewAllHearingsButton.dataset.interactionBound = "true";
+      viewAllHearingsButton.type = "button";
+      viewAllHearingsButton.addEventListener("click", () => {
+        global.location.href = "calendar.html";
+      });
+    }
+  }
+
   function renderDashboard(data) {
     const dashboard = data.dashboard || {};
     const summary = dashboard.summary || {};
@@ -157,6 +187,7 @@
     }
 
     cleanupDashboardLegacy();
+    initializeDashboardInteractions();
     if (typeof global.lucide !== "undefined") global.lucide.createIcons();
   }
 
