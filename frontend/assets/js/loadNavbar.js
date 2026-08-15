@@ -5,6 +5,7 @@
     navbarPath: "../components/navbar.html",
     globalSearchScript: "../assets/js/globalSearch.js",
     userPermissionsScript: "../assets/js/user-permissions.js",
+    sharedStylesheet: "../assets/css/input.css",
     searchEndpoint: "/search",
     searchDebounce: 300,
     searchMinCharacters: 2,
@@ -16,6 +17,7 @@
     loadingPromise: null,
     abortController: null,
     globalSearchInitialized: false,
+    dashboardObserver: null,
     elements: Object.seal({
       navbar: null,
       userButton: null,
@@ -31,6 +33,78 @@
   });
 
   function $(id) { return document.getElementById(id); }
+
+  function ensureSharedStyles() {
+    const existing = document.querySelector(`link[data-wathiqa-shared-styles="true"]`);
+    if (existing) return;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = CONFIG.sharedStylesheet;
+    link.dataset.wathiqaSharedStyles = "true";
+    document.head.appendChild(link);
+  }
+
+  function createDashboardDocumentAction() {
+    const button = document.createElement("button");
+    button.id = "action-upload-document";
+    button.type = "button";
+    button.className = "group card bg-white rounded-3xl border border-gray-100 p-6 transition-all hover:-translate-y-1 hover:shadow-xl";
+    button.innerHTML = `
+      <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-green-700">
+        <i data-lucide="file-plus"></i>
+      </div>
+      <h3 class="mt-5 font-bold text-lg">مستند</h3>
+      <p class="text-sm text-gray-500 mt-2">رفع مستند</p>
+    `;
+    return button;
+  }
+
+  function ensureDashboardQuickActions() {
+    const section = $("dashboard-quick-actions");
+    if (!section) return;
+
+    const grid = section.querySelector(":scope > .grid");
+    if (!grid || $("action-upload-document")) return;
+
+    grid.appendChild(createDashboardDocumentAction());
+    if (typeof global.lucide !== "undefined") global.lucide.createIcons();
+  }
+
+  function initializeDashboardQuickActionRepair() {
+    if (!$("dashboard-quick-actions")) return;
+
+    ensureDashboardQuickActions();
+
+    if (state.dashboardObserver) state.dashboardObserver.disconnect();
+    state.dashboardObserver = new MutationObserver(() => ensureDashboardQuickActions());
+    state.dashboardObserver.observe($("dashboard-quick-actions"), {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  function handleDashboardQuickActionCapture(event) {
+    const action = event.target.closest("#action-search, #action-upload-document");
+    if (!action) return;
+
+    if (action.id === "action-search") {
+      event.preventDefault();
+      event.stopPropagation();
+      const input = $("headerSearchInput");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      return;
+    }
+
+    if (action.id === "action-upload-document") {
+      event.preventDefault();
+      event.stopPropagation();
+      global.location.href = "documents.html";
+    }
+  }
 
   function cacheElements() {
     state.elements.navbar = $("navbar");
@@ -77,6 +151,7 @@
     state.loadingPromise = (async () => {
       state.container = $("navbar-container");
       if (!state.container) throw new Error("Navbar container not found.");
+      ensureSharedStyles();
       if (state.elements.navbar && state.container.contains(state.elements.navbar)) return;
       state.container.innerHTML = await fetchNavbar();
       await initializeNavbar();
@@ -92,17 +167,20 @@
     refreshNotificationBadge(global.__APP_DATA__?.dashboard?.summary?.notifications ?? 0);
     await initializeGlobalSearch();
     await initializeUserPermissions();
+    initializeDashboardQuickActionRepair();
   }
 
   function initializeIcons() { if (typeof lucide !== "undefined") lucide.createIcons(); }
 
   function attachEvents() {
     detachEvents();
+    document.addEventListener("click", handleDashboardQuickActionCapture, true);
     document.addEventListener("click", handleClick);
     document.addEventListener("click", closeMenus);
   }
 
   function detachEvents() {
+    document.removeEventListener("click", handleDashboardQuickActionCapture, true);
     document.removeEventListener("click", handleClick);
     document.removeEventListener("click", closeMenus);
   }
@@ -196,7 +274,13 @@
   }
 
   function destroy() {
-    abortRequest(); detachEvents(); clearElements();
+    abortRequest();
+    detachEvents();
+    if (state.dashboardObserver) {
+      state.dashboardObserver.disconnect();
+      state.dashboardObserver = null;
+    }
+    clearElements();
     if (state.container) state.container.innerHTML = "";
     state.container = null; state.navbarHtml = null; state.loadingPromise = null; state.globalSearchInitialized = false;
   }
