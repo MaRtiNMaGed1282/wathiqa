@@ -20,6 +20,24 @@ const LAW_METADATA = {
   "income-tax-law.pdf": { title: "قانون الضريبة على الدخل", category: "الضرائب" },
   "investment-law.pdf": { title: "قانون الاستثمار", category: "الاستثمار" },
   "labor-law.pdf": { title: "قانون العمل", category: "قوانين العمل" },
+  "old-rent-law.pdf": { title: "قانون الإيجار القديم", category: "الإيجارات" },
+};
+
+const ENGLISH_TITLE_METADATA = {
+  "Old Rent Law": LAW_METADATA["old-rent-law.pdf"],
+  "Labor Law": LAW_METADATA["labor-law.pdf"],
+  "Civil Law": LAW_METADATA["civil-law.pdf"],
+  "Civil Procedure Law": LAW_METADATA["civil-procedure-law.pdf"],
+  "Commercial Law": LAW_METADATA["commercial-law.pdf"],
+  "Companies Law": LAW_METADATA["companies-law.pdf"],
+  "Consumer Protection Law": LAW_METADATA["consumer-protection-law.pdf"],
+  "Criminal Law": LAW_METADATA["criminal-law.pdf"],
+  "Criminal Procedure Law": LAW_METADATA["criminal-procedure-law.pdf"],
+  "Cybercrime Law": LAW_METADATA["cybercrime-law.pdf"],
+  "Evidence Law": LAW_METADATA["evidence-law.pdf"],
+  "Income Tax Law": LAW_METADATA["income-tax-law.pdf"],
+  "Investment Law": LAW_METADATA["investment-law.pdf"],
+  "Child Law": LAW_METADATA["child-law.pdf"],
 };
 
 function safeLawFilePath(relativePath) {
@@ -39,17 +57,10 @@ function safeLawFilePath(relativePath) {
 
 function fallbackMetadata(filename) {
   const stem = path.basename(filename, ".pdf").replace(/[-_]+/g, " ").trim();
+  const known = LAW_METADATA[filename] || ENGLISH_TITLE_METADATA[stem];
+  if (known) return known;
   const title = stem ? stem.replace(/\b\w/g, (letter) => letter.toUpperCase()) : filename;
   return { title, category: "تشريعات" };
-}
-
-function getExistingLawPaths() {
-  return new Promise((resolve, reject) => {
-    db.all("SELECT pdf_path FROM laws", [], (error, rows) => {
-      if (error) return reject(error);
-      resolve(new Set((rows || []).map((row) => String(row.pdf_path || "").trim()).filter(Boolean)));
-    });
-  });
 }
 
 async function ensureLawIndex() {
@@ -104,21 +115,28 @@ async function ensureLawIndex() {
     });
   }
 
-  // Keep the legal library titles canonical and Arabic even when older database
-  // rows were created from English filenames or legacy metadata.
-  const updates = pdfs.filter((filename) => LAW_METADATA[filename] && existing.has(filename));
-  if (updates.length) {
-    await new Promise((resolve, reject) => {
-      db.serialize(() => {
-        const update = db.prepare("UPDATE laws SET title = ?, category = ? WHERE pdf_path = ?");
-        updates.forEach((filename) => {
-          const metadata = LAW_METADATA[filename];
-          update.run(metadata.title, metadata.category, filename);
-        });
-        update.finalize((error) => (error ? reject(error) : resolve()));
+  // Repair existing rows by filename and by legacy English title. This is what
+  // fixes records that were already inserted before Arabic metadata existed.
+  await new Promise((resolve, reject) => {
+    db.serialize(() => {
+      const updateByPath = db.prepare("UPDATE laws SET title = ?, category = ? WHERE pdf_path = ?");
+      pdfs.forEach((filename) => {
+        const metadata = LAW_METADATA[filename];
+        if (metadata) updateByPath.run(metadata.title, metadata.category, filename);
       });
+      updateByPath.finalize((error) => (error ? reject(error) : resolve()));
     });
-  }
+  });
+
+  await new Promise((resolve, reject) => {
+    db.serialize(() => {
+      const updateByTitle = db.prepare("UPDATE laws SET title = ?, category = ? WHERE title = ?");
+      Object.entries(ENGLISH_TITLE_METADATA).forEach(([englishTitle, metadata]) => {
+        updateByTitle.run(metadata.title, metadata.category, englishTitle);
+      });
+      updateByTitle.finalize((error) => (error ? reject(error) : resolve()));
+    });
+  });
 }
 
 exports.getAllLaws = async (req, res) => {
