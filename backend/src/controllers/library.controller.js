@@ -21,6 +21,11 @@ const LAW_METADATA = {
   "investment-law.pdf": { title: "قانون الاستثمار", category: "الاستثمار" },
   "labor-law.pdf": { title: "قانون العمل", category: "قوانين العمل" },
   "old-rent-law.pdf": { title: "قانون الإيجار القديم", category: "الإيجارات" },
+  "personal-status-law.pdf": { title: "قانون الأحوال الشخصية", category: "الأحوال الشخصية" },
+  "real-estate-registration-law.pdf": { title: "قانون الشهر العقاري", category: "التسجيل العقاري" },
+  "traffic-law.pdf": { title: "قانون المرور", category: "المرور" },
+  "unified-building-law.pdf": { title: "قانون البناء الموحد", category: "التنظيم والبناء" },
+  "vat-law.pdf": { title: "قانون ضريبة القيمة المضافة", category: "الضرائب" },
 };
 
 const ENGLISH_TITLE_METADATA = {
@@ -38,18 +43,19 @@ const ENGLISH_TITLE_METADATA = {
   "Income Tax Law": LAW_METADATA["income-tax-law.pdf"],
   "Investment Law": LAW_METADATA["investment-law.pdf"],
   "Child Law": LAW_METADATA["child-law.pdf"],
+  "Personal Status Law": LAW_METADATA["personal-status-law.pdf"],
+  "Real Estate Registration Law": LAW_METADATA["real-estate-registration-law.pdf"],
+  "Traffic Law": LAW_METADATA["traffic-law.pdf"],
+  "Unified Building Law": LAW_METADATA["unified-building-law.pdf"],
+  "Vat Law": LAW_METADATA["vat-law.pdf"],
+  "VAT Law": LAW_METADATA["vat-law.pdf"],
 };
 
 function safeLawFilePath(relativePath) {
   if (!relativePath || typeof relativePath !== "string") return null;
-
   const normalized = relativePath.replace(/\\/g, "/");
   const filename = path.basename(normalized);
-
-  if (!filename || normalized !== filename || filename.includes("..")) {
-    return null;
-  }
-
+  if (!filename || normalized !== filename || filename.includes("..")) return null;
   const resolved = path.resolve(LAWS_ROOT, filename);
   if (!resolved.startsWith(`${LAWS_ROOT}${path.sep}`)) return null;
   return resolved;
@@ -65,160 +71,83 @@ function fallbackMetadata(filename) {
 
 async function ensureLawIndex() {
   await new Promise((resolve, reject) => {
-    db.run(
-      `CREATE TABLE IF NOT EXISTS laws (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        category TEXT,
-        pdf_path TEXT NOT NULL
-      )`,
-      (error) => (error ? reject(error) : resolve()),
-    );
+    db.run(`CREATE TABLE IF NOT EXISTS laws (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, category TEXT, pdf_path TEXT NOT NULL)`, (error) => (error ? reject(error) : resolve()));
   });
-
   const entries = await new Promise((resolve, reject) => {
     fs.readdir(LAWS_ROOT, { withFileTypes: true }, (error, result) => {
-      if (error) {
-        if (error.code === "ENOENT") return resolve([]);
-        return reject(error);
-      }
+      if (error) { if (error.code === "ENOENT") return resolve([]); return reject(error); }
       resolve(result || []);
     });
   });
-
-  const pdfs = entries
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".pdf"))
-    .map((entry) => entry.name);
-
+  const pdfs = entries.filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".pdf")).map((entry) => entry.name);
   if (!pdfs.length) return;
-
   const existingRows = await new Promise((resolve, reject) => {
-    db.all("SELECT id, title, category, pdf_path FROM laws", [], (error, rows) => {
-      if (error) return reject(error);
-      resolve(rows || []);
-    });
+    db.all("SELECT id, title, category, pdf_path FROM laws", [], (error, rows) => { if (error) return reject(error); resolve(rows || []); });
   });
-
   const existing = new Map(existingRows.map((row) => [String(row.pdf_path || "").trim(), row]));
   const missing = pdfs.filter((filename) => !existing.has(filename));
-
   if (missing.length) {
     await new Promise((resolve, reject) => {
       db.serialize(() => {
         const insert = db.prepare("INSERT INTO laws (title, category, pdf_path) VALUES (?, ?, ?)");
-        missing.forEach((filename) => {
-          const metadata = LAW_METADATA[filename] || fallbackMetadata(filename);
-          insert.run(metadata.title, metadata.category, filename);
-        });
+        missing.forEach((filename) => { const metadata = LAW_METADATA[filename] || fallbackMetadata(filename); insert.run(metadata.title, metadata.category, filename); });
         insert.finalize((error) => (error ? reject(error) : resolve()));
       });
     });
   }
-
-  // Repair existing rows by filename and by legacy English title. This is what
-  // fixes records that were already inserted before Arabic metadata existed.
   await new Promise((resolve, reject) => {
     db.serialize(() => {
       const updateByPath = db.prepare("UPDATE laws SET title = ?, category = ? WHERE pdf_path = ?");
-      pdfs.forEach((filename) => {
-        const metadata = LAW_METADATA[filename];
-        if (metadata) updateByPath.run(metadata.title, metadata.category, filename);
-      });
+      pdfs.forEach((filename) => { const metadata = LAW_METADATA[filename]; if (metadata) updateByPath.run(metadata.title, metadata.category, filename); });
       updateByPath.finalize((error) => (error ? reject(error) : resolve()));
     });
   });
-
   await new Promise((resolve, reject) => {
     db.serialize(() => {
       const updateByTitle = db.prepare("UPDATE laws SET title = ?, category = ? WHERE title = ?");
-      Object.entries(ENGLISH_TITLE_METADATA).forEach(([englishTitle, metadata]) => {
-        updateByTitle.run(metadata.title, metadata.category, englishTitle);
-      });
+      Object.entries(ENGLISH_TITLE_METADATA).forEach(([englishTitle, metadata]) => updateByTitle.run(metadata.title, metadata.category, englishTitle));
       updateByTitle.finalize((error) => (error ? reject(error) : resolve()));
     });
   });
 }
 
 exports.getAllLaws = async (req, res) => {
-  try {
-    await ensureLawIndex();
-  } catch (error) {
-    console.error("Unable to repair law index:", error.message || error);
-  }
-
+  try { await ensureLawIndex(); } catch (error) { console.error("Unable to repair law index:", error.message || error); }
   const search = String(req.query.search || "").trim();
   const category = String(req.query.category || "").trim();
   const conditions = [];
   const params = [];
-
-  if (search) {
-    conditions.push("(title LIKE ? OR category LIKE ?)");
-    params.push(`%${search}%`, `%${search}%`);
-  }
-
-  if (category) {
-    conditions.push("category = ?");
-    params.push(category);
-  }
-
+  if (search) { conditions.push("(title LIKE ? OR category LIKE ?)"); params.push(`%${search}%`, `%${search}%`); }
+  if (category) { conditions.push("category = ?"); params.push(category); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
-  db.all(
-    `SELECT id, title, category, pdf_path FROM laws ${where} ORDER BY title COLLATE NOCASE ASC`,
-    params,
-    (err, rows) => {
-      if (err) return res.status(500).json({ message: err.message });
-      res.json(rows || []);
-    },
-  );
+  db.all(`SELECT id, title, category, pdf_path FROM laws ${where} ORDER BY title COLLATE NOCASE ASC`, params, (err, rows) => {
+    if (err) return res.status(500).json({ message: err.message });
+    res.json(rows || []);
+  });
 };
 
 exports.getLawById = async (req, res) => {
-  try {
-    await ensureLawIndex();
-  } catch (error) {
-    console.error("Unable to repair law index:", error.message || error);
-  }
-
+  try { await ensureLawIndex(); } catch (error) { console.error("Unable to repair law index:", error.message || error); }
   const { id } = req.params;
-
-  db.get(
-    `SELECT id, title, category, pdf_path FROM laws WHERE id = ?`,
-    [id],
-    (err, row) => {
-      if (err) return res.status(500).json({ message: err.message });
-      if (!row) return res.status(404).json({ message: "القانون غير موجود" });
-      res.json(row);
-    },
-  );
+  db.get(`SELECT id, title, category, pdf_path FROM laws WHERE id = ?`, [id], (err, row) => {
+    if (err) return res.status(500).json({ message: err.message });
+    if (!row) return res.status(404).json({ message: "القانون غير موجود" });
+    res.json(row);
+  });
 };
 
 exports.getLawFile = async (req, res) => {
-  try {
-    await ensureLawIndex();
-  } catch (error) {
-    console.error("Unable to repair law index:", error.message || error);
-  }
-
+  try { await ensureLawIndex(); } catch (error) { console.error("Unable to repair law index:", error.message || error); }
   const { id } = req.params;
   const disposition = req.query.download === "1" ? "attachment" : "inline";
-
-  db.get(
-    `SELECT id, title, pdf_path FROM laws WHERE id = ?`,
-    [id],
-    (err, row) => {
-      if (err) return res.status(500).json({ message: err.message });
-      if (!row) return res.status(404).json({ message: "القانون غير موجود" });
-
-      const filePath = safeLawFilePath(row.pdf_path);
-      if (!filePath || !fs.existsSync(filePath)) {
-        return res.status(404).json({ message: "ملف القانون غير موجود" });
-      }
-
-      const filename = path.basename(filePath);
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"`);
-      res.sendFile(filePath);
-    },
-  );
+  db.get(`SELECT id, title, pdf_path FROM laws WHERE id = ?`, [id], (err, row) => {
+    if (err) return res.status(500).json({ message: err.message });
+    if (!row) return res.status(404).json({ message: "القانون غير موجود" });
+    const filePath = safeLawFilePath(row.pdf_path);
+    if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ message: "ملف القانون غير موجود" });
+    const filename = path.basename(filePath);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"`);
+    res.sendFile(filePath);
+  });
 };
