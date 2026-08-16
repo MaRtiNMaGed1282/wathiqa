@@ -59,10 +59,7 @@ async function main() {
       await run(`DELETE FROM "${name.replace(/"/g, '""')}"`);
     }
 
-    await run(
-      `DELETE FROM users WHERE id <> ?`,
-      [adminId],
-    );
+    await run(`DELETE FROM users WHERE id <> ?`, [adminId]);
 
     await run(
       `UPDATE users
@@ -74,14 +71,16 @@ async function main() {
     );
 
     // A client build must start unlicensed and require the customer's .lic file.
+    // The license schema requires text values such as office_name to be non-NULL,
+    // so empty strings are used for the inactive placeholder state.
     await run(
       `UPDATE license
-       SET office_name = NULL,
-           license_key = NULL,
+       SET office_name = '',
+           license_key = '',
            expiry_date = NULL,
            is_active = 0,
-           payload = NULL,
-           signature = NULL
+           payload = '',
+           signature = ''
        WHERE id = 1`,
     );
 
@@ -99,7 +98,7 @@ async function main() {
   }
 
   const remainingUsers = await all(`SELECT id, email, role FROM users`);
-  const remainingLicense = await all(`SELECT id, is_active FROM license LIMIT 1`);
+  const remainingLicense = await all(`SELECT id, office_name, is_active FROM license LIMIT 1`);
 
   console.log("Client release prepared successfully.");
   console.log("Users:", remainingUsers);
