@@ -4,19 +4,25 @@ const {
   sanitizeFilename,
   createFileValidationOptions,
 } = require("../utils/fileValidation");
+const { getUploadsRoot, ensureDirectory } = require("../utils/storagePaths");
 
-// مجلد تخزين الملفات
+// Use the same persistent storage location as the rest of the Electron application.
+// In packaged mode this resolves to Electron's userData directory rather than the
+// read-only application bundle.
+const uploadsRoot = getUploadsRoot();
+ensureDirectory(uploadsRoot);
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../../../uploads")); // مجلد uploads في جذر المشروع
+    cb(null, uploadsRoot);
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + "_" + sanitizeFilename(file.originalname));
   },
 });
 
-console.log("MULTER UPLOADS =", path.join(__dirname, "../../../uploads"));
+console.log("MULTER UPLOADS =", uploadsRoot);
 
-const upload = multer({ storage: storage, ...createFileValidationOptions() });
+const upload = multer({ storage, ...createFileValidationOptions() });
 
 module.exports = upload;
