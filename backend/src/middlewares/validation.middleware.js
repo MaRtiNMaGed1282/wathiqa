@@ -45,17 +45,29 @@ function validateCase(req, res, next) {
     case_status,
   } = req.body || {};
 
-  if ([court_case_number, client_id, case_title, case_type, opened_at, case_status].some(isEmpty)) {
-    return res.status(400).json({ message: "Missing required fields" });
+  const missing = [];
+  if (isEmpty(court_case_number)) missing.push("رقم القضية بالمحكمة");
+  if (isEmpty(client_id)) missing.push("الموكل");
+  if (isEmpty(case_title)) missing.push("عنوان القضية");
+  if (isEmpty(case_type)) missing.push("نوع القضية");
+  if (isEmpty(opened_at)) missing.push("تاريخ فتح القضية");
+  if (isEmpty(case_status)) missing.push("حالة القضية");
+
+  if (missing.length) {
+    return res.status(400).json({
+      message: `الحقول المطلوبة غير مكتملة: ${missing.join("، ")}`,
+      missing,
+    });
   }
-  if (!isValidIntegerId(client_id)) return res.status(400).json({ message: "Invalid client_id" });
-  if (!isValidMoney(total_fees)) return res.status(400).json({ message: "Invalid total_fees" });
-  if (!isValidDate(opened_at)) return res.status(400).json({ message: "Invalid opened_at" });
+
+  if (!isValidIntegerId(client_id)) return res.status(400).json({ message: "الموكل المحدد غير صالح" });
+  if (!isValidMoney(total_fees)) return res.status(400).json({ message: "إجمالي الأتعاب غير صالح" });
+  if (!isValidDate(opened_at)) return res.status(400).json({ message: "تاريخ فتح القضية غير صالح" });
 
   if (!isEmpty(closed_at)) {
-    if (!isValidDate(closed_at)) return res.status(400).json({ message: "Invalid closed_at" });
+    if (!isValidDate(closed_at)) return res.status(400).json({ message: "تاريخ إغلاق القضية غير صالح" });
     if (!isDateOnOrAfter(closed_at, opened_at)) {
-      return res.status(400).json({ message: "closed_at cannot be earlier than opened_at" });
+      return res.status(400).json({ message: "تاريخ إغلاق القضية لا يمكن أن يسبق تاريخ الفتح" });
     }
   }
 
