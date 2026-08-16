@@ -33,7 +33,7 @@ function evaluateLicense(license) {
   }
 
   if (!verifyLicense(license.payload, license.signature)) {
-    return { valid: false, reason: "INVALID_SIGNATURE_OR_MACHINE" };
+    return { valid: false, reason: "INVALID_SIGNATURE" };
   }
 
   return {
@@ -65,6 +65,7 @@ exports.getLicense = (req, res) => {
   );
 };
 
+// Startup validation is intentionally available before login.
 exports.validateLicense = (req, res) => {
   readStoredLicense((err, license) => {
     if (err) return res.status(500).json({ valid: false, reason: "DB_ERROR" });
@@ -86,12 +87,12 @@ exports.activateLicense = (req, res) => {
     return res.status(400).json({ message: "بيانات الترخيص غير صالحة" });
   }
 
-  if (!data.machine_id) {
-    return res.status(400).json({ message: "الترخيص غير مرتبط بجهاز" });
+  if (!data || typeof data !== "object" || !data.office || !data.type) {
+    return res.status(400).json({ message: "بيانات الترخيص غير صالحة" });
   }
 
   if (!verifyLicense(payload, signature)) {
-    return res.status(400).json({ message: "الترخيص غير صالح لهذا الجهاز" });
+    return res.status(400).json({ message: "الترخيص غير صالح" });
   }
 
   db.run(
