@@ -29,3 +29,27 @@
 #revenues-page #invoiceRevenueSection .invoice-metric { background:#f8fafc !important; color:#1f2a44 !important; border:1px solid #e5e7eb !important; }
 #revenues-page #invoiceRevenueSection .invoice-status { background:#fff !important; color:#1f2a44 !important; border:1px solid #d1d5db !important; }
 #revenues-page #contentState > section:not(:first-child) .text-gray-500 { color:#6b7280 !important; }
+
+/* Shared metric/stat cards: prevent white-on-white rendering and keep the
+   same readable treatment across every authenticated page. */
+.metric-card,
+.stat-card,
+#dashboard-kpis .card {
+  background:#f8fafc !important;
+  color:#1f2a44 !important;
+  border:1px solid #d5dbe5 !important;
+  box-shadow:0 4px 14px rgba(31,42,68,.07) !important;
+}
+.metric-card > p:first-child,
+.stat-card .stat-label,
+#dashboard-kpis .card p.text-gray-500 {
+  color:#475569 !important;
+}
+.metric-card h1,
+.metric-card h2,
+.metric-card h3,
+.metric-card h4,
+.stat-card .stat-value,
+#dashboard-kpis .card h2 {
+  color:#1f2a44;
+}
