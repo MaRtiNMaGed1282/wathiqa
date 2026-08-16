@@ -86,15 +86,31 @@ function createDescription(module, action) {
 module.exports = function activityAuditMiddleware(req, res, next) {
   res.on("finish", () => {
     if (!MUTATING_METHODS.has(req.method) || req.activityAuditDisabled || res.statusCode >= 400) return;
+
     const module = resolveModule(req.originalUrl || req.url || "");
     if (!module) return;
+
     const userId = req.user && req.user.id ? Number(req.user.id) : null;
     const recordId = resolveRecordId(req);
+
+    // activity_logs.record_id is intentionally NOT NULL. Some successful
+    // mutations (for example office/system actions) do not have a related
+    // database record in the request. Do not write an invalid audit row.
+    // Mutations that create/delete a real record are expected to provide the
+    // record ID through the route/body or their existing explicit logger.
+    if (recordId === null) return;
+
     const action = resolveAction(req.method, req.originalUrl || req.url || "");
     const description = createDescription(module, action);
-    db.run(`INSERT INTO activity_logs (module, record_id, action, description, user_id) VALUES (?, ?, ?, ?, ?)`, [module, recordId, action, description, userId], (err) => {
-      if (err) console.error("Activity Audit Error:", err.message);
-    });
+
+    db.run(
+      `INSERT INTO activity_logs (module, record_id, action, description, user_id) VALUES (?, ?, ?, ?, ?)`,
+      [module, recordId, action, description, userId],
+      (err) => {
+        if (err) console.error("Activity Audit Error:", err.message);
+      },
+    );
   });
+
   next();
 };
