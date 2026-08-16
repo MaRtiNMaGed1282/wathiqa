@@ -42,48 +42,57 @@ function fallbackMetadata(filename) {
   return { title, category: "تشريعات" };
 }
 
-function ensureLawIndex() {
+function getExistingLawPaths() {
   return new Promise((resolve, reject) => {
+    db.all("SELECT pdf_path FROM laws", [], (error, rows) => {
+      if (error) return reject(error);
+      resolve(new Set((rows || []).map((row) => String(row.pdf_path || "").trim()).filter(Boolean)));
+    });
+  });
+}
+
+async function ensureLawIndex() {
+  await new Promise((resolve, reject) => {
     db.run(
       `CREATE TABLE IF NOT EXISTS laws (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         category TEXT,
-        pdf_path TEXT NOT NULL UNIQUE
+        pdf_path TEXT NOT NULL
       )`,
-      (createError) => {
-        if (createError) return reject(createError);
-
-        fs.readdir(LAWS_ROOT, { withFileTypes: true }, (readError, entries) => {
-          if (readError) {
-            if (readError.code === "ENOENT") return resolve();
-            return reject(readError);
-          }
-
-          const pdfs = entries
-            .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".pdf"))
-            .map((entry) => entry.name);
-
-          if (!pdfs.length) return resolve();
-
-          db.serialize(() => {
-            const insert = db.prepare(
-              `INSERT OR IGNORE INTO laws (title, category, pdf_path) VALUES (?, ?, ?)`,
-            );
-
-            pdfs.forEach((filename) => {
-              const metadata = LAW_METADATA[filename] || fallbackMetadata(filename);
-              insert.run(metadata.title, metadata.category, filename);
-            });
-
-            insert.finalize((finalizeError) => {
-              if (finalizeError) return reject(finalizeError);
-              resolve();
-            });
-          });
-        });
-      },
+      (error) => (error ? reject(error) : resolve()),
     );
+  });
+
+  const entries = await new Promise((resolve, reject) => {
+    fs.readdir(LAWS_ROOT, { withFileTypes: true }, (error, result) => {
+      if (error) {
+        if (error.code === "ENOENT") return resolve([]);
+        return reject(error);
+      }
+      resolve(result || []);
+    });
+  });
+
+  const pdfs = entries
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".pdf"))
+    .map((entry) => entry.name);
+
+  if (!pdfs.length) return;
+
+  const existing = await getExistingLawPaths();
+  const missing = pdfs.filter((filename) => !existing.has(filename));
+  if (!missing.length) return;
+
+  await new Promise((resolve, reject) => {
+    db.serialize(() => {
+      const insert = db.prepare("INSERT INTO laws (title, category, pdf_path) VALUES (?, ?, ?)");
+      missing.forEach((filename) => {
+        const metadata = LAW_METADATA[filename] || fallbackMetadata(filename);
+        insert.run(metadata.title, metadata.category, filename);
+      });
+      insert.finalize((error) => (error ? reject(error) : resolve()));
+    });
   });
 }
 
