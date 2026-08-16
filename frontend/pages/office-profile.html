@@ -11,7 +11,28 @@
     <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
     <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
     <script src="../assets/vendor/toastify/toastify.js"></script>
-    <style>body { font-family: "Cairo", sans-serif; }</style>
+    <style>
+      body { font-family: "Cairo", sans-serif; }
+      .office-asset-preview {
+        height: 180px;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f9fafb;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+      }
+      .office-asset-preview img {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: 220px;
+        max-height: 150px;
+        object-fit: contain;
+      }
+    </style>
   </head>
   <body class="bg-light text-primary min-h-screen flex font-cairo">
     <div id="navbar-container"></div>
@@ -66,8 +87,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="border rounded-2xl p-5">
             <h3 class="font-semibold mb-4">شعار المكتب</h3>
-            <div class="min-h-40 flex items-center justify-center bg-gray-50 rounded-xl border">
-              <img id="logoPreview" alt="شعار المكتب" class="hidden max-h-40 max-w-full object-contain" />
+            <div class="office-asset-preview">
+              <img id="logoPreview" alt="شعار المكتب" class="hidden" />
               <span id="logoEmpty" class="text-gray-400">لا يوجد شعار محفوظ</span>
             </div>
             <div id="logoUploadArea" class="mt-4"><input id="office_logo" type="file" accept="image/png,image/jpeg" class="w-full border rounded-xl p-3" /></div>
@@ -75,8 +96,8 @@
 
           <div class="border rounded-2xl p-5">
             <h3 class="font-semibold mb-4">ختم المكتب</h3>
-            <div class="min-h-40 flex items-center justify-center bg-gray-50 rounded-xl border">
-              <img id="stampPreview" alt="ختم المكتب" class="hidden max-h-40 max-w-full object-contain" />
+            <div class="office-asset-preview">
+              <img id="stampPreview" alt="ختم المكتب" class="hidden" />
               <span id="stampEmpty" class="text-gray-400">لا يوجد ختم محفوظ</span>
             </div>
             <div id="stampUploadArea" class="mt-4"><input id="office_stamp" type="file" accept="image/png,image/jpeg" class="w-full border rounded-xl p-3" /></div>
