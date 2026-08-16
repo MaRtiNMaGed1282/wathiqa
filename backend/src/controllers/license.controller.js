@@ -33,7 +33,7 @@ function evaluateLicense(license) {
   }
 
   if (!verifyLicense(license.payload, license.signature)) {
-    return { valid: false, reason: "INVALID_SIGNATURE" };
+    return { valid: false, reason: "INVALID_SIGNATURE_OR_MACHINE" };
   }
 
   return {
@@ -59,29 +59,15 @@ exports.getLicense = (req, res) => {
     `,
     [],
     (err, row) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
+      if (err) return res.status(500).json({ message: err.message });
       res.json(row || null);
     },
   );
 };
 
-// Startup-safe validation: this endpoint intentionally does not require login.
-// Electron must be able to determine whether a persisted license is valid before
-// the login screen is shown.
 exports.validateLicense = (req, res) => {
   readStoredLicense((err, license) => {
-    if (err) {
-      return res.status(500).json({
-        valid: false,
-        reason: "DB_ERROR",
-      });
-    }
-
+    if (err) return res.status(500).json({ valid: false, reason: "DB_ERROR" });
     return res.json(evaluateLicense(license));
   });
 };
@@ -90,24 +76,22 @@ exports.activateLicense = (req, res) => {
   const { payload, signature } = req.body || {};
 
   if (typeof payload !== "string" || typeof signature !== "string") {
-    return res.status(400).json({
-      message: "ملف الترخيص غير صالح",
-    });
+    return res.status(400).json({ message: "ملف الترخيص غير صالح" });
   }
 
   let data;
   try {
     data = JSON.parse(payload);
   } catch {
-    return res.status(400).json({
-      message: "بيانات الترخيص غير صالحة",
-    });
+    return res.status(400).json({ message: "بيانات الترخيص غير صالحة" });
+  }
+
+  if (!data.machine_id) {
+    return res.status(400).json({ message: "الترخيص غير مرتبط بجهاز" });
   }
 
   if (!verifyLicense(payload, signature)) {
-    return res.status(400).json({
-      message: "ترخيص غير صالح",
-    });
+    return res.status(400).json({ message: "الترخيص غير صالح لهذا الجهاز" });
   }
 
   db.run(
@@ -122,45 +106,24 @@ exports.activateLicense = (req, res) => {
     `,
     [data.office || null, payload, signature],
     function (err) {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
+      if (err) return res.status(500).json({ message: err.message });
 
       if (this.changes === 0) {
-        return res.status(500).json({
-          message: "تعذر حفظ الترخيص",
-        });
+        return res.status(500).json({ message: "تعذر حفظ الترخيص" });
       }
 
-      res.json({
-        message: "تم التفعيل بنجاح",
-      });
+      res.json({ message: "تم التفعيل بنجاح" });
     },
   );
 };
 
 exports.getLicenseInfo = (req, res) => {
   db.get(
-    `
-    SELECT payload
-    FROM license
-    LIMIT 1
-    `,
+    `SELECT payload FROM license LIMIT 1`,
     [],
     (err, row) => {
-      if (err) {
-        return res.status(500).json({
-          message: err.message,
-        });
-      }
-
-      if (!row || !row.payload) {
-        return res.status(404).json({
-          message: "No license found",
-        });
-      }
+      if (err) return res.status(500).json({ message: err.message });
+      if (!row || !row.payload) return res.status(404).json({ message: "No license found" });
 
       try {
         const payload = JSON.parse(row.payload);
@@ -170,9 +133,7 @@ exports.getLicenseInfo = (req, res) => {
           issued_at: payload.issued_at,
         });
       } catch {
-        return res.status(500).json({
-          message: "بيانات الترخيص غير صالحة",
-        });
+        return res.status(500).json({ message: "بيانات الترخيص غير صالحة" });
       }
     },
   );
