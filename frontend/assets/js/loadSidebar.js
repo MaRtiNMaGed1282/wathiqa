@@ -131,6 +131,113 @@
     document.head.appendChild(style);
   }
 
+  function applyServiceArchivePlacement() {
+    const page = (global.location.pathname.split("/").pop() || "").split("?")[0].split("#")[0];
+    if (page !== "service-profile.html") return;
+
+    const button = Array.from(document.querySelectorAll("button, a")).find((element) =>
+      /أرشفة الخدمة/.test((element.textContent || "").replace(/\s+/g, " ").trim()),
+    );
+    if (!button) return;
+
+    const title = document.getElementById("serviceTitle");
+    const main = title?.closest("main");
+    if (!main) return;
+
+    let actions = main.querySelector("#service-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.id = "service-actions";
+      actions.className = "flex flex-wrap items-center gap-2 mb-6";
+      title.insertAdjacentElement("afterend", actions);
+
+      const edit = document.getElementById("editServiceBtn");
+      const remove = document.getElementById("deleteServiceBtn");
+      if (edit) actions.appendChild(edit);
+      if (remove) actions.appendChild(remove);
+    }
+
+    if (button.parentElement !== actions) actions.appendChild(button);
+    button.classList.add("bg-orange-600", "text-white", "px-4", "py-2", "rounded");
+    button.style.position = "static";
+    button.style.margin = "0";
+    button.style.float = "none";
+  }
+
+  function money(value) {
+    return `${Number(value || 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 })} جنيه`;
+  }
+
+  async function loadRevenueInvoices() {
+    const page = (global.location.pathname.split("/").pop() || "").split("?")[0].split("#")[0];
+    if (page !== "revenues.html" || !global.api) return;
+
+    const content = document.getElementById("contentState");
+    if (!content || document.getElementById("invoice-revenue-summary")) return;
+
+    try {
+      const rows = await global.api.get("/invoices");
+      const invoices = Array.isArray(rows) ? rows : [];
+      if (document.getElementById("invoice-revenue-summary")) return;
+
+      const total = invoices.reduce((sum, row) => sum + Number(row.total || 0), 0);
+      const paid = invoices.reduce((sum, row) => sum + Number(row.paid || 0), 0);
+      const remaining = invoices.reduce((sum, row) => sum + Number(row.remaining || 0), 0);
+      const statusCount = {
+        issued: invoices.filter((row) => row.computed_status === "issued" || row.status === "issued").length,
+        partial: invoices.filter((row) => row.computed_status === "partial" || row.status === "partial").length,
+        paid: invoices.filter((row) => row.computed_status === "paid" || row.status === "paid").length,
+        cancelled: invoices.filter((row) => row.status === "cancelled").length,
+      };
+
+      const section = document.createElement("section");
+      section.id = "invoice-revenue-summary";
+      section.className = "bg-white rounded-2xl shadow p-6 mb-6";
+      section.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+          <div>
+            <h2 class="text-xl font-bold">بيانات الفواتير</h2>
+            <p class="text-sm text-gray-500 mt-1">ملخص الفواتير الصادرة والتحصيلات المرتبطة بها.</p>
+          </div>
+          <button type="button" id="openRevenueInvoices" class="bg-[#1f2a44] text-white px-4 py-2 rounded-xl">إدارة الفواتير</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="rounded-xl bg-gray-50 p-4"><p class="text-gray-500 text-sm">عدد الفواتير</p><p class="text-2xl font-bold mt-1">${invoices.length.toLocaleString("ar-EG")}</p></div>
+          <div class="rounded-xl bg-blue-50 p-4"><p class="text-gray-500 text-sm">إجمالي الفواتير</p><p class="text-2xl font-bold mt-1">${money(total)}</p></div>
+          <div class="rounded-xl bg-green-50 p-4"><p class="text-gray-500 text-sm">المحصل من الفواتير</p><p class="text-2xl font-bold text-green-700 mt-1">${money(paid)}</p></div>
+          <div class="rounded-xl bg-red-50 p-4"><p class="text-gray-500 text-sm">المتبقي من الفواتير</p><p class="text-2xl font-bold text-red-600 mt-1">${money(remaining)}</p></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+          <div class="border rounded-xl p-3 text-center"><span class="text-sm text-gray-500">صادرة</span><strong class="block mt-1">${statusCount.issued}</strong></div>
+          <div class="border rounded-xl p-3 text-center"><span class="text-sm text-gray-500">جزئية</span><strong class="block mt-1">${statusCount.partial}</strong></div>
+          <div class="border rounded-xl p-3 text-center"><span class="text-sm text-gray-500">مدفوعة</span><strong class="block mt-1">${statusCount.paid}</strong></div>
+          <div class="border rounded-xl p-3 text-center"><span class="text-sm text-gray-500">ملغاة</span><strong class="block mt-1">${statusCount.cancelled}</strong></div>
+        </div>
+        <div class="mt-5 border-t pt-5">
+          <h3 class="font-bold mb-3">آخر الفواتير</h3>
+          <div class="space-y-2">
+            ${invoices.slice(0, 5).map((row) => `<div class="flex flex-wrap items-center justify-between gap-3 border rounded-xl p-3"><div><strong>${String(row.invoice_number || "—")}</strong><div class="text-sm text-gray-500">${String(row.client_name || "—")}</div></div><div class="text-sm">${money(row.total)} — ${String(row.computed_status || row.status || "—")}</div></div>`).join("") || '<div class="text-gray-500">لا توجد فواتير.</div>'}
+          </div>
+        </div>`;
+
+      const heading = Array.from(content.querySelectorAll("h2")).find((element) => element.textContent.trim() === "إجمالي الموكلين");
+      const anchor = heading?.closest("section");
+      if (anchor) anchor.insertAdjacentElement("beforebegin", section);
+      else content.prepend(section);
+
+      document.getElementById("openRevenueInvoices")?.addEventListener("click", () => {
+        if (global.WathiqaInvoiceUI?.open) global.WathiqaInvoiceUI.open("list");
+      });
+    } catch (error) {
+      console.error("Unable to load revenue invoice summary:", error);
+    }
+  }
+
+  function applyPageFixes() {
+    applyServiceArchivePlacement();
+    loadRevenueInvoices();
+  }
+
   ensureCanonicalStylesheet();
   applyLegacyRtlShellFix();
 
@@ -305,6 +412,7 @@
     }
 
     await refreshNotificationBadge();
+    applyPageFixes();
   }
 
   function updateOfficeInformation(office) {
@@ -328,6 +436,7 @@
         state.container.contains(state.elements.sidebar)
       ) {
         highlightActiveLink();
+        applyPageFixes();
         return;
       }
 
@@ -369,5 +478,8 @@
         console.error("Sidebar loading failed:", error);
       }
     });
+    applyPageFixes();
+    const observer = new MutationObserver(() => applyPageFixes());
+    observer.observe(document.body, { childList: true, subtree: true });
   });
 })(window);
