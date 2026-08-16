@@ -6,6 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "desktop": "electron .",
+    "prepare-client": "node backend/scripts/prepare-client-release.js",
     "build": "electron-builder"
   },
   "build": {
