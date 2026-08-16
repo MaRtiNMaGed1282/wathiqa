@@ -33,7 +33,7 @@ function configureSession() {
       "connect-src 'self' http://localhost:5000; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
-      "frame-src 'none';",
+      "frame-src 'self' file: blob:;",
     ];
     callback({ responseHeaders });
   });
