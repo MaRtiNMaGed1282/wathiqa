@@ -19,6 +19,7 @@ const LAW_METADATA = {
   "evidence-law.pdf": { title: "قانون الإثبات", category: "الإثبات" },
   "income-tax-law.pdf": { title: "قانون الضريبة على الدخل", category: "الضرائب" },
   "investment-law.pdf": { title: "قانون الاستثمار", category: "الاستثمار" },
+  "labor-law.pdf": { title: "قانون العمل", category: "قوانين العمل" },
 };
 
 function safeLawFilePath(relativePath) {
@@ -80,20 +81,44 @@ async function ensureLawIndex() {
 
   if (!pdfs.length) return;
 
-  const existing = await getExistingLawPaths();
-  const missing = pdfs.filter((filename) => !existing.has(filename));
-  if (!missing.length) return;
-
-  await new Promise((resolve, reject) => {
-    db.serialize(() => {
-      const insert = db.prepare("INSERT INTO laws (title, category, pdf_path) VALUES (?, ?, ?)");
-      missing.forEach((filename) => {
-        const metadata = LAW_METADATA[filename] || fallbackMetadata(filename);
-        insert.run(metadata.title, metadata.category, filename);
-      });
-      insert.finalize((error) => (error ? reject(error) : resolve()));
+  const existingRows = await new Promise((resolve, reject) => {
+    db.all("SELECT id, title, category, pdf_path FROM laws", [], (error, rows) => {
+      if (error) return reject(error);
+      resolve(rows || []);
     });
   });
+
+  const existing = new Map(existingRows.map((row) => [String(row.pdf_path || "").trim(), row]));
+  const missing = pdfs.filter((filename) => !existing.has(filename));
+
+  if (missing.length) {
+    await new Promise((resolve, reject) => {
+      db.serialize(() => {
+        const insert = db.prepare("INSERT INTO laws (title, category, pdf_path) VALUES (?, ?, ?)");
+        missing.forEach((filename) => {
+          const metadata = LAW_METADATA[filename] || fallbackMetadata(filename);
+          insert.run(metadata.title, metadata.category, filename);
+        });
+        insert.finalize((error) => (error ? reject(error) : resolve()));
+      });
+    });
+  }
+
+  // Keep the legal library titles canonical and Arabic even when older database
+  // rows were created from English filenames or legacy metadata.
+  const updates = pdfs.filter((filename) => LAW_METADATA[filename] && existing.has(filename));
+  if (updates.length) {
+    await new Promise((resolve, reject) => {
+      db.serialize(() => {
+        const update = db.prepare("UPDATE laws SET title = ?, category = ? WHERE pdf_path = ?");
+        updates.forEach((filename) => {
+          const metadata = LAW_METADATA[filename];
+          update.run(metadata.title, metadata.category, filename);
+        });
+        update.finalize((error) => (error ? reject(error) : resolve()));
+      });
+    });
+  }
 }
 
 exports.getAllLaws = async (req, res) => {
