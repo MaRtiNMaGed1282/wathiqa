@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { getMachineFingerprint } = require("./machineFingerprint");
 
 const publicKey = fs.readFileSync(
   path.join(__dirname, "../security/public.pem"),
@@ -16,14 +15,17 @@ function verifySignature(payload, signature) {
 }
 
 function verifyLicense(payload, signature) {
-  if (!verifySignature(payload, signature)) return false;
+  if (typeof payload !== "string" || typeof signature !== "string") {
+    return false;
+  }
+
+  if (!verifySignature(payload, signature)) {
+    return false;
+  }
 
   try {
     const data = JSON.parse(payload);
-    if (!data || typeof data !== "object") return false;
-    if (!data.machine_id) return false;
-
-    return data.machine_id === getMachineFingerprint();
+    return Boolean(data && typeof data === "object" && data.office && data.type);
   } catch {
     return false;
   }
