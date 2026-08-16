@@ -26,14 +26,14 @@ function configureSession() {
     const responseHeaders = { ...(details.responseHeaders || {}) };
     responseHeaders["Content-Security-Policy"] = [
       "default-src 'self' file:; " +
-      "script-src 'self' 'unsafe-inline'; " +
-      "style-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' file: data: blob:; " +
-      "font-src 'self' file: data:; " +
+      "script-src 'self' 'unsafe-inline' chrome://resources; " +
+      "style-src 'self' 'unsafe-inline' chrome://resources; " +
+      "img-src 'self' file: data: blob: chrome://resources; " +
+      "font-src 'self' file: data: blob: chrome://resources; " +
       "connect-src 'self' http://localhost:5000; " +
-      "object-src 'none'; " +
+      "object-src 'self' file: blob: data:; " +
       "base-uri 'self'; " +
-      "frame-src 'self' file: blob:;",
+      "frame-src 'self' file: blob: chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai;",
     ];
     callback({ responseHeaders });
   });
