@@ -59,7 +59,7 @@ app.use("/api/attorneys", attorneyRoutes);
 app.use("/api/backup", require("./routes/backup.routes"));
 app.use("/api/archive", require("./routes/archive.routes"));
 
-app.get("/", (req, res) => res.json({ status: "success", message: "Lawyer Case Management API is running" }));
+app.get("/", (req, res) => res.json({ status: "success", message: "واجهة برمجة تطبيقات نظام وثيقة تعمل بنجاح" }));
 startDeadlineReminderScheduler();
 
 app.use((err, req, res, next) => {
@@ -71,7 +71,7 @@ app.use((err, req, res, next) => {
   if (err?.message === "Unsupported file type") return res.status(400).json({ message: "نوع الملف غير مدعوم" });
   if (err?.message === "CORS origin not allowed") return res.status(403).json({ message: "مصدر الطلب غير مسموح" });
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) return res.status(400).json({ message: "صيغة الطلب غير صالحة" });
-  console.error("Unhandled API error:", err?.message || err);
+  console.error("خطأ غير معالج في واجهة برمجة التطبيقات:", err?.message || "حدث خطأ غير معروف");
   return res.status(err?.status || 500).json({ message: err?.status && err.status < 500 ? err.message || "حدث خطأ في الطلب" : "حدث خطأ داخلي في الخادم" });
 });
 
