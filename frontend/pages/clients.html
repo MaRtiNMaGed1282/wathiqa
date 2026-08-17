@@ -109,9 +109,9 @@
         <form id="addClientForm" action="javascript:void(0)" method="post" class="bg-white shadow rounded p-4 mb-4 flex flex-col gap-3">
           <input type="text" id="full_name" name="full_name" placeholder="الاسم الكامل" autocomplete="name" required class="border p-2 rounded" />
           <input type="text" id="client_code" name="client_code" placeholder="كود الموكل" autocomplete="off" class="border p-2 rounded" />
-          <input type="text" id="national_id" name="national_id" placeholder="الرقم القومي" inputmode="numeric" autocomplete="off" maxlength="14" minlength="14" pattern="[0-9]{14}" required class="border p-2 rounded" />
-          <input type="tel" id="phone" name="phone" placeholder="رقم الهاتف" inputmode="tel" autocomplete="tel" required class="border p-2 rounded" />
-          <input type="text" id="address" name="address" placeholder="العنوان" autocomplete="street-address" required class="border p-2 rounded" />
+          <input type="text" id="national_id" name="national_id" placeholder="الرقم القومي" inputmode="numeric" autocomplete="off" maxlength="14" minlength="14" pattern="[0-9]{14}" class="border p-2 rounded" />
+          <input type="tel" id="phone" name="phone" placeholder="رقم الهاتف" inputmode="tel" autocomplete="tel" class="border p-2 rounded" />
+          <input type="text" id="address" name="address" placeholder="العنوان" autocomplete="street-address" class="border p-2 rounded" />
 
           <div class="border-t pt-4 mt-2">
             <h4 class="font-bold text-primary mb-3">بيانات التوكيل (اختياري)</h4>
@@ -139,9 +139,9 @@
 
         <input type="text" id="edit_full_name" autocomplete="name" required class="w-full border rounded p-3 mb-3" placeholder="الاسم الكامل" />
         <input type="text" id="edit_client_code" autocomplete="off" class="w-full border rounded p-3 mb-3" placeholder="كود الموكل" />
-        <input type="text" id="edit_national_id" inputmode="numeric" maxlength="14" minlength="14" pattern="[0-9]{14}" required class="w-full border rounded p-3 mb-3" placeholder="الرقم القومي" />
-        <input type="tel" id="edit_phone" inputmode="tel" autocomplete="tel" required class="w-full border rounded p-3 mb-3" placeholder="رقم الهاتف" />
-        <input type="text" id="edit_address" autocomplete="street-address" required class="w-full border rounded p-3 mb-3" placeholder="العنوان" />
+        <input type="text" id="edit_national_id" inputmode="numeric" maxlength="14" minlength="14" pattern="[0-9]{14}" class="w-full border rounded p-3 mb-3" placeholder="الرقم القومي" />
+        <input type="tel" id="edit_phone" inputmode="tel" autocomplete="tel" class="w-full border rounded p-3 mb-3" placeholder="رقم الهاتف" />
+        <input type="text" id="edit_address" autocomplete="street-address" class="w-full border rounded p-3 mb-3" placeholder="العنوان" />
         <textarea id="edit_notes" class="w-full border rounded p-3 mb-3" placeholder="ملاحظات"></textarea>
 
         <div class="flex justify-end gap-3 mt-4">
