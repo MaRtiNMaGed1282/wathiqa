@@ -16,7 +16,7 @@ function logActivity({ module, record_id, action, description, user_id }) {
     [module, record_id, action, description, user_id],
     (err) => {
       if (err) {
-        console.error("Activity Log Error:", err.message);
+        console.error("خطأ في سجل النشاط:", err.message);
       }
     },
   );
