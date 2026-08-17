@@ -2,125 +2,58 @@
 @import url("./tailwind.min.css");
 @import url("./search-shell-fixes.css");
 
-/* Testing/UI fixes kept global so the authenticated pages share the same behavior. */
+/* Shared functional visibility fixes. Keep these scoped to the affected UI
+   rather than changing the global button system. */
 #action-upload-document { display: none !important; }
 #exportClientsButton { display:inline-flex !important; align-items:center !important; justify-content:center !important; min-height:40px !important; padding:8px 16px !important; border:1px solid #15803d !important; border-radius:8px !important; background:#16a34a !important; color:#fff !important; font-family:Cairo,sans-serif !important; font-weight:700 !important; line-height:1.4 !important; cursor:pointer !important; }
 #exportClientsButton:hover { background:#15803d !important; color:#fff !important; }
 #sidebar .sidebar-nav { scrollbar-width:none !important; -ms-overflow-style:none !important; }
 #sidebar .sidebar-nav::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
 
+/* Egyptian laws: the download action must always have an explicit visible
+   surface. This is intentionally scoped to the laws table. */
+#lawsTableBody td button[data-view] { display:inline-flex !important; align-items:center !important; justify-content:center !important; min-height:40px !important; padding:8px 16px !important; background:#273247 !important; color:#fff !important; border:0 !important; border-radius:8px !important; opacity:1 !important; visibility:visible !important; position:relative !important; z-index:1 !important; }
+#lawsTableBody td button[data-download] { display:inline-flex !important; align-items:center !important; justify-content:center !important; min-height:40px !important; padding:8px 16px !important; background:#16a34a !important; color:#fff !important; border:0 !important; border-radius:8px !important; opacity:1 !important; visibility:visible !important; position:relative !important; z-index:1 !important; }
+#lawsTableBody td button[data-download]:hover { background:#15803d !important; color:#fff !important; }
+
 /* Invoice modal: keep the search field wide and the controls predictable. */
 #wathiqa-invoice-modal [data-invoice-panel="list"] > div:first-child { display:grid !important; grid-template-columns:minmax(0,1fr) 220px auto !important; align-items:stretch !important; width:100% !important; min-width:0 !important; gap:12px !important; flex-wrap:nowrap !important; }
 #wathiqa-invoice-modal #invoiceSearch { display:block !important; width:100% !important; min-width:0 !important; max-width:none !important; flex:none !important; box-sizing:border-box !important; }
 #wathiqa-invoice-modal #invoiceStatus { width:100% !important; min-width:0 !important; box-sizing:border-box !important; }
 #wathiqa-invoice-modal [data-invoice-refresh] { min-width:70px !important; min-height:48px !important; white-space:nowrap !important; }
-@media (max-width:700px) {
-  #wathiqa-invoice-modal [data-invoice-panel="list"] > div:first-child { grid-template-columns:1fr !important; }
-  #wathiqa-invoice-modal #invoiceSearch,
-  #wathiqa-invoice-modal #invoiceStatus,
-  #wathiqa-invoice-modal [data-invoice-refresh] { grid-column:1 !important; width:100% !important; }
-}
+@media (max-width:700px) { #wathiqa-invoice-modal [data-invoice-panel="list"] > div:first-child { grid-template-columns:1fr !important; } #wathiqa-invoice-modal #invoiceSearch,#wathiqa-invoice-modal #invoiceStatus,#wathiqa-invoice-modal [data-invoice-refresh] { grid-column:1 !important; width:100% !important; } }
 
-/* Revenues page: the financial hero is the only dark section. All other
-   content sections must remain white with readable dark text. */
+/* Revenues page: the financial hero is the only intentionally dark section.
+   Invoice-revenue content must stay white with readable dark text. These
+   selectors are global to the invoice widget because that widget is injected
+   dynamically and is not always a direct child of #contentState. */
 #revenues-page #contentState { background:transparent !important; color:#1f2a44 !important; }
 #revenues-page #contentState > section:not(:first-child) { background:#fff !important; color:#1f2a44 !important; }
-#revenues-page #invoiceRevenueSection { background:#fff !important; color:#1f2a44 !important; border:1px solid rgba(31,42,68,.08) !important; box-shadow:0 4px 18px rgba(31,42,68,.06) !important; }
-#revenues-page #invoiceRevenueSection .invoice-metric { background:#f8fafc !important; color:#1f2a44 !important; border:1px solid #e5e7eb !important; }
-#revenues-page #invoiceRevenueSection .invoice-status { background:#fff !important; color:#1f2a44 !important; border:1px solid #d1d5db !important; }
+#invoiceRevenueSection { background:#fff !important; color:#1f2a44 !important; border:1px solid rgba(31,42,68,.08) !important; box-shadow:0 4px 18px rgba(31,42,68,.06) !important; }
+#invoiceRevenueSection .invoice-metric { background:#f8fafc !important; color:#1f2a44 !important; border:1px solid #e5e7eb !important; }
+#invoiceRevenueSection .invoice-status { background:#fff !important; color:#1f2a44 !important; border:1px solid #d1d5db !important; }
+#invoiceRevenueSection .invoice-metric p,#invoiceRevenueSection .invoice-metric span,#invoiceRevenueSection .invoice-metric strong,#invoiceRevenueSection .invoice-metric h1,#invoiceRevenueSection .invoice-metric h2,#invoiceRevenueSection .invoice-metric h3,#invoiceRevenueSection .invoice-metric h4 { color:#1f2a44 !important; }
+#invoiceRevenueSection > * { color:#1f2a44; }
 #revenues-page #contentState > section:not(:first-child) .text-gray-500 { color:#6b7280 !important; }
 
 /* Shared metric/stat cards. Keep the canonical white card treatment and
    avoid overriding every dashboard card with a grey surface. */
-.metric-card,
-.stat-card,
-#dashboard-kpis .card {
-  background:#ffffff !important;
-  color:#1f2a44 !important;
-  border:1px solid rgba(41,48,64,.08) !important;
-  box-shadow:0 1px 2px rgba(0,0,0,.05) !important;
-}
-.metric-card > p:first-child,
-.stat-card .stat-label,
-#dashboard-kpis .card p.text-gray-500 {
-  color:#64748b !important;
-}
-.metric-card h1,
-.metric-card h2,
-.metric-card h3,
-.metric-card h4,
-.stat-card .stat-value,
-#dashboard-kpis .card h2 {
-  color:#1f2a44 !important;
-}
+.metric-card,.stat-card,#dashboard-kpis .card { background:#ffffff !important; color:#1f2a44 !important; border:1px solid rgba(41,48,64,.08) !important; box-shadow:0 1px 2px rgba(0,0,0,.05) !important; }
+.metric-card > p:first-child,.stat-card .stat-label,#dashboard-kpis .card p.text-gray-500 { color:#64748b !important; }
+.metric-card h1,.metric-card h2,.metric-card h3,.metric-card h4,.stat-card .stat-value,#dashboard-kpis .card h2 { color:#1f2a44 !important; }
 
 /* Dashboard KPI grid: keep cards readable at normal desktop widths and use
    eight columns only when there is genuinely enough horizontal space. */
-#dashboard-kpis > div {
-  gap:16px !important;
-}
-#dashboard-kpis .card {
-  min-width:0 !important;
-  min-height:154px !important;
-  padding:20px !important;
-  border-radius:24px !important;
-  overflow:hidden !important;
-}
-#dashboard-kpis .card > div {
-  min-width:0 !important;
-  height:100% !important;
-}
-#dashboard-kpis .card > div > div:first-child {
-  min-width:0 !important;
-}
-#dashboard-kpis .card p,
-#dashboard-kpis .card h2 {
-  overflow-wrap:anywhere !important;
-}
-#dashboard-kpis .card h2 {
-  margin-top:10px !important;
-  font-size:2rem !important;
-  line-height:1.05 !important;
-}
-#dashboard-kpis .card p.mt-2 {
-  margin-top:8px !important;
-}
-#dashboard-kpis .card > div > div:last-child {
-  width:52px !important;
-  height:52px !important;
-  min-width:52px !important;
-  flex:0 0 52px !important;
-  border-radius:16px !important;
-}
-#dashboard-kpis .card svg {
-  width:24px !important;
-  height:24px !important;
-  stroke-width:2 !important;
-}
-
-@media (min-width:1024px) and (max-width:1799px) {
-  #dashboard-kpis > div {
-    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
-  }
-}
-
-@media (min-width:1800px) {
-  #dashboard-kpis > div {
-    grid-template-columns:repeat(8,minmax(0,1fr)) !important;
-  }
-}
-
-@media (max-width:1023px) and (min-width:640px) {
-  #dashboard-kpis > div {
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
-}
-
-@media (max-width:639px) {
-  #dashboard-kpis > div {
-    grid-template-columns:1fr !important;
-  }
-  #dashboard-kpis .card {
-    min-height:138px !important;
-  }
-}
+#dashboard-kpis > div { gap:16px !important; }
+#dashboard-kpis .card { min-width:0 !important; min-height:154px !important; padding:20px !important; border-radius:24px !important; overflow:hidden !important; }
+#dashboard-kpis .card > div { min-width:0 !important; height:100% !important; }
+#dashboard-kpis .card > div > div:first-child { min-width:0 !important; }
+#dashboard-kpis .card p,#dashboard-kpis .card h2 { overflow-wrap:anywhere !important; }
+#dashboard-kpis .card h2 { margin-top:10px !important; font-size:2rem !important; line-height:1.05 !important; }
+#dashboard-kpis .card p.mt-2 { margin-top:8px !important; }
+#dashboard-kpis .card > div > div:last-child { width:52px !important; height:52px !important; min-width:52px !important; flex:0 0 52px !important; border-radius:16px !important; }
+#dashboard-kpis .card svg { width:24px !important; height:24px !important; stroke-width:2 !important; }
+@media (min-width:1024px) and (max-width:1799px) { #dashboard-kpis > div { grid-template-columns:repeat(4,minmax(0,1fr)) !important; } }
+@media (min-width:1800px) { #dashboard-kpis > div { grid-template-columns:repeat(8,minmax(0,1fr)) !important; } }
+@media (max-width:1023px) and (min-width:640px) { #dashboard-kpis > div { grid-template-columns:repeat(2,minmax(0,1fr)) !important; } }
+@media (max-width:639px) { #dashboard-kpis > div { grid-template-columns:1fr !important; } #dashboard-kpis .card { min-height:138px !important; } }
