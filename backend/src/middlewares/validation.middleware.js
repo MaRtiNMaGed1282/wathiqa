@@ -11,22 +11,24 @@ const {
 function idParam(name = "id") {
   return (req, res, next) => {
     if (!isValidIntegerId(req.params[name])) {
-      return res.status(400).json({ message: `Invalid ${name}` });
+      return res.status(400).json({ message: "المعرف المحدد غير صالح" });
     }
     next();
   };
 }
 
 function validateClient(req, res, next) {
-  const { full_name, national_id, phone, address } = req.body || {};
+  const { full_name, national_id, phone } = req.body || {};
 
-  if ([full_name, national_id, phone, address].some(isEmpty)) {
-    return res.status(400).json({ message: "الاسم والرقم القومي ورقم الهاتف والعنوان مطلوبة" });
+  if (isEmpty(full_name)) {
+    return res.status(400).json({ message: "اسم الموكل مطلوب" });
   }
-  if (!isValidNationalId(national_id)) {
+
+  if (!isEmpty(national_id) && !isValidNationalId(national_id)) {
     return res.status(400).json({ message: "الرقم القومي يجب أن يتكون من 14 رقماً" });
   }
-  if (!isValidPhone(phone)) {
+
+  if (!isEmpty(phone) && !isValidPhone(phone)) {
     return res.status(400).json({ message: "رقم الهاتف غير صالح" });
   }
 
