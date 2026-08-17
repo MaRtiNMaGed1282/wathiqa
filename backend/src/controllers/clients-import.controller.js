@@ -1,13 +1,9 @@
 const db = require("../config/sqlite");
 const logActivity = require("../utils/activityLogger");
-const {
-  isEmpty,
-  isValidNationalId,
-  isValidPhone,
-} = require("../utils/validation");
+const { isEmpty, isValidNationalId, isValidPhone } = require("../utils/validation");
 
 const MAX_ROWS = 5000;
-const REQUIRED_FIELDS = ["full_name", "national_id", "phone", "address"];
+const REQUIRED_FIELDS = ["full_name"];
 
 function normalize(value) {
   if (value === undefined || value === null) return "";
@@ -42,17 +38,15 @@ function validateRow(row, index) {
     notes: normalize(row.notes),
   };
 
-  for (const field of REQUIRED_FIELDS) {
-    if (isEmpty(value[field])) {
-      return { row: index, message: `${field} مطلوب` };
-    }
+  if (REQUIRED_FIELDS.some((field) => isEmpty(value[field]))) {
+    return { row: index, message: "الاسم الكامل مطلوب" };
   }
 
-  if (!isValidNationalId(value.national_id)) {
+  if (value.national_id && !isValidNationalId(value.national_id)) {
     return { row: index, message: "الرقم القومي يجب أن يتكون من 14 رقماً" };
   }
 
-  if (!isValidPhone(value.phone)) {
+  if (value.phone && !isValidPhone(value.phone)) {
     return { row: index, message: "رقم الهاتف غير صالح" };
   }
 
@@ -74,9 +68,7 @@ exports.importClients = async (req, res) => {
   }
 
   if (rows.length > MAX_ROWS) {
-    return res.status(400).json({
-      message: `الحد الأقصى للاستيراد هو ${MAX_ROWS} صف`,
-    });
+    return res.status(400).json({ message: `الحد الأقصى للاستيراد هو ${MAX_ROWS} صف` });
   }
 
   if (!["skip", "update"].includes(duplicateMode)) {
@@ -89,7 +81,8 @@ exports.importClients = async (req, res) => {
   const prepared = [];
 
   rows.forEach((row, index) => {
-    const error = validateRow(row, index + 2);
+    const sourceRow = index + 2;
+    const error = validateRow(row, sourceRow);
     if (error) {
       errors.push(error);
       return;
@@ -102,18 +95,20 @@ exports.importClients = async (req, res) => {
       phone: normalize(row.phone),
       address: normalize(row.address),
       notes: normalize(row.notes),
-      sourceRow: index + 2,
+      sourceRow,
     };
 
-    if (seenNationalIds.has(normalized.national_id)) {
-      errors.push({ row: normalized.sourceRow, message: "الرقم القومي مكرر داخل الملف" });
-      return;
+    if (normalized.national_id) {
+      if (seenNationalIds.has(normalized.national_id)) {
+        errors.push({ row: sourceRow, message: "الرقم القومي مكرر داخل الملف" });
+        return;
+      }
+      seenNationalIds.add(normalized.national_id);
     }
-    seenNationalIds.add(normalized.national_id);
 
     if (normalized.client_code) {
       if (seenClientCodes.has(normalized.client_code)) {
-        errors.push({ row: normalized.sourceRow, message: "كود الموكل مكرر داخل الملف" });
+        errors.push({ row: sourceRow, message: "كود الموكل مكرر داخل الملف" });
         return;
       }
       seenClientCodes.add(normalized.client_code);
@@ -135,10 +130,9 @@ exports.importClients = async (req, res) => {
     await run("BEGIN TRANSACTION");
 
     for (const row of prepared) {
-      const existing = await get(
-        "SELECT id FROM clients WHERE national_id = ?",
-        [row.national_id],
-      );
+      const existing = row.national_id
+        ? await get("SELECT id FROM clients WHERE national_id = ?", [row.national_id])
+        : null;
 
       if (existing) {
         if (duplicateMode === "skip") {
@@ -169,8 +163,8 @@ exports.importClients = async (req, res) => {
              WHERE id = ?`,
             [
               row.full_name,
-              row.phone,
-              row.address,
+              row.phone || null,
+              row.address || null,
               row.client_code,
               row.client_code,
               row.notes,
@@ -198,7 +192,14 @@ exports.importClients = async (req, res) => {
         const inserted = await run(
           `INSERT INTO clients (client_code, full_name, national_id, phone, address, notes)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [row.client_code || null, row.full_name, row.national_id, row.phone, row.address, row.notes || null],
+          [
+            row.client_code || null,
+            row.full_name,
+            row.national_id || null,
+            row.phone || null,
+            row.address || null,
+            row.notes || null,
+          ],
         );
 
         logActivity({
