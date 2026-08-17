@@ -17,7 +17,8 @@ const {
   globalSearch,
 } = require("../controllers/cases.controller");
 
-router.post("/", auth, validateCase, upload.array("files", 20), createCase);
+// Multipart/form-data must be parsed before validateCase reads req.body.
+router.post("/", auth, upload.array("files", 20), validateCase, createCase);
 router.get("/", auth, getAllCases);
 router.get("/search", auth, searchCases);
 router.get("/filter", auth, filterCases);
