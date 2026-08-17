@@ -54,8 +54,8 @@
   color:#1f2a44 !important;
 }
 
-/* Dashboard KPI grid: eight KPIs remain available on wide desktop screens,
-   but each card gets enough breathing room for Arabic labels and values. */
+/* Dashboard KPI grid: keep cards readable at normal desktop widths and use
+   eight columns only when there is genuinely enough horizontal space. */
 #dashboard-kpis > div {
   gap:16px !important;
 }
@@ -98,9 +98,15 @@
   stroke-width:2 !important;
 }
 
-@media (max-width:1535px) and (min-width:1024px) {
+@media (min-width:1024px) and (max-width:1799px) {
   #dashboard-kpis > div {
     grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  }
+}
+
+@media (min-width:1800px) {
+  #dashboard-kpis > div {
+    grid-template-columns:repeat(8,minmax(0,1fr)) !important;
   }
 }
 
