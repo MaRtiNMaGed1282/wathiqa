@@ -8,6 +8,9 @@
   <script src="../assets/js/api.js"></script>
   <link rel="stylesheet" href="../assets/css/fonts.css" />
   <link rel="stylesheet" href="../assets/css/tailwind.min.css" />
+  <link rel="stylesheet" href="../assets/vendor/toastify/toastify.css" />
+  <script src="../assets/vendor/toastify/toastify.js"></script>
+  <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 </head>
 <body class="font-cairo bg-light text-primary min-h-screen">
   <div id="app-shell">
@@ -41,6 +44,42 @@
   <script src="../assets/js/loadSidebar.js"></script><script src="../assets/js/loadNavbar.js"></script>
   <script>
     const labels = { client: 'موكل', case: 'قضية', service: 'خدمة' };
+
+    function showToast(message, type = 'success') {
+      if (!message) return;
+      if (window.Toastify) {
+        Toastify({
+          text: message,
+          duration: 3500,
+          gravity: 'top',
+          position: 'left',
+          close: true,
+          style: {
+            background: type === 'success' ? '#16a34a' : '#dc2626',
+            color: '#ffffff',
+            fontFamily: 'Cairo, sans-serif',
+            fontWeight: '600',
+          },
+        }).showToast();
+      }
+    }
+
+    async function confirmAction(title, text, confirmText) {
+      if (!window.Swal) return false;
+      const result = await Swal.fire({
+        title,
+        text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: 'إلغاء',
+        reverseButtons: true,
+        confirmButtonColor: '#273247',
+        cancelButtonColor: '#6b7280',
+      });
+      return result.isConfirmed;
+    }
+
     async function loadArchive() {
       const type = document.getElementById('typeFilter').value, state = document.getElementById('state'), table = document.getElementById('archiveTable'), body = document.getElementById('archiveBody');
       state.textContent = 'جاري التحميل...'; table.classList.add('hidden');
@@ -49,14 +88,34 @@
         if (!rows.length) { state.textContent = 'لا توجد سجلات مؤرشفة'; return; }
         rows.forEach(row => { const tr = document.createElement('tr'); tr.className = 'border-t'; tr.innerHTML = `<td class="p-3">${labels[row.entity_type] || row.entity_type}</td><td class="p-3">${row.record_id}</td><td class="p-3">${row.reason || '—'}</td><td class="p-3">${row.archived_by_name || '—'}</td><td class="p-3">${row.archived_at || '—'}</td><td class="p-3"><button class="restore-btn bg-primary text-white px-3 py-2 rounded-lg" data-id="${row.id}">استعادة</button></td>`; body.appendChild(tr); });
         state.textContent = ''; table.classList.remove('hidden');
-        body.querySelectorAll('.restore-btn').forEach(btn => btn.addEventListener('click', async () => { if (!confirm('هل تريد استعادة هذا السجل؟')) return; try { await api.put(`/archive/${btn.dataset.id}/restore`, {}); await loadArchive(); } catch (error) { alert(error.message || 'تعذر استعادة السجل'); } }));
+        body.querySelectorAll('.restore-btn').forEach(btn => btn.addEventListener('click', async () => {
+          const confirmed = await confirmAction('تأكيد الاستعادة', 'هل تريد استعادة هذا السجل؟', 'استعادة');
+          if (!confirmed) return;
+          try {
+            await api.put(`/archive/${btn.dataset.id}/restore`, {});
+            showToast('تمت استعادة السجل بنجاح', 'success');
+            await loadArchive();
+          } catch (error) {
+            showToast(error.message || 'تعذر استعادة السجل', 'error');
+          }
+        }));
       } catch (error) { state.textContent = error.message || 'تعذر تحميل الأرشيف'; }
     }
+
     document.getElementById('archiveButton').addEventListener('click', async () => {
       const entityType = document.getElementById('archiveType').value, recordId = document.getElementById('archiveRecordId').value, reason = document.getElementById('archiveReason').value.trim();
-      if (!recordId) return alert('أدخل رقم السجل');
-      if (!confirm('هل تريد أرشفة هذا السجل؟')) return;
-      try { await api.post('/archive', { entityType, recordId: Number(recordId), reason: reason || null }); document.getElementById('archiveRecordId').value = ''; document.getElementById('archiveReason').value = ''; await loadArchive(); } catch (error) { alert(error.message || 'تعذر أرشفة السجل'); }
+      if (!recordId) return showToast('أدخل رقم السجل', 'error');
+      const confirmed = await confirmAction('تأكيد الأرشفة', 'هل تريد أرشفة هذا السجل؟', 'أرشفة');
+      if (!confirmed) return;
+      try {
+        await api.post('/archive', { entityType, recordId: Number(recordId), reason: reason || null });
+        document.getElementById('archiveRecordId').value = '';
+        document.getElementById('archiveReason').value = '';
+        showToast('تمت أرشفة السجل بنجاح', 'success');
+        await loadArchive();
+      } catch (error) {
+        showToast(error.message || 'تعذر أرشفة السجل', 'error');
+      }
     });
     document.getElementById('typeFilter').addEventListener('change', loadArchive); window.addEventListener('DOMContentLoaded', loadArchive);
   </script>
