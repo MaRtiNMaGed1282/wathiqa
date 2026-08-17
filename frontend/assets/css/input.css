@@ -35,10 +35,8 @@
 #revenues-page #contentState > section:not(:first-child) .text-gray-500 { color:#6b7280 !important; }
 
 /* HARD PAGE-SCOPED OVERRIDE for the invoice summary section shown on the
-   Revenues page. The previous fixes targeted only one possible ID, while the
-   live widget can use a different id/class and can carry bg-primary classes.
-   Match invoice-related containers by id/class and override the legacy
-   utility layer with !important. The normal financial hero is untouched. */
+   Revenues page. Match invoice-related containers by id/class and override
+   the legacy utility layer with !important. */
 #revenues-page [id*="invoice" i]:not(#wathiqa-invoice-modal):not(#wathiqa-invoice-payment-modal),
 #revenues-page [class*="invoice" i]:not(#wathiqa-invoice-modal):not(#wathiqa-invoice-payment-modal),
 #revenues-page [data-invoice-revenue] {
@@ -47,61 +45,48 @@
   border-color:#e5e7eb !important;
   box-shadow:0 4px 18px rgba(31,42,68,.06) !important;
 }
-
-#revenues-page [id*="invoice" i] p,
-#revenues-page [id*="invoice" i] span,
-#revenues-page [id*="invoice" i] strong,
-#revenues-page [id*="invoice" i] h1,
-#revenues-page [id*="invoice" i] h2,
-#revenues-page [id*="invoice" i] h3,
-#revenues-page [id*="invoice" i] h4,
-#revenues-page [id*="invoice" i] h5,
-#revenues-page [id*="invoice" i] h6,
-#revenues-page [id*="invoice" i] td,
-#revenues-page [id*="invoice" i] th,
-#revenues-page [class*="invoice" i] p,
-#revenues-page [class*="invoice" i] span,
-#revenues-page [class*="invoice" i] strong,
-#revenues-page [class*="invoice" i] h1,
-#revenues-page [class*="invoice" i] h2,
-#revenues-page [class*="invoice" i] h3,
-#revenues-page [class*="invoice" i] h4,
-#revenues-page [class*="invoice" i] h5,
-#revenues-page [class*="invoice" i] h6,
-#revenues-page [class*="invoice" i] td,
-#revenues-page [class*="invoice" i] th,
-#revenues-page [data-invoice-revenue] p,
-#revenues-page [data-invoice-revenue] span,
-#revenues-page [data-invoice-revenue] strong,
-#revenues-page [data-invoice-revenue] h1,
-#revenues-page [data-invoice-revenue] h2,
-#revenues-page [data-invoice-revenue] h3,
-#revenues-page [data-invoice-revenue] h4,
-#revenues-page [data-invoice-revenue] h5,
-#revenues-page [data-invoice-revenue] h6,
-#revenues-page [data-invoice-revenue] td,
-#revenues-page [data-invoice-revenue] th {
+#revenues-page [id*="invoice" i] p,#revenues-page [id*="invoice" i] span,#revenues-page [id*="invoice" i] strong,#revenues-page [id*="invoice" i] h1,#revenues-page [id*="invoice" i] h2,#revenues-page [id*="invoice" i] h3,#revenues-page [id*="invoice" i] h4,#revenues-page [id*="invoice" i] h5,#revenues-page [id*="invoice" i] h6,#revenues-page [id*="invoice" i] td,#revenues-page [id*="invoice" i] th,
+#revenues-page [class*="invoice" i] p,#revenues-page [class*="invoice" i] span,#revenues-page [class*="invoice" i] strong,#revenues-page [class*="invoice" i] h1,#revenues-page [class*="invoice" i] h2,#revenues-page [class*="invoice" i] h3,#revenues-page [class*="invoice" i] h4,#revenues-page [class*="invoice" i] h5,#revenues-page [class*="invoice" i] h6,#revenues-page [class*="invoice" i] td,#revenues-page [class*="invoice" i] th,
+#revenues-page [data-invoice-revenue] p,#revenues-page [data-invoice-revenue] span,#revenues-page [data-invoice-revenue] strong,#revenues-page [data-invoice-revenue] h1,#revenues-page [data-invoice-revenue] h2,#revenues-page [data-invoice-revenue] h3,#revenues-page [data-invoice-revenue] h4,#revenues-page [data-invoice-revenue] h5,#revenues-page [data-invoice-revenue] h6,#revenues-page [data-invoice-revenue] td,#revenues-page [data-invoice-revenue] th {
   color:#1f2a44 !important;
   opacity:1 !important;
   visibility:visible !important;
 }
-
-#revenues-page [id*="invoice" i] .bg-white,
-#revenues-page [id*="invoice" i] .bg-gray-50,
-#revenues-page [id*="invoice" i] .bg-gray-100,
-#revenues-page [id*="invoice" i] .bg-primary,
-#revenues-page [id*="invoice" i] .bg-secondary,
-#revenues-page [class*="invoice" i] .bg-white,
-#revenues-page [class*="invoice" i] .bg-gray-50,
-#revenues-page [class*="invoice" i] .bg-gray-100,
-#revenues-page [class*="invoice" i] .bg-primary,
-#revenues-page [class*="invoice" i] .bg-secondary,
-#revenues-page [data-invoice-revenue] .bg-white,
-#revenues-page [data-invoice-revenue] .bg-gray-50,
-#revenues-page [data-invoice-revenue] .bg-gray-100,
-#revenues-page [data-invoice-revenue] .bg-primary,
-#revenues-page [data-invoice-revenue] .bg-secondary {
+#revenues-page [id*="invoice" i] .bg-white,#revenues-page [id*="invoice" i] .bg-gray-50,#revenues-page [id*="invoice" i] .bg-gray-100,#revenues-page [id*="invoice" i] .bg-primary,#revenues-page [id*="invoice" i] .bg-secondary,
+#revenues-page [class*="invoice" i] .bg-white,#revenues-page [class*="invoice" i] .bg-gray-50,#revenues-page [class*="invoice" i] .bg-gray-100,#revenues-page [class*="invoice" i] .bg-primary,#revenues-page [class*="invoice" i] .bg-secondary,
+#revenues-page [data-invoice-revenue] .bg-white,#revenues-page [data-invoice-revenue] .bg-gray-50,#revenues-page [data-invoice-revenue] .bg-gray-100,#revenues-page [data-invoice-revenue] .bg-primary,#revenues-page [data-invoice-revenue] .bg-secondary {
   background:#fff !important;
+}
+
+/* Action buttons must remain actual buttons, not become white-on-white when
+   the surrounding invoice section is normalized to a white surface. */
+#revenues-page [id*="invoice" i] button.bg-primary,
+#revenues-page [class*="invoice" i] button.bg-primary,
+#revenues-page [data-invoice-revenue] button.bg-primary,
+#revenues-page [id*="invoice" i] button[data-invoice-action],
+#revenues-page [class*="invoice" i] button[data-invoice-action],
+#revenues-page [data-invoice-revenue] button[data-invoice-action] {
+  background:#273247 !important;
+  color:#fff !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  position:relative !important;
+  z-index:20 !important;
+}
+#revenues-page [id*="invoice" i] button.bg-green-600,
+#revenues-page [class*="invoice" i] button.bg-green-600,
+#revenues-page [data-invoice-revenue] button.bg-green-600 {
+  background:#16a34a !important;
+  color:#fff !important;
+}
+#revenues-page [id*="invoice" i] button.bg-red-600,
+#revenues-page [class*="invoice" i] button.bg-red-600,
+#revenues-page [data-invoice-revenue] button.bg-red-600 {
+  background:#dc2626 !important;
+  color:#fff !important;
 }
 
 /* Preserve actual action buttons inside the invoice section. */
