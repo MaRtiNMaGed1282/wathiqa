@@ -111,15 +111,15 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-3 mb-5">
-          <button type="button" id="downloadClientImportTemplate" class="bg-secondary text-white px-4 py-2 rounded">تحميل نموذج الاستيراد</button>
-          <button type="button" id="previewClientImport" class="bg-primary text-white px-4 py-2 rounded">معاينة البيانات</button>
+          <button type="button" id="downloadClientImportTemplate" style="display:inline-flex;align-items:center;justify-content:center;background:#273247;color:#ffffff;border:0;cursor:pointer;font-family:inherit;font-weight:600;" class="px-4 py-2 rounded">تحميل نموذج الاستيراد</button>
+          <button type="button" id="previewClientImport" style="display:inline-flex;align-items:center;justify-content:center;background:#273247;color:#ffffff;border:0;cursor:pointer;font-family:inherit;font-weight:600;" class="px-4 py-2 rounded">معاينة البيانات</button>
         </div>
         <div id="bulkImportSummary" class="hidden mb-4 rounded-lg bg-gray-50 p-4"></div>
         <div id="bulkImportErrors" class="hidden mb-4 rounded-lg bg-red-50 p-4 text-red-800"></div>
         <div id="bulkImportPreview" class="hidden overflow-auto border rounded"></div>
         <div class="flex justify-end gap-3 mt-5">
-          <button type="button" id="downloadImportErrors" class="hidden bg-gray-600 text-white px-4 py-2 rounded">تحميل تقرير الأخطاء</button>
-          <button type="button" id="confirmClientImport" class="hidden bg-green-600 text-white px-5 py-2 rounded">تأكيد الاستيراد</button>
+          <button type="button" id="downloadImportErrors" style="display:none;align-items:center;justify-content:center;background:#4b5563;color:#ffffff;border:0;cursor:pointer;font-family:inherit;font-weight:600;" class="px-4 py-2 rounded">تحميل تقرير الأخطاء</button>
+          <button type="button" id="confirmClientImport" style="display:none;align-items:center;justify-content:center;background:#16a34a;color:#ffffff;border:0;cursor:pointer;font-family:inherit;font-weight:600;" class="px-5 py-2 rounded">تأكيد الاستيراد</button>
         </div>
       </div>`;
     document.body.appendChild(wrapper);
@@ -199,9 +199,9 @@
         summary.className = "mb-4 rounded-lg bg-blue-50 p-4";
         summary.textContent = `إجمالي الصفوف: ${parsedRows.length}. الاسم الكامل هو الحقل الإلزامي الوحيد.`;
         errorsBox.classList.add("hidden");
-        confirmButton.classList.remove("hidden");
+        confirmButton.style.display = "inline-flex";
       } catch (error) {
-        confirmButton.classList.add("hidden");
+        confirmButton.style.display = "none";
         await showMessage(error.message || "فشل قراءة الملف", "error");
       }
     });
@@ -230,12 +230,12 @@
         if (latestErrors.length) {
           errorsBox.className = "mb-4 rounded-lg bg-red-50 p-4 text-red-800";
           errorsBox.textContent = `عدد الصفوف التي بها أخطاء: ${latestErrors.length}`;
-          downloadErrorsButton.classList.remove("hidden");
+          downloadErrorsButton.style.display = "inline-flex";
         } else {
           errorsBox.classList.add("hidden");
-          downloadErrorsButton.classList.add("hidden");
+          downloadErrorsButton.style.display = "none";
         }
-        confirmButton.classList.add("hidden");
+        confirmButton.style.display = "none";
         if (typeof window.Page?.initialize === "function") {
           window.Page.destroy?.();
           await window.Page.initialize();
