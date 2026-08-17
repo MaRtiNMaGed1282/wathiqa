@@ -28,12 +28,13 @@
     ];
     const instructions = XLSX.utils.aoa_to_sheet([
       ["نموذج استيراد الموكلين"],
-      ["الحقول المطلوبة: الاسم الكامل، الرقم القومي، رقم الهاتف، العنوان"],
-      ["الحقول الاختيارية: كود الموكل، الملاحظات"],
-      ["الرقم القومي يجب أن يتكون من 14 رقماً"],
+      ["الحقل المطلوب: الاسم الكامل فقط"],
+      ["الحقول الاختيارية: كود الموكل، الرقم القومي، رقم الهاتف، العنوان، الملاحظات"],
+      ["إذا تم إدخال الرقم القومي يجب أن يتكون من 14 رقماً"],
+      ["إذا تم إدخال رقم الهاتف يجب أن يكون بصيغة صحيحة"],
       ["الحد الأقصى للاستيراد: 5000 صف"],
     ]);
-    instructions["!cols"] = [{ wch: 90 }];
+    instructions["!cols"] = [{ wch: 100 }];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "الموكلين");
     XLSX.utils.book_append_sheet(workbook, instructions, "تعليمات");
@@ -68,6 +69,14 @@
 
           if (!rows.length) throw new Error("لا توجد صفوف بيانات للاستيراد");
           if (rows.length > MAX_ROWS) throw new Error(`الحد الأقصى للاستيراد هو ${MAX_ROWS} صف`);
+
+          const invalidRows = rows
+            .map((row, index) => ({ row, index: index + 2 }))
+            .filter(({ row }) => !row.full_name);
+          if (invalidRows.length) {
+            throw new Error(`الاسم الكامل مطلوب في الصفوف: ${invalidRows.map(({ index }) => index).join("، ")}`);
+          }
+
           resolve(rows);
         } catch (error) {
           reject(error);
@@ -188,7 +197,7 @@
         parsedRows = await parseFile(fileInput.files[0]);
         renderPreview(previewContainer, parsedRows);
         summary.className = "mb-4 rounded-lg bg-blue-50 p-4";
-        summary.textContent = `إجمالي الصفوف: ${parsedRows.length}. سيتم فحص البيانات والمكررات عند التأكيد.`;
+        summary.textContent = `إجمالي الصفوف: ${parsedRows.length}. الاسم الكامل هو الحقل الإلزامي الوحيد.`;
         errorsBox.classList.add("hidden");
         confirmButton.classList.remove("hidden");
       } catch (error) {
