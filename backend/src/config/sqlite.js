@@ -44,7 +44,7 @@ function resolveDatabasePath() {
     fs.mkdirSync(databaseDir, { recursive: true });
 
     if (!fs.existsSync(persistentDbPath)) {
-      if (!fs.existsSync(bundledDbPath)) throw new Error(`Bundled database not found: ${bundledDbPath}`);
+      if (!fs.existsSync(bundledDbPath)) throw new Error(`قاعدة البيانات المضمنة غير موجودة: ${bundledDbPath}`);
       fs.copyFileSync(bundledDbPath, persistentDbPath);
     }
 
@@ -61,12 +61,12 @@ const dbPath = resolveDatabasePath();
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
-    console.error("SQLite connection failed:", err.message);
+    console.error("فشل الاتصال بقاعدة البيانات:", err.message);
     process.exit(1);
   }
 
-  console.log("SQLite Database Connected");
-  console.log("Database Path:", dbPath);
+  console.log("تم الاتصال بقاعدة البيانات بنجاح");
+  console.log("مسار قاعدة البيانات:", dbPath);
 
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,7 +79,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     is_read INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`, (tableErr) => {
-    if (tableErr) console.error("Failed to create notifications table:", tableErr.message);
+    if (tableErr) console.error("فشل إنشاء جدول الإشعارات:", tableErr.message);
   });
 
   db.run(`CREATE TABLE IF NOT EXISTS user_permissions (
@@ -96,13 +96,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (tableErr) => {
     if (tableErr) {
-      console.error("Failed to create user_permissions table:", tableErr.message);
+      console.error("فشل إنشاء جدول صلاحيات المستخدمين:", tableErr.message);
       return;
     }
 
     db.all(`SELECT id, role FROM users`, [], (usersErr, users) => {
       if (usersErr) {
-        console.error("Failed to initialize user permissions:", usersErr.message);
+        console.error("فشل تهيئة صلاحيات المستخدمين:", usersErr.message);
         return;
       }
 
@@ -139,7 +139,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     revoked_at DATETIME,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (tableErr) => {
-    if (tableErr) console.error("Failed to create user_sessions table:", tableErr.message);
+    if (tableErr) console.error("فشل إنشاء جدول جلسات المستخدمين:", tableErr.message);
   });
 });
 
