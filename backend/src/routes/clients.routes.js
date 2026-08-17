@@ -5,9 +5,9 @@ const auth = require("../middlewares/auth.middleware");
 const financial = require("../middlewares/financial.middleware");
 const role = require("../middlewares/role.middleware");
 const { idParam, validateClient } = require("../middlewares/validation.middleware");
+const { createClient } = require("../controllers/clients-create.controller");
 
 const {
-  createClient,
   getAllClients,
   getClientById,
   updateClient,
@@ -44,8 +44,8 @@ router.get("/dashboard/notifications", auth, getDashboardNotifications);
 router.post("/import", auth, importClients);
 router.get("/:id", auth, idParam(), getClientById);
 
-// Multipart/form-data must be parsed before validateClient reads req.body.
-router.post("/", auth, upload.single("attorney_file"), validateClient, createClient);
+// Multipart/form-data must be parsed before reading req.body.
+router.post("/", auth, upload.single("attorney_file"), createClient);
 router.put("/:id", auth, idParam(), validateClient, updateClient);
 router.delete("/:id", auth, role("admin"), idParam(), deleteClient);
 
