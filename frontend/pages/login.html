@@ -30,10 +30,16 @@
           <input type="password" id="password" autocomplete="current-password" minlength="8" required class="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
 
+        <label class="flex items-center gap-2 cursor-pointer select-none text-primary font-semibold">
+          <input id="rememberMe" type="checkbox" class="w-4 h-4 accent-primary" />
+          <span>تذكرني</span>
+        </label>
+
         <button id="loginBtn" type="submit" class="w-full bg-primary hover:bg-secondary text-white py-3 rounded-lg transition font-semibold">تسجيل الدخول</button>
       </form>
     </div>
 
+    <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/phase25-state.js"></script>
     <script>
@@ -44,6 +50,7 @@
         const form = e.currentTarget;
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
+        const rememberMe = document.getElementById("rememberMe").checked;
         const btn = document.getElementById("loginBtn");
         const errorBox = document.getElementById("errorMessage");
 
@@ -60,8 +67,8 @@
 
           const data = await api.post(API_URL, { email, password }, { busyElement: btn });
 
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify({ ...data.user, must_change_password: data.must_change_password }));
+          const user = { ...data.user, must_change_password: data.must_change_password };
+          auth.setSession(data.token, user, rememberMe);
 
           window.location.href = data.must_change_password ? "change-password.html" : "dashboard.html";
         } catch (err) {
