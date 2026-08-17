@@ -24,17 +24,95 @@
 @media (max-width:700px) { #wathiqa-invoice-modal [data-invoice-panel="list"] > div:first-child { grid-template-columns:1fr !important; } #wathiqa-invoice-modal #invoiceSearch,#wathiqa-invoice-modal #invoiceStatus,#wathiqa-invoice-modal [data-invoice-refresh] { grid-column:1 !important; width:100% !important; } }
 
 /* Revenues page: the financial hero is the only intentionally dark section.
-   Invoice-revenue content must stay white with readable dark text. These
-   selectors are global to the invoice widget because that widget is injected
-   dynamically and is not always a direct child of #contentState. */
+   Invoice-revenue content must stay white with readable dark text. */
 #revenues-page #contentState { background:transparent !important; color:#1f2a44 !important; }
 #revenues-page #contentState > section:not(:first-child) { background:#fff !important; color:#1f2a44 !important; }
 #invoiceRevenueSection { background:#fff !important; color:#1f2a44 !important; border:1px solid rgba(31,42,68,.08) !important; box-shadow:0 4px 18px rgba(31,42,68,.06) !important; }
-#invoiceRevenueSection .invoice-metric { background:#f8fafc !important; color:#1f2a44 !important; border:1px solid #e5e7eb !important; }
+#invoiceRevenueSection .invoice-metric { background:#fff !important; color:#1f2a44 !important; border:1px solid #e5e7eb !important; }
 #invoiceRevenueSection .invoice-status { background:#fff !important; color:#1f2a44 !important; border:1px solid #d1d5db !important; }
 #invoiceRevenueSection .invoice-metric p,#invoiceRevenueSection .invoice-metric span,#invoiceRevenueSection .invoice-metric strong,#invoiceRevenueSection .invoice-metric h1,#invoiceRevenueSection .invoice-metric h2,#invoiceRevenueSection .invoice-metric h3,#invoiceRevenueSection .invoice-metric h4 { color:#1f2a44 !important; }
-#invoiceRevenueSection > * { color:#1f2a44; }
+#invoiceRevenueSection > * { color:#1f2a44 !important; }
 #revenues-page #contentState > section:not(:first-child) .text-gray-500 { color:#6b7280 !important; }
+
+/* HARD PAGE-SCOPED OVERRIDE for the invoice summary section shown on the
+   Revenues page. The previous fixes targeted only one possible ID, while the
+   live widget can use a different id/class and can carry bg-primary classes.
+   Match invoice-related containers by id/class and override the legacy
+   utility layer with !important. The normal financial hero is untouched. */
+#revenues-page [id*="invoice" i]:not(#wathiqa-invoice-modal):not(#wathiqa-invoice-payment-modal),
+#revenues-page [class*="invoice" i]:not(#wathiqa-invoice-modal):not(#wathiqa-invoice-payment-modal),
+#revenues-page [data-invoice-revenue] {
+  background:#fff !important;
+  color:#1f2a44 !important;
+  border-color:#e5e7eb !important;
+  box-shadow:0 4px 18px rgba(31,42,68,.06) !important;
+}
+
+#revenues-page [id*="invoice" i] p,
+#revenues-page [id*="invoice" i] span,
+#revenues-page [id*="invoice" i] strong,
+#revenues-page [id*="invoice" i] h1,
+#revenues-page [id*="invoice" i] h2,
+#revenues-page [id*="invoice" i] h3,
+#revenues-page [id*="invoice" i] h4,
+#revenues-page [id*="invoice" i] h5,
+#revenues-page [id*="invoice" i] h6,
+#revenues-page [id*="invoice" i] td,
+#revenues-page [id*="invoice" i] th,
+#revenues-page [class*="invoice" i] p,
+#revenues-page [class*="invoice" i] span,
+#revenues-page [class*="invoice" i] strong,
+#revenues-page [class*="invoice" i] h1,
+#revenues-page [class*="invoice" i] h2,
+#revenues-page [class*="invoice" i] h3,
+#revenues-page [class*="invoice" i] h4,
+#revenues-page [class*="invoice" i] h5,
+#revenues-page [class*="invoice" i] h6,
+#revenues-page [class*="invoice" i] td,
+#revenues-page [class*="invoice" i] th,
+#revenues-page [data-invoice-revenue] p,
+#revenues-page [data-invoice-revenue] span,
+#revenues-page [data-invoice-revenue] strong,
+#revenues-page [data-invoice-revenue] h1,
+#revenues-page [data-invoice-revenue] h2,
+#revenues-page [data-invoice-revenue] h3,
+#revenues-page [data-invoice-revenue] h4,
+#revenues-page [data-invoice-revenue] h5,
+#revenues-page [data-invoice-revenue] h6,
+#revenues-page [data-invoice-revenue] td,
+#revenues-page [data-invoice-revenue] th {
+  color:#1f2a44 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+#revenues-page [id*="invoice" i] .bg-white,
+#revenues-page [id*="invoice" i] .bg-gray-50,
+#revenues-page [id*="invoice" i] .bg-gray-100,
+#revenues-page [id*="invoice" i] .bg-primary,
+#revenues-page [id*="invoice" i] .bg-secondary,
+#revenues-page [class*="invoice" i] .bg-white,
+#revenues-page [class*="invoice" i] .bg-gray-50,
+#revenues-page [class*="invoice" i] .bg-gray-100,
+#revenues-page [class*="invoice" i] .bg-primary,
+#revenues-page [class*="invoice" i] .bg-secondary,
+#revenues-page [data-invoice-revenue] .bg-white,
+#revenues-page [data-invoice-revenue] .bg-gray-50,
+#revenues-page [data-invoice-revenue] .bg-gray-100,
+#revenues-page [data-invoice-revenue] .bg-primary,
+#revenues-page [data-invoice-revenue] .bg-secondary {
+  background:#fff !important;
+}
+
+/* Preserve actual action buttons inside the invoice section. */
+#revenues-page [id*="invoice" i] button,
+#revenues-page [class*="invoice" i] button,
+#revenues-page [data-invoice-revenue] button {
+  opacity:1 !important;
+  visibility:visible !important;
+  position:relative !important;
+  z-index:10 !important;
+}
 
 /* Shared metric/stat cards. Keep the canonical white card treatment and
    avoid overriding every dashboard card with a grey surface. */
