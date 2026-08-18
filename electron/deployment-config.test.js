@@ -4,6 +4,7 @@ const {
   getApiBaseUrl,
   getBackendUrl,
   getServerListenHost,
+  isPairingTokenValid,
 } = require("./deployment-config");
 
 const standalone = normalizeConfig({ mode: "standalone" });
@@ -35,6 +36,21 @@ assert.strictEqual(client.host, null);
 assert.strictEqual(client.serverUrl, "http://192.168.1.100:5000");
 assert.strictEqual(getApiBaseUrl(client), "http://192.168.1.100:5000/api");
 assert.strictEqual(getBackendUrl(client), "http://192.168.1.100:5000");
+
+const pairing = normalizeConfig({
+  mode: "server",
+  pairingToken: "test-token",
+  pairingExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+});
+assert.strictEqual(isPairingTokenValid(pairing, "test-token"), true);
+assert.strictEqual(isPairingTokenValid(pairing, "wrong-token"), false);
+
+const expiredPairing = normalizeConfig({
+  mode: "server",
+  pairingToken: "test-token",
+  pairingExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+});
+assert.strictEqual(isPairingTokenValid(expiredPairing, "test-token"), false);
 
 assert.throws(() => normalizeConfig({ mode: "client" }), /requires serverUrl/);
 assert.throws(() => normalizeConfig({ mode: "invalid" }), /Invalid Wathiqa deployment mode/);
