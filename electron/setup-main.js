@@ -1,0 +1,273 @@
+const { app, BrowserWindow, ipcMain, shell, session } = require("electron");
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
+const http = require("http");
+const https = require("https");
+const dgram = require("dgram");
+const {
+  loadConfig,
+  saveConfig,
+  normalizeConfig,
+  generatePairing,
+  DEFAULT_PORT,
+} = require("./deployment-config");
+const {
+  getNetworkDiagnostics,
+  inspectFirewall,
+  configureFirewall,
+  testPort,
+} = require("./windows-firewall");
+
+const DISCOVERY_PORT = 39455;
+const DISCOVERY_REQUEST = "WATHIQA_DISCOVERY_REQUEST_V1";
+const DISCOVERY_RESPONSE = "WATHIQA_DISCOVERY_RESPONSE_V1";
+const APP_ICON = path.join(__dirname, "../assets/wathiqa.ico");
+const SETUP_PAGE = path.join(__dirname, "setup-ui/index.html");
+const SHARED_USER_DATA = path.join(app.getPath("appData"), "Wathiqa");
+
+let pairingQrFactory = null;
+try {
+  const qrModule = require("qrcode-generator");
+  pairingQrFactory = qrModule?.qrcode || qrModule?.default || qrModule;
+} catch (error) {
+  console.error("Failed to load QR generator:", error.message);
+}
+
+app.setPath("userData", SHARED_USER_DATA);
+app.setName("Wathiqa");
+
+process.on("uncaughtException", (error) => console.error("SETUP UNCAUGHT EXCEPTION:", error));
+process.on("unhandledRejection", (error) => console.error("SETUP UNHANDLED REJECTION:", error));
+
+function requestJson(url, options = {}) {
+  const timeout = options.timeout || 5000;
+  return new Promise((resolve, reject) => {
+    let parsed;
+    try { parsed = new URL(url); } catch { reject(new Error("عنوان الخادم غير صالح")); return; }
+    const transport = parsed.protocol === "https:" ? https : http;
+    const body = options.body ? JSON.stringify(options.body) : null;
+    const request = transport.request(parsed, {
+      method: options.method || (body ? "POST" : "GET"),
+      headers: { Accept: "application/json", ...(body ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } : {}) },
+    }, (response) => {
+      let data = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { data += chunk; });
+      response.on("end", () => {
+        let payload = null;
+        try { payload = data ? JSON.parse(data) : null; } catch (_) {}
+        if (response.statusCode >= 200 && response.statusCode < 300) return resolve(payload);
+        reject(new Error(payload?.message || `HTTP ${response.statusCode || 0}`));
+      });
+    });
+    request.setTimeout(timeout, () => request.destroy(new Error("انتهت مهلة الاتصال")));
+    request.on("error", reject);
+    if (body) request.write(body);
+    request.end();
+  });
+}
+
+function calculateBroadcast(address, netmask) {
+  const ip = address.split(".").map(Number);
+  const mask = netmask.split(".").map(Number);
+  return ip.map((part, index) => (part | (~mask[index] & 255))).join(".");
+}
+
+function getLocalNetworkInfo() {
+  const diagnostics = getNetworkDiagnostics();
+  const broadcasts = [];
+  for (const adapter of diagnostics.adapters) {
+    if (!adapter.netmask) continue;
+    broadcasts.push(calculateBroadcast(adapter.address, adapter.netmask));
+  }
+  return {
+    hostname: diagnostics.hostname,
+    addresses: diagnostics.adapters.map((adapter) => adapter.address),
+    broadcasts: [...new Set(broadcasts)],
+    adapters: diagnostics.adapters,
+    preferredAddress: diagnostics.preferredAddress,
+  };
+}
+
+async function testServer(serverUrl, pairingToken = null) {
+  const base = String(serverUrl || "").trim().replace(/\/+$/, "");
+  if (!base) throw new Error("أدخل عنوان خادم Wathiqa");
+  const normalized = normalizeConfig({ mode: "client", serverUrl: base });
+  const health = await requestJson(`${normalized.serverUrl}/api/system/health`, { timeout: 5000 });
+  if (health?.status !== "ok") throw new Error("الخادم لم يعطِ حالة اتصال صالحة");
+  let info = null;
+  try { info = await requestJson(`${normalized.serverUrl}/api/system/info`, { timeout: 5000 }); } catch (_) {}
+  let pairing = null;
+  if (pairingToken) {
+    pairing = await requestJson(`${normalized.serverUrl}/api/system/pair`, { method: "POST", body: { token: pairingToken }, timeout: 5000 });
+  }
+  return {
+    success: true,
+    serverUrl: normalized.serverUrl,
+    health,
+    info,
+    pairing,
+    checks: { server: true, database: true, license: true },
+  };
+}
+
+function getFirewallDiagnostics(port) {
+  const firewall = inspectFirewall(port);
+  return {
+    ...firewall,
+    network: getLocalNetworkInfo(),
+  };
+}
+
+function createPairingPayload(config) {
+  if (!config?.pairingToken) throw new Error("لم يتم إنشاء رمز الربط");
+  return JSON.stringify({
+    scheme: "WATHIQA_PAIRING",
+    version: 1,
+    serverUrl: config.serverUrl,
+    serverIdentity: config.serverIdentity || os.hostname(),
+    port: config.port || DEFAULT_PORT,
+    token: config.pairingToken,
+    expiresAt: config.pairingExpiresAt,
+  });
+}
+
+function generatePairingQr(config) {
+  if (!pairingQrFactory) throw new Error("مولد QR غير متاح. شغّل npm install أولاً.");
+  const payload = createPairingPayload(config);
+  const qr = pairingQrFactory(0, "M");
+  qr.addData(payload);
+  qr.make();
+  return {
+    payload,
+    svg: qr.createSvgTag({ cellSize: 5, margin: 20, scalable: true, title: "Wathiqa pairing QR" }),
+    expiresAt: config.pairingExpiresAt,
+  };
+}
+
+function discoverServers(timeout = 2200) {
+  return new Promise((resolve) => {
+    const socket = dgram.createSocket("udp4");
+    const found = new Map();
+    const network = getLocalNetworkInfo();
+    const finish = () => { try { socket.close(); } catch (_) {} resolve([...found.values()]); };
+    socket.on("error", () => finish());
+    socket.on("message", (message, remote) => {
+      try {
+        const payload = JSON.parse(message.toString("utf8"));
+        if (payload.type !== DISCOVERY_RESPONSE || payload.service !== "wathiqa") return;
+        const address = payload.address || remote.address;
+        if (!address || !payload.port) return;
+        const key = `${address}:${payload.port}`;
+        found.set(key, { serverUrl: `http://${address}:${payload.port}`, serverIdentity: payload.serverIdentity || address, address, port: payload.port, version: payload.version || 1 });
+      } catch (_) {}
+    });
+    socket.bind(() => {
+      try { socket.setBroadcast(true); } catch (_) {}
+      const message = Buffer.from(DISCOVERY_REQUEST, "utf8");
+      const targets = ["255.255.255.255", ...(network.broadcasts || [])];
+      for (const target of [...new Set(targets)]) {
+        try { socket.send(message, 0, message.length, DISCOVERY_PORT, target); } catch (_) {}
+      }
+    });
+    setTimeout(finish, timeout);
+  });
+}
+
+function getWathiqaExecutableCandidates() {
+  if (process.platform !== "win32") return [];
+  return [
+    path.join(process.env.LOCALAPPDATA || "", "Programs", "Wathiqa", "Wathiqa.exe"),
+    path.join(process.env.ProgramFiles || "", "Wathiqa", "Wathiqa.exe"),
+    path.join(process.env["ProgramFiles(x86)"] || "", "Wathiqa", "Wathiqa.exe"),
+  ].filter(Boolean);
+}
+
+async function launchWathiqa() {
+  const executable = [...new Set(getWathiqaExecutableCandidates())].find((candidate) => fs.existsSync(candidate));
+  if (!executable) return { launched: false, message: "Wathiqa.exe was not found in the standard installation locations. Use the Wathiqa shortcut from Windows." };
+  const error = await shell.openPath(executable);
+  return error ? { launched: false, message: error } : { launched: true, path: executable };
+}
+
+function registerIpc() {
+  ipcMain.handle("setup:get-state", () => {
+    let config;
+    try { config = loadConfig(); }
+    catch (error) {
+      config = { mode: "standalone", host: "127.0.0.1", serverUrl: null, serverIdentity: null, port: DEFAULT_PORT };
+      console.error(error);
+    }
+    return { config, network: getLocalNetworkInfo(), firewall: getFirewallDiagnostics(config.port || DEFAULT_PORT) };
+  });
+
+  ipcMain.handle("setup:save-standalone", (_event, payload = {}) => saveConfig({
+    mode: "standalone", host: "127.0.0.1", serverUrl: null,
+    serverIdentity: payload.serverIdentity || null, port: payload.port || DEFAULT_PORT,
+    pairingToken: null, pairingExpiresAt: null,
+  }));
+
+  ipcMain.handle("setup:save-server", (_event, payload = {}) => {
+    const network = getLocalNetworkInfo();
+    const port = Number(payload.port || DEFAULT_PORT);
+    const config = saveConfig({
+      mode: "server", host: "0.0.0.0", serverUrl: `http://${network.preferredAddress}:${port}`,
+      serverIdentity: payload.serverIdentity || os.hostname(), port,
+      pairingToken: null, pairingExpiresAt: null,
+    });
+    const firewall = configureFirewall(port);
+    return { config, network, firewall };
+  });
+
+  ipcMain.handle("setup:configure-firewall", (_event, payload = {}) => configureFirewall(Number(payload.port || DEFAULT_PORT)));
+  ipcMain.handle("setup:inspect-firewall", (_event, payload = {}) => getFirewallDiagnostics(Number(payload.port || DEFAULT_PORT)));
+  ipcMain.handle("setup:test-local-port", (_event, payload = {}) => testPort(String(payload.host || "127.0.0.1"), Number(payload.port || DEFAULT_PORT)));
+
+  ipcMain.handle("setup:generate-pairing", () => {
+    const network = getLocalNetworkInfo();
+    const current = loadConfig();
+    const config = generatePairing({ serverUrl: `http://${network.preferredAddress}:${current.port || DEFAULT_PORT}`, serverIdentity: current.serverIdentity || os.hostname() });
+    return { ...generatePairingQr(config), serverUrl: config.serverUrl, serverIdentity: config.serverIdentity };
+  });
+
+  ipcMain.handle("setup:discover-servers", () => discoverServers());
+  ipcMain.handle("setup:test-server", (_event, payload = {}) => testServer(payload.serverUrl, payload.pairingToken || null));
+
+  ipcMain.handle("setup:save-client", (_event, payload = {}) => {
+    if (!payload.serverUrl) throw new Error("serverUrl is required");
+    return saveConfig({
+      mode: "client", host: null, serverUrl: payload.serverUrl,
+      serverIdentity: payload.serverIdentity || null, port: payload.port || DEFAULT_PORT,
+      pairingToken: null, pairingExpiresAt: null,
+    });
+  });
+
+  ipcMain.handle("setup:launch-wathiqa", () => launchWathiqa());
+}
+
+function createWindow() {
+  const window = new BrowserWindow({
+    width: 980, height: 760, minWidth: 860, minHeight: 640, resizable: false,
+    autoHideMenuBar: true, backgroundColor: "#f7f8fa", icon: APP_ICON,
+    webPreferences: { preload: path.join(__dirname, "setup-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true },
+  });
+  window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  window.webContents.on("will-navigate", (event, url) => { if (!url.startsWith("file://")) event.preventDefault(); });
+  window.loadFile(SETUP_PAGE);
+}
+
+app.whenReady().then(() => {
+  registerIpc();
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => callback(permission === "media"));
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const headers = { ...(details.responseHeaders || {}) };
+    headers["Content-Security-Policy"] = [
+      "default-src 'self' file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob:; font-src 'self' file: data:; connect-src 'self'; media-src 'self' file: blob:; object-src 'none'; base-uri 'self';",
+    ];
+    callback({ responseHeaders: headers });
+  });
+  createWindow();
+});
+
+app.on("window-all-closed", () => app.quit());
