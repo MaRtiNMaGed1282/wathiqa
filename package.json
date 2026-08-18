@@ -6,7 +6,6 @@
   "main": "electron/main.js",
   "scripts": {
     "desktop": "electron .",
-    "prepare-client": "node backend/scripts/prepare-client-release.js",
     "build": "npm run build:server",
     "build:server": "electron-builder --config electron-builder.server.json",
     "build:client": "electron-builder --config electron-builder.client.json",
