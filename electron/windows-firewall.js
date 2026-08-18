@@ -15,11 +15,28 @@ function getNetworkDiagnostics() {
       adapters.push({ name, address: entry.address, netmask: entry.netmask || null, mac: entry.mac || null });
     }
   }
-  return {
+
+  const diagnostics = {
     hostname: os.hostname(),
     adapters,
     preferredAddress: adapters[0]?.address || "127.0.0.1",
+    profiles: [],
+    privateProfileAvailable: false,
   };
+
+  if (process.platform !== "win32") return diagnostics;
+
+  const script = "$ErrorActionPreference='SilentlyContinue'; Get-NetConnectionProfile | Select-Object InterfaceAlias,Name,NetworkCategory,IPv4Connectivity | ConvertTo-Json -Compress";
+  const result = runPowerShell(script);
+  if (!result.success || !result.stdout.trim()) return diagnostics;
+
+  try {
+    const parsed = JSON.parse(result.stdout.trim());
+    diagnostics.profiles = Array.isArray(parsed) ? parsed : [parsed];
+    diagnostics.privateProfileAvailable = diagnostics.profiles.some((profile) => String(profile.NetworkCategory).toLowerCase() === "private");
+  } catch (_) {}
+
+  return diagnostics;
 }
 
 function runPowerShell(script, { elevated = false } = {}) {
@@ -81,12 +98,24 @@ function configureFirewall(port) {
     throw new Error("Invalid firewall port");
   }
 
+  const network = getNetworkDiagnostics();
   const ruleName = getRuleName(numericPort);
   const escaped = ruleName.replace(/'/g, "''");
   const script = `\n$ErrorActionPreference = 'Stop'\nRemove-NetFirewallRule -DisplayName '${escaped}' -ErrorAction SilentlyContinue\nNew-NetFirewallRule -DisplayName '${escaped}' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${numericPort} -Profile Private -RemoteAddress LocalSubnet -Description 'Wathiqa office LAN server access; private network and local subnet only.' | Out-Null\nexit 0\n`;
   const result = runPowerShell(script, { elevated: true });
   if (result.success) {
-    return { status: "configured", configured: true, ruleName, port: numericPort, profile: DEFAULT_PROFILE, remoteAddress: DEFAULT_REMOTE_ADDRESS, message: `تم إعداد Windows Firewall للمنفذ ${numericPort} على شبكة المكتب الخاصة فقط.` };
+    return {
+      status: network.privateProfileAvailable ? "configured" : "configured_private_profile_only",
+      configured: true,
+      ruleName,
+      port: numericPort,
+      profile: DEFAULT_PROFILE,
+      remoteAddress: DEFAULT_REMOTE_ADDRESS,
+      network,
+      message: network.privateProfileAvailable
+        ? `تم إعداد Windows Firewall للمنفذ ${numericPort} على شبكة المكتب الخاصة فقط.`
+        : `تم إنشاء قاعدة Firewall للمنفذ ${numericPort} على Profile=Private. الشبكة الحالية ليست Private، لذلك يجب تغييرها إلى Private قبل اتصال أجهزة المكتب.`,
+    };
   }
 
   const denied = /canceled|cancelled|0x800704c7|user/i.test(`${result.stderr} ${result.stdout}`);
@@ -95,6 +124,7 @@ function configureFirewall(port) {
     configured: false,
     ruleName,
     port: numericPort,
+    network,
     message: denied ? "تم إلغاء صلاحية المسؤول، لذلك لم يتم تغيير Windows Firewall." : "تعذر إعداد Windows Firewall. يمكنك تشغيل الإعداد بصلاحيات المسؤول ثم المحاولة مرة أخرى.",
     details: result.stderr.trim() || result.stdout.trim(),
   };
