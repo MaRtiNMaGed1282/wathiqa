@@ -1,4 +1,4 @@
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 
 const DEFAULT_CONFIG = {
   mode: "standalone",
@@ -33,4 +33,9 @@ contextBridge.exposeInMainWorld("__APP_CONFIG__", {
   SERVER_URL: deploymentConfig.serverUrl,
   SERVER_IDENTITY: deploymentConfig.serverIdentity,
   PORT: deploymentConfig.port,
+});
+
+contextBridge.exposeInMainWorld("__WATHIQA_STARTUP__", {
+  retry: () => ipcRenderer.invoke("wathiqa-startup-retry"),
+  saveServerUrl: (serverUrl) => ipcRenderer.invoke("wathiqa-startup-save-server-url", serverUrl),
 });
