@@ -9,11 +9,11 @@
     "electron/device-identity.js",
     "electron/connection-monitor.js",
     "electron/version-compatibility.js",
-    "electron/server-secrets.js",
     "frontend/**/*",
-    "package.json",
-    "assets/wathiqa.ico"
+    "assets/wathiqa.ico",
+    "package.json"
   ],
+  "extraResources": [],
   "asar": true,
   "npmRebuild": false,
   "win": {
