@@ -29,6 +29,7 @@ app.use(express.json({ limit: "2mb" }));
 app.use(activityAuditMiddleware);
 app.use(archiveResponseMiddleware);
 
+app.use("/api/system", require("./routes/system.routes"));
 app.use("/api/auth", authRoutes);
 app.use("/api/sessions", require("./routes/sessions.routes"));
 app.use("/api/users", require("./routes/users.routes"));
