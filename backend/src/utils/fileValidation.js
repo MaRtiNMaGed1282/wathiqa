@@ -22,6 +22,9 @@ const allowedMimeTypes = [
 ];
 
 const maxFileSize = 5 * 1024 * 1024;
+const maxFilesPerRequest = 1;
+const maxFieldNameSize = 100;
+const maxFields = 20;
 
 function sanitizeFilename(filename) {
   const basename = path.basename(filename || "");
@@ -51,6 +54,11 @@ function createFileValidationOptions() {
   return {
     limits: {
       fileSize: maxFileSize,
+      files: maxFilesPerRequest,
+      fields: maxFields,
+      fieldNameSize: maxFieldNameSize,
+      parts: maxFields + maxFilesPerRequest,
+      headerPairs: 100,
     },
     fileFilter,
   };
@@ -60,6 +68,9 @@ module.exports = {
   allowedExtensions,
   allowedMimeTypes,
   maxFileSize,
+  maxFilesPerRequest,
+  maxFieldNameSize,
+  maxFields,
   sanitizeFilename,
   fileFilter,
   createFileValidationOptions,
