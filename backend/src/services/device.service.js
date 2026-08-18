@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const os = require("os");
 const db = require("../config/sqlite");
 
+const DEVICE_OFFLINE_AFTER_MS = 150000;
+
 function ensureDeviceTable() {
   db.run(`CREATE TABLE IF NOT EXISTS office_devices (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +91,16 @@ function listDevices() {
        FROM office_devices
        ORDER BY last_seen_at DESC`,
       [],
-      (error, rows) => error ? reject(error) : resolve(rows)
+      (error, rows) => {
+        if (error) return reject(error);
+        const now = Date.now();
+        resolve(rows.map((row) => {
+          if (row.status === "revoked") return row;
+          const lastSeen = Date.parse(row.lastSeenAt || "");
+          const isRecent = Number.isFinite(lastSeen) && now - lastSeen <= DEVICE_OFFLINE_AFTER_MS;
+          return { ...row, status: isRecent ? "online" : "offline" };
+        }));
+      }
     );
   });
 }
@@ -113,4 +124,5 @@ module.exports = {
   touchDevice,
   listDevices,
   revokeDevice,
+  DEVICE_OFFLINE_AFTER_MS,
 };
