@@ -7,16 +7,19 @@
   "scripts": {
     "desktop": "electron .",
     "prepare-client": "node backend/scripts/prepare-client-release.js",
-    "build": "electron-builder",
-    "office-setup": "electron electron/setup-main.js",
+    "build": "npm run build:server",
+    "build:server": "electron-builder --config electron-builder.server.json",
+    "build:client": "electron-builder --config electron-builder.client.json",
     "build:office-setup": "electron-builder --config electron-builder.setup.json",
+    "build:all": "npm run build:server && npm run build:client && npm run build:office-setup",
+    "office-setup": "electron electron/setup-main.js",
     "test:deployment": "node electron/deployment-config.test.js",
     "test:multi-device": "node backend/scripts/multi-device-functional-test.js"
   },
   "build": {
-    "appId": "com.wathiqa.desktop",
-    "productName": "Wathiqa",
-    "directories": { "output": "dist" },
+    "appId": "com.wathiqa.server",
+    "productName": "Wathiqa Server",
+    "directories": { "output": "dist-server" },
     "files": [
       "electron/**/*",
       "frontend/**/*",
@@ -38,7 +41,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Wathiqa"
+      "shortcutName": "Wathiqa Server"
     }
   },
   "dependencies": {
