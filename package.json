@@ -15,9 +15,7 @@
   "build": {
     "appId": "com.wathiqa.desktop",
     "productName": "Wathiqa",
-    "directories": {
-      "output": "dist"
-    },
+    "directories": { "output": "dist" },
     "files": [
       "electron/**/*",
       "frontend/**/*",
@@ -25,28 +23,13 @@
       "node_modules/**/*"
     ],
     "extraResources": [
-      {
-        "from": "database",
-        "to": "database"
-      },
-      {
-        "from": "assets/wathiqa.ico",
-        "to": "assets/wathiqa.ico"
-      },
-      {
-        "from": ".env",
-        "to": ".env"
-      }
+      { "from": "database", "to": "database" },
+      { "from": "assets/wathiqa.ico", "to": "assets/wathiqa.ico" }
     ],
     "asar": true,
     "npmRebuild": true,
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        }
-      ],
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "assets/wathiqa.ico"
     },
     "nsis": {
