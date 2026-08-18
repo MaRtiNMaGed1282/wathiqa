@@ -7,13 +7,8 @@ const LOGIN_PAGE = path.join(__dirname, "../frontend/pages/login.html");
 const ACTIVATION_PAGE = path.join(__dirname, "../frontend/pages/activation.html");
 const APP_ICON = path.join(__dirname, "../assets/wathiqa.ico");
 
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:", err);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.error("UNHANDLED REJECTION:", err);
-});
+process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
+process.on("unhandledRejection", (err) => console.error("UNHANDLED REJECTION:", err));
 
 let deploymentConfig;
 let server;
@@ -29,24 +24,17 @@ function getRuntimeBackendUrl() {
 
 function loadLocalBackendIfRequired() {
   const config = getRuntimeConfig();
-
-  if (config.mode === "client") {
-    return null;
-  }
-
+  if (config.mode === "client") return null;
   server = require("../backend/src/server");
   return server;
 }
 
 function configureSession() {
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false);
-  });
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = { ...(details.responseHeaders || {}) };
-    const backendUrl = getRuntimeBackendUrl();
-    const connectSource = backendUrl.replace(/\/$/, "");
+    const connectSource = getRuntimeBackendUrl().replace(/\/$/, "");
 
     responseHeaders["Content-Security-Policy"] = [
       "default-src 'self' file:; " +
@@ -64,15 +52,9 @@ function configureSession() {
 }
 
 function configureNavigation(win) {
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (!url || url === "about:blank") return { action: "allow" };
-    return { action: "deny" };
-  });
-
+  win.webContents.setWindowOpenHandler(({ url }) => (!url || url === "about:blank" ? { action: "allow" } : { action: "deny" }));
   win.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("file://")) {
-      event.preventDefault();
-    }
+    if (!url.startsWith("file://")) event.preventDefault();
   });
 }
 
@@ -95,64 +77,81 @@ function createWindow(page) {
 
   win.maximize();
   configureNavigation(win);
-
   win.loadFile(page);
-
-  win.webContents.on("did-fail-load", (_event, code, desc) => {
-    console.error("LOAD FAILED:", code, desc);
-  });
-
+  win.webContents.on("did-fail-load", (_event, code, desc) => console.error("LOAD FAILED:", code, desc));
   return win;
 }
 
-function checkLicense() {
-  const backendUrl = getRuntimeBackendUrl();
-
-  return new Promise((resolve) => {
-    http
-      .get(`${backendUrl}/api/license/validate`, (res) => {
-        let data = "";
-
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-
-        res.on("end", () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            resolve({ valid: false });
-          }
-        });
-      })
-      .on("error", () => {
-        resolve({ valid: false });
+function requestJson(url, timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    const request = http.get(url, (res) => {
+      let data = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        let payload = null;
+        try { payload = data ? JSON.parse(data) : null; } catch (_) {}
+        if (res.statusCode >= 200 && res.statusCode < 300) return resolve(payload);
+        const error = new Error(`HTTP ${res.statusCode || 0}`);
+        error.statusCode = res.statusCode || 0;
+        reject(error);
       });
+    });
+
+    request.setTimeout(timeout, () => request.destroy(new Error("Request timeout")));
+    request.on("error", reject);
   });
 }
 
-function waitForServer(timeout = 15000) {
+async function waitForServer(timeout = 15000) {
   const backendUrl = getRuntimeBackendUrl();
+  const healthUrl = `${backendUrl}/api/system/health`;
+  const start = Date.now();
+  let lastError;
 
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
+  while (Date.now() - start <= timeout) {
+    try {
+      const health = await requestJson(healthUrl, 3000);
+      if (health?.status === "ok") return health;
+      lastError = new Error("Wathiqa server returned an invalid health response");
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
 
-    const check = () => {
-      const request = http.get(backendUrl, () => {
-        resolve();
-      });
+  throw new Error(`Wathiqa server connection timeout: ${backendUrl} (${lastError?.message || "unknown error"})`);
+}
 
-      request.on("error", () => {
-        if (Date.now() - start > timeout) {
-          reject(new Error(`Wathiqa backend startup/connection timeout: ${backendUrl}`));
-        } else {
-          setTimeout(check, 500);
-        }
-      });
-    };
+async function checkLicense() {
+  return requestJson(`${getRuntimeBackendUrl()}/api/license/validate`, 10000);
+}
 
-    check();
+function createStartupErrorWindow(error) {
+  const config = getRuntimeConfig();
+  const isClient = config.mode === "client";
+  const serverAddress = config.serverUrl || getRuntimeBackendUrl();
+  const title = isClient ? "Wathiqa server unavailable" : "Wathiqa could not start";
+  const message = isClient
+    ? `This computer is configured as a Wathiqa client, but the office server could not be reached.<br><br><strong>Server:</strong> ${serverAddress}<br><strong>Error:</strong> ${error.message}`
+    : `The Wathiqa application server did not become available.<br><br><strong>Error:</strong> ${error.message}`;
+
+  const win = new BrowserWindow({
+    width: 800,
+    height: 500,
+    autoHideMenuBar: true,
+    icon: APP_ICON,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
   });
+
+  win.loadURL(
+    "data:text/html;charset=utf-8," +
+      encodeURIComponent(`<!doctype html><html lang="en"><body style="font-family:sans-serif;padding:40px"><h2>${title}</h2><p>${message}</p><p>Please verify the Wathiqa server is running and both computers are connected to the same office network.</p></body></html>`),
+  );
 }
 
 app.whenReady().then(async () => {
@@ -163,30 +162,18 @@ app.whenReady().then(async () => {
 
     await waitForServer();
 
-    const license = await checkLicense();
-    createWindow(license.valid ? LOGIN_PAGE : ACTIVATION_PAGE);
-  } catch (err) {
-    console.error(err);
+    let license;
+    try {
+      license = await checkLicense();
+    } catch (error) {
+      if (deploymentConfig.mode === "client") throw new Error(`Unable to validate the office license through the server: ${error.message}`);
+      license = { valid: false };
+    }
 
-    const win = new BrowserWindow({
-      width: 800,
-      height: 500,
-      autoHideMenuBar: true,
-      icon: APP_ICON,
-      webPreferences: {
-        preload: path.join(__dirname, "preload.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    });
-
-    win.loadURL(
-      "data:text/html;charset=utf-8," +
-        encodeURIComponent(
-          "<!doctype html><html lang=\"en\"><body style=\"font-family:sans-serif;padding:40px\"><h2>Wathiqa could not start</h2><p>The Wathiqa application server did not become available.</p></body></html>",
-        ),
-    );
+    createWindow(license?.valid ? LOGIN_PAGE : ACTIVATION_PAGE);
+  } catch (error) {
+    console.error(error);
+    createStartupErrorWindow(error);
   }
 });
 
@@ -196,6 +183,5 @@ app.on("window-all-closed", () => {
   } catch (err) {
     console.error(err);
   }
-
   app.quit();
 });
