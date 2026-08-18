@@ -1,6 +1,9 @@
 {
   "appId": "com.wathiqa.office-setup",
   "productName": "Wathiqa Office Setup",
+  "extraMetadata": {
+    "main": "electron/setup-main.js"
+  },
   "directories": {
     "output": "dist-office-setup"
   },
