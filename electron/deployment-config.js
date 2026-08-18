@@ -1,6 +1,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const crypto = require("crypto");
 
 const VALID_MODES = new Set(["standalone", "server", "client"]);
 const DEFAULT_PORT = 5000;
@@ -10,6 +11,8 @@ const DEFAULT_HOSTS = Object.freeze({
 });
 const CONFIG_DIR_NAME = "Wathiqa";
 const CONFIG_FILE_NAME = "deployment.json";
+const PAIRING_TOKEN_BYTES = 24;
+const PAIRING_TOKEN_TTL_MS = 10 * 60 * 1000;
 
 function getConfigDirectory() {
   try {
@@ -63,6 +66,8 @@ function normalizeConfig(input = {}) {
     serverUrl,
     serverIdentity: input.serverIdentity ? String(input.serverIdentity).trim() : null,
     port,
+    pairingToken: input.pairingToken ? String(input.pairingToken).trim() : null,
+    pairingExpiresAt: input.pairingExpiresAt ? String(input.pairingExpiresAt).trim() : null,
   };
 }
 
@@ -73,6 +78,8 @@ function getDefaultConfig() {
     serverUrl: null,
     serverIdentity: null,
     port: DEFAULT_PORT,
+    pairingToken: null,
+    pairingExpiresAt: null,
   };
 }
 
@@ -94,6 +101,31 @@ function saveConfig(input) {
   return config;
 }
 
+function createPairingToken() {
+  return crypto.randomBytes(PAIRING_TOKEN_BYTES).toString("base64url");
+}
+
+function generatePairing(input = {}) {
+  const current = loadConfig();
+  if (current.mode !== "server") throw new Error("Pairing can only be generated on a Wathiqa server");
+
+  const token = createPairingToken();
+  const expiresAt = new Date(Date.now() + PAIRING_TOKEN_TTL_MS).toISOString();
+  return saveConfig({ ...current, ...input, pairingToken: token, pairingExpiresAt: expiresAt });
+}
+
+function isPairingTokenValid(config, token) {
+  if (!config?.pairingToken || !token) return false;
+  if (config.pairingToken !== String(token)) return false;
+  if (!config.pairingExpiresAt) return false;
+  return Date.parse(config.pairingExpiresAt) > Date.now();
+}
+
+function clearPairingToken() {
+  const current = loadConfig();
+  return saveConfig({ ...current, pairingToken: null, pairingExpiresAt: null });
+}
+
 function getApiBaseUrl(config = loadConfig()) {
   return config.mode === "client" ? `${config.serverUrl}/api` : "/api";
 }
@@ -111,11 +143,15 @@ module.exports = {
   VALID_MODES: [...VALID_MODES],
   DEFAULT_PORT,
   DEFAULT_HOSTS,
+  PAIRING_TOKEN_TTL_MS,
   getConfigDirectory,
   getConfigPath,
   getDefaultConfig,
   loadConfig,
   saveConfig,
+  generatePairing,
+  isPairingTokenValid,
+  clearPairingToken,
   normalizeConfig,
   getApiBaseUrl,
   getBackendUrl,
