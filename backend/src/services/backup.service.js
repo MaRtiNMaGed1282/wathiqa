@@ -101,7 +101,7 @@ async function listBackups() {
 
 async function extractArchive(archive, destination) {
   if (process.platform === "win32") {
-    await execFileAsync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `Expand-Archive -LiteralPath '${archive}' -DestinationPath '${destination}' -Force`]);
+    await execFileAsync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `Expand-Archive -LiteralPath '${archive.replace(/'/g, "''")}' -DestinationPath '${destination.replace(/'/g, "''")}' -Force`]);
   } else {
     await execFileAsync("unzip", ["-q", archive, "-d", destination]);
   }
@@ -130,10 +130,15 @@ async function scheduleRestore(name) {
   const archive = path.join(getBackupRoot(), name);
   if (!fs.existsSync(archive)) throw new Error("النسخة الاحتياطية غير موجودة");
 
-  const verification = await verifyBackup(name);
+  // Restore must use the full verifier, including manifest checks and SQLite integrity.
+  // Require lazily to avoid the verifier -> backup.service dependency cycle.
+  const { verifyBackup: verifyBackupForRestore } = require("./backup-verification.service");
+  const verification = await verifyBackupForRestore(name);
   if (!verification.valid) throw new Error("لا يمكن الاستعادة من نسخة احتياطية غير سليمة");
 
+  // Preserve the current office state before replacing it at the next startup.
   await createBackup();
+
   const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "wathiqa-restore-"));
   const pending = path.join(getBackupRoot(), "pending-restore");
   try {
