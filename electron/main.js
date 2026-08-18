@@ -170,6 +170,10 @@ app.whenReady().then(async () => {
       license = { valid: false };
     }
 
+    if (deploymentConfig.mode === "client" && !license?.valid) {
+      throw new Error(`The office Wathiqa license is not valid (${license?.reason || "UNKNOWN"}). License activation must be performed on the main office computer.`);
+    }
+
     createWindow(license?.valid ? LOGIN_PAGE : ACTIVATION_PAGE);
   } catch (error) {
     console.error(error);
