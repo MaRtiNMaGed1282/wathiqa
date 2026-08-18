@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wathiqa Office Setup</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="brand">
+      <div class="brand-mark">و</div>
+      <div>
+        <h1>إعداد وثيقة للمكتب</h1>
+        <p>تهيئة الاتصال بين أجهزة المكتب دون تعديل بيانات النظام.</p>
+      </div>
+    </header>
+
+    <section id="step-choice" class="step active">
+      <div class="step-heading">
+        <span class="step-number">1</span>
+        <div><h2>كيف تريد استخدام وثيقة؟</h2><p>اختر طريقة تشغيل هذا الكمبيوتر.</p></div>
+      </div>
+      <div class="choice-grid">
+        <button class="choice" data-mode="standalone">
+          <span class="choice-icon">▣</span>
+          <strong>هذا الكمبيوتر فقط</strong>
+          <span>تشغيل مستقل بقاعدة بيانات محلية.</span>
+        </button>
+        <button class="choice" data-mode="office">
+          <span class="choice-icon">▦</span>
+          <strong>عدة أجهزة في المكتب</strong>
+          <span>ربط الأجهزة بخادم وثيقة واحد.</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="step-office" class="step">
+      <div class="step-heading">
+        <span class="step-number">2</span>
+        <div><h2>تحديد دور هذا الكمبيوتر</h2><p>يجب أن يكون هناك خادم واحد فقط للمكتب.</p></div>
+      </div>
+      <div class="choice-grid two">
+        <button class="choice" data-role="server">
+          <span class="choice-icon">◆</span>
+          <strong>هذا هو الكمبيوتر الرئيسي</strong>
+          <span>سيستضيف قاعدة البيانات وملفات المكتب.</span>
+        </button>
+        <button class="choice" data-role="client">
+          <span class="choice-icon">◇</span>
+          <strong>الاتصال بخادم موجود</strong>
+          <span>هذا الكمبيوتر سيستخدم بيانات الخادم مباشرة.</span>
+        </button>
+      </div>
+      <button class="back" data-back="choice">رجوع</button>
+    </section>
+
+    <section id="step-server" class="step">
+      <div class="step-heading">
+        <span class="step-number">3</span>
+        <div><h2>إعداد خادم المكتب</h2><p>احفظ إعداد الخادم ثم شغّل Wathiqa Server.</p></div>
+      </div>
+      <div class="panel">
+        <div class="status-row"><span>اسم الكمبيوتر</span><strong id="server-hostname">—</strong></div>
+        <div class="status-row"><span>عنوان الشبكة</span><strong id="server-address">—</strong></div>
+        <div class="field-row">
+          <label for="server-port">منفذ الخادم</label>
+          <input id="server-port" type="number" min="1" max="65535" value="5000">
+        </div>
+        <div class="notice">يستخدم الخادم <b>0.0.0.0</b> للاستماع على شبكة المكتب. لا يتم تفعيل قواعد Windows Firewall تلقائياً في هذه المرحلة؛ هذه الوظيفة مخصصة للمرحلة 7.</div>
+        <div id="server-result" class="result hidden"></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" data-back="office">رجوع</button>
+        <button id="save-server" class="primary">حفظ إعداد الخادم</button>
+      </div>
+    </section>
+
+    <section id="step-client" class="step">
+      <div class="step-heading">
+        <span class="step-number">3</span>
+        <div><h2>الاتصال بخادم المكتب</h2><p>أدخل عنوان الخادم ثم اختبر الاتصال قبل الحفظ.</p></div>
+      </div>
+      <div class="panel">
+        <div class="field">
+          <label for="server-url">عنوان خادم وثيقة</label>
+          <input id="server-url" type="text" dir="ltr" placeholder="http://192.168.1.100:5000" autocomplete="off">
+          <small>يمكنك استخدام عنوان IP أو اسم الكمبيوتر داخل شبكة المكتب.</small>
+        </div>
+        <div class="field">
+          <label for="server-identity">اسم الخادم — اختياري</label>
+          <input id="server-identity" type="text" placeholder="wathiqa-server">
+        </div>
+        <div id="connection-result" class="result hidden"></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" data-back="office">رجوع</button>
+        <button id="test-client" class="secondary">اختبار الاتصال</button>
+        <button id="save-client" class="primary">حفظ والاتصال</button>
+      </div>
+    </section>
+
+    <section id="step-done" class="step">
+      <div class="success-icon">✓</div>
+      <h2 id="done-title">تم حفظ الإعداد</h2>
+      <p id="done-text"></p>
+      <div id="done-details" class="panel"></div>
+      <div class="actions center">
+        <button id="restart-setup" class="secondary">تعديل الإعداد</button>
+        <button id="open-wathiqa" class="primary">فتح وثيقة</button>
+      </div>
+      <p class="muted">إذا لم يفتح زر وثيقة التطبيق تلقائياً، يمكنك تشغيل Wathiqa من اختصار Windows.</p>
+    </section>
+
+    <footer>
+      <span>Wathiqa Office Setup</span>
+      <span>Multi-Device Deployment</span>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
