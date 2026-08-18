@@ -13,6 +13,7 @@
     "build:all": "npm run build:server && npm run build:client && npm run build:office-setup",
     "office-setup": "electron electron/setup-main.js",
     "test:deployment": "node electron/deployment-config.test.js",
+    "test:version-compatibility": "node electron/version-compatibility.test.js",
     "test:multi-device": "node backend/scripts/multi-device-functional-test.js"
   },
   "build": {
@@ -46,12 +47,13 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "bidi-js": "^1.0.3",
+    "body-parser": "^2.3.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "harfbuzzjs": "^1.4.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.1.1",
+    "multer": "^2.2.0",
     "pdfkit": "^0.17.2",
     "qrcode-generator": "^2.0.4",
     "sqlite3": "^6.0.1"
