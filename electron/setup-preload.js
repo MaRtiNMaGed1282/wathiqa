@@ -6,5 +6,5 @@ contextBridge.exposeInMainWorld("wathiqaSetup", {
   saveServer: (payload) => ipcRenderer.invoke("setup:save-server", payload),
   testServer: (payload) => ipcRenderer.invoke("setup:test-server", payload),
   saveClient: (payload) => ipcRenderer.invoke("setup:save-client", payload),
-  openUrl: (url) => ipcRenderer.invoke("setup:open-url", url),
+  launchWathiqa: () => ipcRenderer.invoke("setup:launch-wathiqa"),
 });
