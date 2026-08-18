@@ -5,6 +5,7 @@ const { execFile } = require("child_process");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const { getBackupRoot } = require("./backup.service");
+const { verifyManifest } = require("./backup-manifest.service");
 
 const execFileAsync = promisify(execFile);
 
@@ -26,6 +27,19 @@ function checkDatabaseIntegrity(databasePath) {
   });
 }
 
+async function extractBackup(archive, destination) {
+  if (process.platform === "win32") {
+    await execFileAsync("powershell.exe", [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      `Expand-Archive -LiteralPath '${archive.replace(/'/g, "''")}' -DestinationPath '${destination.replace(/'/g, "''")}' -Force`,
+    ]);
+    return;
+  }
+  await execFileAsync("unzip", ["-q", archive, "-d", destination]);
+}
+
 async function verifyBackup(name) {
   if (!isValidBackupName(name)) throw new Error("اسم النسخة الاحتياطية غير صالح");
 
@@ -37,20 +51,21 @@ async function verifyBackup(name) {
 
   const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "wathiqa-verify-"));
   try {
-    if (process.platform === "win32") {
-      await execFileAsync("powershell.exe", [
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        `Expand-Archive -LiteralPath '${archive.replace(/'/g, "''")}' -DestinationPath '${temp.replace(/'/g, "''")}' -Force`,
-      ]);
-    } else {
-      await execFileAsync("unzip", ["-q", archive, "-d", temp]);
-    }
+    await extractBackup(archive, temp);
 
     const databasePath = path.join(temp, "wathiqa.db");
+    const manifestPath = path.join(temp, "backup-manifest.json");
     const metadataPath = path.join(temp, "backup-metadata.json");
+
     if (!fs.existsSync(databasePath)) throw new Error("النسخة الاحتياطية لا تحتوي على قاعدة البيانات المطلوبة");
+    if (!fs.existsSync(manifestPath)) throw new Error("النسخة الاحتياطية لا تحتوي على بيان السلامة المطلوب");
+
+    let manifest;
+    try {
+      manifest = JSON.parse(await fs.promises.readFile(manifestPath, "utf8"));
+    } catch (_) {
+      throw new Error("بيان سلامة النسخة الاحتياطية غير صالح");
+    }
 
     let metadata = null;
     if (fs.existsSync(metadataPath)) {
@@ -61,13 +76,15 @@ async function verifyBackup(name) {
       }
     }
 
+    const manifestResult = await verifyManifest(temp, manifest);
+    if (!manifestResult.valid) {
+      throw new Error(`فشل التحقق من سلامة ملفات النسخة الاحتياطية (${manifestResult.failures.length} ملف)`);
+    }
+
     const databaseHealthy = await checkDatabaseIntegrity(databasePath);
     if (!databaseHealthy) throw new Error("فشل فحص سلامة قاعدة البيانات داخل النسخة الاحتياطية");
 
-    const included = [];
-    for (const entry of ["uploads", "attorneys"]) {
-      if (fs.existsSync(path.join(temp, entry))) included.push(entry);
-    }
+    const included = ["uploads", "attorneys", "office-assets"].filter((entry) => fs.existsSync(path.join(temp, entry)));
 
     return {
       valid: true,
@@ -75,6 +92,8 @@ async function verifyBackup(name) {
       size: stat.size,
       createdAt: stat.mtime.toISOString(),
       databaseIntegrity: "ok",
+      manifestIntegrity: "ok",
+      fileCount: manifestResult.fileCount,
       metadata,
       included,
     };
