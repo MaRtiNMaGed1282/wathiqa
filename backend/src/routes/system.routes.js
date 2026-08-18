@@ -3,6 +3,7 @@ const os = require("os");
 const { loadConfig, isPairingTokenValid, clearPairingToken } = require("../../../electron/deployment-config");
 const { readPackageVersion, getCompatibility } = require("../../../electron/version-compatibility");
 const { registerDevice, touchDevice, listDevices, revokeDevice } = require("../services/device.service");
+const authMiddleware = require("../middlewares/auth.middleware");
 
 const router = express.Router();
 const SERVER_VERSION = readPackageVersion();
@@ -15,6 +16,15 @@ function getDeploymentConfig() {
 function getServerIdentity(config) { return config.serverIdentity || os.hostname(); }
 function getRequestIp(req) { const forwarded = req.headers["x-forwarded-for"]; return String(forwarded || req.socket?.remoteAddress || "").split(",")[0].trim() || null; }
 function isLocalRequest(req) { const address = String(req.socket?.remoteAddress || "").replace(/^::ffff:/, ""); return address === "127.0.0.1" || address === "::1" || address === "localhost"; }
+
+function requireLocalAdmin(req, res, next) {
+  if (!isLocalRequest(req)) return res.status(403).json({ success: false, message: "إدارة الأجهزة متاحة من خادم المكتب فقط" });
+  return authMiddleware(req, res, (error) => {
+    if (error) return next(error);
+    if (!req.user || req.user.role !== "admin") return res.status(403).json({ success: false, message: "تحتاج إلى صلاحيات المسؤول لإدارة أجهزة المكتب" });
+    next();
+  });
+}
 
 router.get("/health", (req, res) => {
   const config = getDeploymentConfig();
@@ -65,8 +75,7 @@ router.post("/devices/heartbeat", async (req, res) => {
   }
 });
 
-router.get("/devices", async (req, res) => {
-  if (!isLocalRequest(req)) return res.status(403).json({ success: false, message: "إدارة الأجهزة متاحة من خادم المكتب فقط" });
+router.get("/devices", requireLocalAdmin, async (req, res) => {
   try {
     const config = getDeploymentConfig();
     const serverAddress = String(req.headers.host || "").split(":")[0] || null;
@@ -92,8 +101,7 @@ router.get("/devices", async (req, res) => {
   } catch (error) { console.error("فشل قراءة أجهزة المكتب:", error.message); return res.status(500).json({ success: false, message: "تعذر قراءة الأجهزة" }); }
 });
 
-router.delete("/devices/:deviceId", async (req, res) => {
-  if (!isLocalRequest(req)) return res.status(403).json({ success: false, message: "إدارة الأجهزة متاحة من خادم المكتب فقط" });
+router.delete("/devices/:deviceId", requireLocalAdmin, async (req, res) => {
   if (req.params.deviceId === "server") return res.status(400).json({ success: false, message: "لا يمكن إلغاء ربط خادم المكتب" });
   try {
     const revoked = await revokeDevice(req.params.deviceId);
