@@ -1,0 +1,31 @@
+{
+  "appId": "com.wathiqa.client",
+  "productName": "Wathiqa Client",
+  "directories": { "output": "dist-client" },
+  "files": [
+    "electron/main.js",
+    "electron/preload.js",
+    "electron/deployment-config.js",
+    "electron/device-identity.js",
+    "electron/connection-monitor.js",
+    "electron/version-compatibility.js",
+    "electron/server-secrets.js",
+    "frontend/**/*",
+    "package.json",
+    "assets/wathiqa.ico"
+  ],
+  "asar": true,
+  "npmRebuild": false,
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "icon": "assets/wathiqa.ico",
+    "artifactName": "Wathiqa-Client-Installer.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Wathiqa Client"
+  }
+}
