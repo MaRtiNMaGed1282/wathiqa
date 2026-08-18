@@ -6,6 +6,7 @@ let selectedRole = null;
 let lastServerUrl = null;
 let pairingToken = null;
 let pairingPayload = null;
+let pairingAccepted = false;
 let scannerStream = null;
 let scannerTimer = null;
 
@@ -35,7 +36,6 @@ function localAddress(network) {
 function parsePairingPayload(raw) {
   const value = String(raw || "").trim();
   if (!value) throw new Error("بيانات QR فارغة");
-
   let payload = null;
   try { payload = JSON.parse(value); } catch (_) {}
 
@@ -60,6 +60,7 @@ function parsePairingPayload(raw) {
   $("pairing-token").value = payload.token || "";
   pairingToken = payload.token || null;
   pairingPayload = value;
+  pairingAccepted = false;
   return payload;
 }
 
@@ -158,7 +159,7 @@ $("copy-pairing").addEventListener("click", async () => {
   if (!pairingPayload) return;
   try {
     await navigator.clipboard.writeText(pairingPayload);
-    setResult($("server-result"), "success", "تم النسخ", "يمكن لصق بيانات الربط في جهاز العميل إذا تعذر استخدام الكاميرا.");
+    setResult($("server-result"), "success", "تم النسخ", "يمكن لصق البيانات في جهاز العميل إذا تعذر استخدام الكاميرا.");
   } catch (_) {
     setResult($("server-result"), "error", "تعذر النسخ", "انسخ البيانات من مربع الربط يدوياً.");
   }
@@ -180,6 +181,9 @@ function renderDiscoveredServers(servers) {
     button.addEventListener("click", () => {
       $("server-url").value = server.serverUrl;
       $("server-identity").value = server.serverIdentity || "";
+      pairingToken = null;
+      pairingAccepted = false;
+      $("pairing-token").value = "";
       setResult($("discovery-result"), "success", "تم اختيار الخادم", "اختبر الاتصال قبل الحفظ.");
     });
     list.appendChild(button);
@@ -255,11 +259,13 @@ async function testClientConnection() {
   try {
     const response = await window.wathiqaSetup.testServer({ serverUrl, pairingToken });
     lastServerUrl = response.serverUrl;
+    pairingAccepted = Boolean(response.pairing?.paired);
     const identity = response.info?.serverIdentity || response.health?.serverIdentity || "غير محدد";
     const mode = response.info?.mode || response.health?.mode || "غير محدد";
-    setResult(result, "success", "تم العثور على خادم Wathiqa", "الخادم متاح عبر الشبكة.", `الخادم: ${identity} — الوضع: ${mode}${response.pairing?.paired ? " — تم قبول رمز الربط" : ""}`);
+    setResult(result, "success", "تم العثور على خادم Wathiqa", "الخادم متاح عبر الشبكة.", `الخادم: ${identity} — الوضع: ${mode}${pairingAccepted ? " — تم قبول رمز الربط" : ""}`);
     return true;
   } catch (error) {
+    pairingAccepted = false;
     setResult(result, "error", "تعذر الاتصال بالخادم", formatError(error), "تحقق من عنوان الخادم، تشغيل Wathiqa على الكمبيوتر الرئيسي، واتصال الشبكة.");
     return false;
   }
@@ -268,7 +274,8 @@ async function testClientConnection() {
 $("test-client").addEventListener("click", testClientConnection);
 
 $("save-client").addEventListener("click", async () => {
-  const ok = await testClientConnection();
+  let ok = pairingAccepted;
+  if (!ok) ok = await testClientConnection();
   if (!ok) return;
   try {
     const config = await window.wathiqaSetup.saveClient({ serverUrl: lastServerUrl, serverIdentity: $("server-identity").value.trim() || null, port: 5000 });
