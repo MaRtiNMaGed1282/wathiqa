@@ -18,14 +18,29 @@ const archiveResponseMiddleware = require("./middlewares/archiveResponse.middlew
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || origin === "null") return callback(null, true);
-    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    if (origin === "null") return callback(new Error("CORS origin not allowed"));
+    if (CORS_ORIGINS.includes(origin)) return callback(null, true);
     return callback(new Error("CORS origin not allowed"));
   },
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Device-Token", "X-Requested-With"],
+  optionsSuccessStatus: 204,
 };
+
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (process.env.NODE_ENV === "production") res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  next();
+});
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "256kb" }));
 app.use(activityAuditMiddleware);
 app.use(archiveResponseMiddleware);
 
