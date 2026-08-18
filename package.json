@@ -9,7 +9,8 @@
     "prepare-client": "node backend/scripts/prepare-client-release.js",
     "build": "electron-builder",
     "office-setup": "electron electron/setup-main.js",
-    "build:office-setup": "electron-builder --config electron-builder.setup.json"
+    "build:office-setup": "electron-builder --config electron-builder.setup.json",
+    "test:deployment": "node electron/deployment-config.test.js"
   },
   "build": {
     "appId": "com.wathiqa.desktop",
