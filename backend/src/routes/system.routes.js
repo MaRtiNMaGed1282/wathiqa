@@ -67,12 +67,34 @@ router.post("/devices/heartbeat", async (req, res) => {
 
 router.get("/devices", async (req, res) => {
   if (!isLocalRequest(req)) return res.status(403).json({ success: false, message: "إدارة الأجهزة متاحة من خادم المكتب فقط" });
-  try { return res.json({ success: true, devices: await listDevices() }); }
-  catch (error) { console.error("فشل قراءة أجهزة المكتب:", error.message); return res.status(500).json({ success: false, message: "تعذر قراءة الأجهزة" }); }
+  try {
+    const config = getDeploymentConfig();
+    const serverAddress = String(req.headers.host || "").split(":")[0] || null;
+    const devices = await listDevices();
+    return res.json({
+      success: true,
+      devices: [
+        {
+          deviceId: "server",
+          deviceName: getServerIdentity(config),
+          deviceRole: "server",
+          ipAddress: serverAddress,
+          platform: `${process.platform}-${process.arch}`,
+          appVersion: SERVER_VERSION,
+          firstSeenAt: null,
+          lastSeenAt: null,
+          status: "online",
+          revokedAt: null,
+        },
+        ...devices,
+      ],
+    });
+  } catch (error) { console.error("فشل قراءة أجهزة المكتب:", error.message); return res.status(500).json({ success: false, message: "تعذر قراءة الأجهزة" }); }
 });
 
 router.delete("/devices/:deviceId", async (req, res) => {
   if (!isLocalRequest(req)) return res.status(403).json({ success: false, message: "إدارة الأجهزة متاحة من خادم المكتب فقط" });
+  if (req.params.deviceId === "server") return res.status(400).json({ success: false, message: "لا يمكن إلغاء ربط خادم المكتب" });
   try {
     const revoked = await revokeDevice(req.params.deviceId);
     if (!revoked) return res.status(404).json({ success: false, message: "الجهاز غير موجود" });
