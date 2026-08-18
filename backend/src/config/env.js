@@ -4,55 +4,58 @@ const dotenv = require("dotenv");
 
 function getEnvCandidates() {
   const candidates = [];
-
-  if (process.env.WATHIQA_ENV_FILE) {
-    candidates.push(path.resolve(process.env.WATHIQA_ENV_FILE));
-  }
-
+  if (process.env.WATHIQA_ENV_FILE) candidates.push(path.resolve(process.env.WATHIQA_ENV_FILE));
   try {
     const { app } = require("electron");
-    if (app?.isPackaged && process.resourcesPath) {
-      candidates.push(path.join(process.resourcesPath, ".env"));
-    }
+    if (app?.isPackaged && process.resourcesPath) candidates.push(path.join(process.resourcesPath, ".env"));
   } catch {}
-
   candidates.push(path.resolve(process.cwd(), ".env"));
   candidates.push(path.resolve(__dirname, "../../../.env"));
-
   return [...new Set(candidates)];
 }
 
-const envFile = getEnvCandidates().find((candidate) => fs.existsSync(candidate));
+function getServerSecretsCandidates() {
+  const candidates = [];
+  if (process.env.WATHIQA_SERVER_SECRETS_FILE) candidates.push(path.resolve(process.env.WATHIQA_SERVER_SECRETS_FILE));
+  try {
+    const { app } = require("electron");
+    if (app?.isPackaged) candidates.push(path.join(app.getPath("userData"), "server-secrets.json"));
+  } catch {}
+  return [...new Set(candidates)];
+}
 
-if (envFile) {
-  dotenv.config({ path: envFile });
+function loadServerSecrets() {
+  const file = getServerSecretsCandidates().find((candidate) => fs.existsSync(candidate));
+  if (!file) return null;
+  let parsed;
+  try { parsed = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch (error) { throw new Error(`Unable to read Wathiqa server secrets: ${error.message}`); }
+  if (!parsed.JWT_SECRET || !parsed.LICENSE_SECRET) throw new Error("Wathiqa server secrets are incomplete");
+  return { JWT_SECRET: String(parsed.JWT_SECRET), LICENSE_SECRET: String(parsed.LICENSE_SECRET), source: file };
+}
+
+const serverSecrets = loadServerSecrets();
+
+if (serverSecrets) {
+  process.env.JWT_SECRET = serverSecrets.JWT_SECRET;
+  process.env.LICENSE_SECRET = serverSecrets.LICENSE_SECRET;
 } else {
-  dotenv.config();
+  const envFile = getEnvCandidates().find((candidate) => fs.existsSync(candidate));
+  if (envFile) dotenv.config({ path: envFile });
+  else dotenv.config();
 }
 
 const requiredSecrets = ["JWT_SECRET", "LICENSE_SECRET"];
-
 for (const name of requiredSecrets) {
-  if (!process.env[name]) {
-    throw new Error(`${name} must be configured in the environment`);
-  }
+  if (!process.env[name]) throw new Error(`${name} must be configured for the Wathiqa server`);
 }
 
 const nodeEnv = String(process.env.NODE_ENV || "production").trim().toLowerCase();
 const port = Number(process.env.PORT || 5000);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("PORT must be a valid TCP port");
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  throw new Error("PORT must be a valid TCP port");
-}
-
-const configuredOrigins = String(process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-const CORS_ORIGINS = configuredOrigins.length
-  ? configuredOrigins
-  : ["http://localhost:5500", "http://127.0.0.1:5500"];
+const configuredOrigins = String(process.env.CORS_ORIGIN || "").split(",").map((origin) => origin.trim()).filter(Boolean);
+const CORS_ORIGINS = configuredOrigins.length ? configuredOrigins : ["http://localhost:5500", "http://127.0.0.1:5500"];
 
 module.exports = {
   NODE_ENV: nodeEnv,
@@ -61,5 +64,5 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET,
   LICENSE_SECRET: process.env.LICENSE_SECRET,
   CORS_ORIGINS,
-  ENV_FILE: envFile || null,
+  ENV_FILE: serverSecrets?.source || null,
 };
