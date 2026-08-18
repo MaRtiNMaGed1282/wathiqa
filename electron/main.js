@@ -2,7 +2,6 @@ const { app, BrowserWindow, Notification, session, ipcMain } = require("electron
 const path = require("path");
 const http = require("http");
 const { loadConfig, saveConfig, getBackendUrl } = require("./deployment-config");
-const { ensureServerSecrets } = require("./server-secrets");
 const { loadIdentity } = require("./device-identity");
 const { startConnectionMonitor } = require("./connection-monitor");
 const { readPackageVersion, getCompatibility } = require("./version-compatibility");
@@ -28,7 +27,15 @@ let startupRecoveryInProgress = false;
 
 function getRuntimeConfig() { if (!deploymentConfig) deploymentConfig = loadConfig(); return deploymentConfig; }
 function getRuntimeBackendUrl() { return getBackendUrl(getRuntimeConfig()); }
-function loadLocalBackendIfRequired() { const config = getRuntimeConfig(); if (config.mode === "client") return null; const secrets = ensureServerSecrets(); process.env.WATHIQA_SERVER_SECRETS_FILE = secrets.path; server = require("../backend/src/server"); return server; }
+function loadLocalBackendIfRequired() {
+  const config = getRuntimeConfig();
+  if (config.mode === "client") return null;
+  const { ensureServerSecrets } = require("./server-secrets");
+  const secrets = ensureServerSecrets();
+  process.env.WATHIQA_SERVER_SECRETS_FILE = secrets.path;
+  server = require("../backend/src/server");
+  return server;
+}
 function getPreloadArguments() { const config = getRuntimeConfig(); return [`--wathiqa-config=${encodeURIComponent(JSON.stringify(config))}`]; }
 
 function sendHeartbeat() {
