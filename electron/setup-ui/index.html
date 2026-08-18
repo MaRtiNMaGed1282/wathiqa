@@ -17,105 +17,76 @@
     </header>
 
     <section id="step-choice" class="step active">
-      <div class="step-heading">
-        <span class="step-number">1</span>
-        <div><h2>كيف تريد استخدام وثيقة؟</h2><p>اختر طريقة تشغيل هذا الكمبيوتر.</p></div>
-      </div>
+      <div class="step-heading"><span class="step-number">1</span><div><h2>كيف تريد استخدام وثيقة؟</h2><p>اختر طريقة تشغيل هذا الكمبيوتر.</p></div></div>
       <div class="choice-grid">
-        <button class="choice" data-mode="standalone">
-          <span class="choice-icon">▣</span>
-          <strong>هذا الكمبيوتر فقط</strong>
-          <span>تشغيل مستقل بقاعدة بيانات محلية.</span>
-        </button>
-        <button class="choice" data-mode="office">
-          <span class="choice-icon">▦</span>
-          <strong>عدة أجهزة في المكتب</strong>
-          <span>ربط الأجهزة بخادم وثيقة واحد.</span>
-        </button>
+        <button class="choice" data-mode="standalone"><span class="choice-icon">▣</span><strong>هذا الكمبيوتر فقط</strong><span>تشغيل مستقل بقاعدة بيانات محلية.</span></button>
+        <button class="choice" data-mode="office"><span class="choice-icon">▦</span><strong>عدة أجهزة في المكتب</strong><span>ربط الأجهزة بخادم وثيقة واحد.</span></button>
       </div>
     </section>
 
     <section id="step-office" class="step">
-      <div class="step-heading">
-        <span class="step-number">2</span>
-        <div><h2>تحديد دور هذا الكمبيوتر</h2><p>يجب أن يكون هناك خادم واحد فقط للمكتب.</p></div>
-      </div>
+      <div class="step-heading"><span class="step-number">2</span><div><h2>تحديد دور هذا الكمبيوتر</h2><p>يجب أن يكون هناك خادم واحد فقط للمكتب.</p></div></div>
       <div class="choice-grid two">
-        <button class="choice" data-role="server">
-          <span class="choice-icon">◆</span>
-          <strong>هذا هو الكمبيوتر الرئيسي</strong>
-          <span>سيستضيف قاعدة البيانات وملفات المكتب.</span>
-        </button>
-        <button class="choice" data-role="client">
-          <span class="choice-icon">◇</span>
-          <strong>الاتصال بخادم موجود</strong>
-          <span>هذا الكمبيوتر سيستخدم بيانات الخادم مباشرة.</span>
-        </button>
+        <button class="choice" data-role="server"><span class="choice-icon">◆</span><strong>هذا هو الكمبيوتر الرئيسي</strong><span>سيستضيف قاعدة البيانات وملفات المكتب.</span></button>
+        <button class="choice" data-role="client"><span class="choice-icon">◇</span><strong>الاتصال بخادم موجود</strong><span>هذا الكمبيوتر سيستخدم بيانات الخادم مباشرة.</span></button>
       </div>
       <button class="back" data-back="choice">رجوع</button>
     </section>
 
     <section id="step-server" class="step">
-      <div class="step-heading">
-        <span class="step-number">3</span>
-        <div><h2>إعداد خادم المكتب</h2><p>احفظ إعداد الخادم ثم شغّل Wathiqa Server.</p></div>
-      </div>
+      <div class="step-heading"><span class="step-number">3</span><div><h2>إعداد خادم المكتب</h2><p>احفظ إعداد الخادم ثم شغّل Wathiqa Server.</p></div></div>
       <div class="panel">
         <div class="status-row"><span>اسم الكمبيوتر</span><strong id="server-hostname">—</strong></div>
         <div class="status-row"><span>عنوان الشبكة</span><strong id="server-address">—</strong></div>
-        <div class="field-row">
-          <label for="server-port">منفذ الخادم</label>
-          <input id="server-port" type="number" min="1" max="65535" value="5000">
-        </div>
-        <div class="notice">يستخدم الخادم <b>0.0.0.0</b> للاستماع على شبكة المكتب. لا يتم تفعيل قواعد Windows Firewall تلقائياً في هذه المرحلة؛ هذه الوظيفة مخصصة للمرحلة 7.</div>
+        <div class="field-row"><label for="server-port">منفذ الخادم</label><input id="server-port" type="number" min="1" max="65535" value="5000"></div>
+        <div class="notice">الخادم يستخدم <b>0.0.0.0</b> للاستماع على شبكة المكتب. إعداد Windows Firewall مؤجل للمرحلة 7.</div>
         <div id="server-result" class="result hidden"></div>
+        <div id="pairing-panel" class="pairing-panel hidden">
+          <div class="pairing-head"><div><h3>ربط جهاز آخر</h3><p>أنشئ رمز ربط مؤقت صالحاً لمدة 10 دقائق.</p></div><button id="generate-pairing" class="primary">إنشاء QR</button></div>
+          <div class="pairing-content">
+            <div id="pairing-qr" class="qr-box"></div>
+            <div class="pairing-info"><div class="status-row"><span>عنوان الخادم</span><strong id="pairing-url" dir="ltr">—</strong></div><div class="status-row"><span>ينتهي في</span><strong id="pairing-expiry">—</strong></div><button id="copy-pairing" class="secondary">نسخ بيانات الربط</button></div>
+          </div>
+          <small class="muted">لا يحتوي QR على كلمة مرور أو مفتاح توقيع؛ يحتوي فقط على عنوان الخادم ورمز ربط مؤقت.</small>
+        </div>
       </div>
-      <div class="actions">
-        <button class="secondary" data-back="office">رجوع</button>
-        <button id="save-server" class="primary">حفظ إعداد الخادم</button>
-      </div>
+      <div class="actions"><button class="secondary" data-back="office">رجوع</button><button id="save-server" class="primary">حفظ إعداد الخادم</button></div>
     </section>
 
     <section id="step-client" class="step">
-      <div class="step-heading">
-        <span class="step-number">3</span>
-        <div><h2>الاتصال بخادم المكتب</h2><p>أدخل عنوان الخادم ثم اختبر الاتصال قبل الحفظ.</p></div>
-      </div>
+      <div class="step-heading"><span class="step-number">3</span><div><h2>الاتصال بخادم المكتب</h2><p>استخدم الاكتشاف أو QR، مع إمكانية إدخال العنوان يدوياً كحل بديل.</p></div></div>
       <div class="panel">
+        <div class="client-tools">
+          <button id="discover-servers" class="secondary">البحث عن خوادم في الشبكة</button>
+          <button id="scan-qr" class="secondary">مسح QR بالكاميرا</button>
+        </div>
+        <div id="discovery-result" class="result hidden"></div>
+        <div id="server-list" class="server-list hidden"></div>
+        <div id="scanner-panel" class="scanner-panel hidden">
+          <video id="qr-video" autoplay muted playsinline></video>
+          <div class="scanner-help">وجّه الكاميرا إلى QR الخاص بخادم وثيقة.</div>
+          <button id="stop-scanner" class="secondary">إيقاف الكاميرا</button>
+        </div>
         <div class="field">
           <label for="server-url">عنوان خادم وثيقة</label>
           <input id="server-url" type="text" dir="ltr" placeholder="http://192.168.1.100:5000" autocomplete="off">
           <small>يمكنك استخدام عنوان IP أو اسم الكمبيوتر داخل شبكة المكتب.</small>
         </div>
-        <div class="field">
-          <label for="server-identity">اسم الخادم — اختياري</label>
-          <input id="server-identity" type="text" placeholder="wathiqa-server">
-        </div>
+        <div class="field"><label for="server-identity">اسم الخادم — اختياري</label><input id="server-identity" type="text" placeholder="wathiqa-server"></div>
+        <div class="field"><label for="pairing-token">رمز الربط — اختياري</label><input id="pairing-token" type="text" dir="ltr" placeholder="يُملأ تلقائياً عند استخدام QR"></div>
+        <div class="field"><label for="pairing-payload">لصق بيانات QR — بديل للمسح</label><textarea id="pairing-payload" dir="ltr" rows="3" placeholder="الصق محتوى QR هنا إذا كانت الكاميرا غير متاحة"></textarea><button id="apply-pairing-payload" class="secondary compact">تطبيق بيانات QR</button></div>
         <div id="connection-result" class="result hidden"></div>
       </div>
-      <div class="actions">
-        <button class="secondary" data-back="office">رجوع</button>
-        <button id="test-client" class="secondary">اختبار الاتصال</button>
-        <button id="save-client" class="primary">حفظ والاتصال</button>
-      </div>
+      <div class="actions"><button class="secondary" data-back="office">رجوع</button><button id="test-client" class="secondary">اختبار الاتصال</button><button id="save-client" class="primary">حفظ والاتصال</button></div>
     </section>
 
     <section id="step-done" class="step">
-      <div class="success-icon">✓</div>
-      <h2 id="done-title">تم حفظ الإعداد</h2>
-      <p id="done-text"></p>
-      <div id="done-details" class="panel"></div>
-      <div class="actions center">
-        <button id="restart-setup" class="secondary">تعديل الإعداد</button>
-        <button id="open-wathiqa" class="primary">فتح وثيقة</button>
-      </div>
-      <p class="muted">إذا لم يفتح زر وثيقة التطبيق تلقائياً، يمكنك تشغيل Wathiqa من اختصار Windows.</p>
+      <div class="success-icon">✓</div><h2 id="done-title">تم حفظ الإعداد</h2><p id="done-text"></p><div id="done-details" class="panel"></div>
+      <div class="actions center"><button id="restart-setup" class="secondary">تعديل الإعداد</button><button id="open-wathiqa" class="primary">فتح وثيقة</button></div>
+      <p class="muted">إذا لم يفتح التطبيق تلقائياً، يمكنك تشغيل Wathiqa من اختصار Windows.</p>
     </section>
 
-    <footer>
-      <span>Wathiqa Office Setup</span>
-      <span>Multi-Device Deployment</span>
-    </footer>
+    <footer><span>Wathiqa Office Setup</span><span>Multi-Device Deployment</span></footer>
   </main>
   <script src="app.js"></script>
 </body>
