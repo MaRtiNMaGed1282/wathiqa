@@ -166,10 +166,23 @@
 
   function getToken() {
     try {
-      return localStorage.getItem("token");
+      return (
+        localStorage.getItem("token") ||
+        sessionStorage.getItem("token") ||
+        null
+      );
     } catch {
       return null;
     }
+  }
+
+  function clearStoredSession() {
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
+    } catch {}
   }
 
   function resolveUrl(url, baseUrl) {
@@ -340,10 +353,7 @@
     }
 
     if (response.status === HTTP_STATUS.UNAUTHORIZED) {
-      try {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      } catch {}
+      clearStoredSession();
       const error = createError(
         "غير مصرح",
         HTTP_STATUS.UNAUTHORIZED,
@@ -473,34 +483,19 @@
     hideFinancialNavigation();
 
     const page = (global.location.pathname.split("/").pop() || "").toLowerCase();
-
-    if (page === "client-profile.html") {
-      hideSectionByHeading("الملخص المالي");
-      hideSectionByHeading("البيانات المالية");
+    if (page === "revenues.html") {
+      document.body.innerHTML = "<div style=\"font-family:Cairo,sans-serif;padding:40px;text-align:center;direction:rtl\"><h1>غير مصرح</h1><p>ليس لديك صلاحية للوصول إلى البيانات المالية.</p></div>";
+      return;
     }
 
-    if (page === "case-profile.html") {
-      hideSectionByHeading("البيانات المالية");
-      hideSectionByHeading("الدفعات");
-      hideSectionByHeading("المصروفات");
+    if (page === "case-profile.html" || page === "service-profile.html" || page === "client-profile.html") {
+      ["الملخص المالي", "المدفوعات", "المصروفات", "إجمالي الأتعاب", "المتبقي", "صافي الربح", "نسبة التحصيل"].forEach(hideSectionByHeading);
     }
-  }
-
-  function initialize() {
-    applyAssistantFinancialVisibility();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+    document.addEventListener("DOMContentLoaded", applyAssistantFinancialVisibility, { once: true });
   } else {
-    initialize();
-  }
-
-  const observer = new MutationObserver(() => {
-    if (isAssistant()) applyAssistantFinancialVisibility();
-  });
-
-  if (document.body) {
-    observer.observe(document.body, { childList: true, subtree: true });
+    applyAssistantFinancialVisibility();
   }
 })(window);
