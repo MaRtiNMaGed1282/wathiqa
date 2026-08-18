@@ -1,6 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
 function getElectronUserDataDir() {
   try {
@@ -11,7 +12,7 @@ function getElectronUserDataDir() {
 }
 
 function getRestoreRoot() {
-  return path.join(process.env.WATHIQA_BACKUP_DIR || path.join(require("os").homedir(), "Wathiqa", "backups"), "pending-restore");
+  return path.join(process.env.WATHIQA_BACKUP_DIR || path.join(os.homedir(), "Wathiqa", "backups"), "pending-restore");
 }
 
 function copyRestoredDirectory(source, target) {
@@ -62,6 +63,8 @@ function resolveDatabasePath() {
 }
 
 const dbPath = resolveDatabasePath();
+const DB_BUSY_TIMEOUT_MS = 10_000;
+const DB_SCHEMA_VERSION = 1;
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -71,6 +74,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
   console.log("تم الاتصال بقاعدة البيانات بنجاح");
   console.log("مسار قاعدة البيانات:", dbPath);
+
+  // Wathiqa is server-authoritative in multi-device mode. These settings improve
+  // concurrent LAN request behavior while keeping SQLite local to the server.
+  db.serialize(() => {
+    db.run(`PRAGMA busy_timeout = ${DB_BUSY_TIMEOUT_MS}`);
+    db.run("PRAGMA foreign_keys = ON");
+    db.run("PRAGMA journal_mode = WAL", (pragmaErr) => {
+      if (pragmaErr) console.error("فشل تفعيل SQLite WAL:", pragmaErr.message);
+    });
+    db.run("PRAGMA synchronous = NORMAL");
+    db.run(`PRAGMA user_version = ${DB_SCHEMA_VERSION}`);
+  });
 
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,3 +164,5 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 module.exports = db;
 module.exports.dbPath = dbPath;
+module.exports.schemaVersion = DB_SCHEMA_VERSION;
+module.exports.busyTimeout = DB_BUSY_TIMEOUT_MS;
