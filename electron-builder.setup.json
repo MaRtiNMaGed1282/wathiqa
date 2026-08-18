@@ -1,0 +1,34 @@
+{
+  "appId": "com.wathiqa.office-setup",
+  "productName": "Wathiqa Office Setup",
+  "directories": {
+    "output": "dist-office-setup"
+  },
+  "files": [
+    "electron/setup-main.js",
+    "electron/setup-preload.js",
+    "electron/deployment-config.js",
+    "electron/setup-ui/**/*",
+    "assets/wathiqa.ico",
+    "package.json"
+  ],
+  "asar": true,
+  "npmRebuild": false,
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/wathiqa.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Wathiqa Office Setup",
+    "artifactName": "Wathiqa-Office-Setup-Installer.${ext}"
+  }
+}
