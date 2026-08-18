@@ -1,8 +1,8 @@
 const { app, BrowserWindow, session } = require("electron");
 const path = require("path");
 const http = require("http");
+const { loadConfig, getBackendUrl } = require("./deployment-config");
 
-const BACKEND_URL = "http://localhost:5000";
 const LOGIN_PAGE = path.join(__dirname, "../frontend/pages/login.html");
 const ACTIVATION_PAGE = path.join(__dirname, "../frontend/pages/activation.html");
 const APP_ICON = path.join(__dirname, "../assets/wathiqa.ico");
@@ -15,7 +15,28 @@ process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
-const server = require("../backend/src/server");
+let deploymentConfig;
+let server;
+
+function getRuntimeConfig() {
+  if (!deploymentConfig) deploymentConfig = loadConfig();
+  return deploymentConfig;
+}
+
+function getRuntimeBackendUrl() {
+  return getBackendUrl(getRuntimeConfig());
+}
+
+function loadLocalBackendIfRequired() {
+  const config = getRuntimeConfig();
+
+  if (config.mode === "client") {
+    return null;
+  }
+
+  server = require("../backend/src/server");
+  return server;
+}
 
 function configureSession() {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
@@ -24,13 +45,16 @@ function configureSession() {
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = { ...(details.responseHeaders || {}) };
+    const backendUrl = getRuntimeBackendUrl();
+    const connectSource = backendUrl.replace(/\/$/, "");
+
     responseHeaders["Content-Security-Policy"] = [
       "default-src 'self' file:; " +
       "script-src 'self' 'unsafe-inline' chrome://resources; " +
       "style-src 'self' 'unsafe-inline' chrome://resources; " +
       "img-src 'self' file: data: blob: chrome://resources; " +
       "font-src 'self' file: data: blob: chrome://resources; " +
-      "connect-src 'self' http://localhost:5000; " +
+      `connect-src 'self' ${connectSource}; ` +
       "object-src 'self' file: blob: data:; " +
       "base-uri 'self'; " +
       "frame-src 'self' file: blob: chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai;",
@@ -41,9 +65,6 @@ function configureSession() {
 
 function configureNavigation(win) {
   win.webContents.setWindowOpenHandler(({ url }) => {
-    // Invoice printing uses window.open("", "_blank") and writes the printable
-    // document into that window. Keep external navigation blocked while allowing
-    // this controlled about:blank child window.
     if (!url || url === "about:blank") return { action: "allow" };
     return { action: "deny" };
   });
@@ -64,6 +85,7 @@ function createWindow(page) {
     autoHideMenuBar: true,
     icon: APP_ICON,
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -84,9 +106,11 @@ function createWindow(page) {
 }
 
 function checkLicense() {
+  const backendUrl = getRuntimeBackendUrl();
+
   return new Promise((resolve) => {
     http
-      .get(`${BACKEND_URL}/api/license/validate`, (res) => {
+      .get(`${backendUrl}/api/license/validate`, (res) => {
         let data = "";
 
         res.on("data", (chunk) => {
@@ -108,17 +132,19 @@ function checkLicense() {
 }
 
 function waitForServer(timeout = 15000) {
+  const backendUrl = getRuntimeBackendUrl();
+
   return new Promise((resolve, reject) => {
     const start = Date.now();
 
     const check = () => {
-      const request = http.get(BACKEND_URL, () => {
+      const request = http.get(backendUrl, () => {
         resolve();
       });
 
       request.on("error", () => {
         if (Date.now() - start > timeout) {
-          reject(new Error("Backend startup timeout"));
+          reject(new Error(`Wathiqa backend startup/connection timeout: ${backendUrl}`));
         } else {
           setTimeout(check, 500);
         }
@@ -130,9 +156,11 @@ function waitForServer(timeout = 15000) {
 }
 
 app.whenReady().then(async () => {
-  configureSession();
-
   try {
+    deploymentConfig = loadConfig();
+    loadLocalBackendIfRequired();
+    configureSession();
+
     await waitForServer();
 
     const license = await checkLicense();
@@ -146,6 +174,7 @@ app.whenReady().then(async () => {
       autoHideMenuBar: true,
       icon: APP_ICON,
       webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
@@ -155,7 +184,7 @@ app.whenReady().then(async () => {
     win.loadURL(
       "data:text/html;charset=utf-8," +
         encodeURIComponent(
-          "<!doctype html><html lang=\"en\"><body style=\"font-family:sans-serif;padding:40px\"><h2>Wathiqa could not start</h2><p>The local application server did not become available.</p></body></html>",
+          "<!doctype html><html lang=\"en\"><body style=\"font-family:sans-serif;padding:40px\"><h2>Wathiqa could not start</h2><p>The Wathiqa application server did not become available.</p></body></html>",
         ),
     );
   }
@@ -163,7 +192,7 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", () => {
   try {
-    server.close();
+    if (server) server.close();
   } catch (err) {
     console.error(err);
   }
