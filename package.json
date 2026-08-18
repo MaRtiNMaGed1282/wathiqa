@@ -10,7 +10,8 @@
     "build": "electron-builder",
     "office-setup": "electron electron/setup-main.js",
     "build:office-setup": "electron-builder --config electron-builder.setup.json",
-    "test:deployment": "node electron/deployment-config.test.js"
+    "test:deployment": "node electron/deployment-config.test.js",
+    "test:multi-device": "node backend/scripts/multi-device-functional-test.js"
   },
   "build": {
     "appId": "com.wathiqa.desktop",
