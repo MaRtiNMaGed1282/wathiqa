@@ -12,12 +12,10 @@ const {
   generatePairing,
   DEFAULT_PORT,
 } = require("./deployment-config");
-const {
-  DISCOVERY_PORT,
-  DISCOVERY_REQUEST,
-  DISCOVERY_RESPONSE,
-} = require("../backend/src/services/networkDiscovery.service");
 
+const DISCOVERY_PORT = 39455;
+const DISCOVERY_REQUEST = "WATHIQA_DISCOVERY_REQUEST_V1";
+const DISCOVERY_RESPONSE = "WATHIQA_DISCOVERY_RESPONSE_V1";
 const APP_ICON = path.join(__dirname, "../assets/wathiqa.ico");
 const SETUP_PAGE = path.join(__dirname, "setup-ui/index.html");
 const SHARED_USER_DATA = path.join(app.getPath("appData"), "Wathiqa");
@@ -157,13 +155,7 @@ function discoverServers(timeout = 2200) {
         const address = payload.address || remote.address;
         if (!address || !payload.port) return;
         const key = `${address}:${payload.port}`;
-        found.set(key, {
-          serverUrl: `http://${address}:${payload.port}`,
-          serverIdentity: payload.serverIdentity || address,
-          address,
-          port: payload.port,
-          version: payload.version || 1,
-        });
+        found.set(key, { serverUrl: `http://${address}:${payload.port}`, serverIdentity: payload.serverIdentity || address, address, port: payload.port, version: payload.version || 1 });
       } catch (_) {}
     });
     socket.bind(() => {
@@ -224,10 +216,7 @@ function registerIpc() {
   ipcMain.handle("setup:generate-pairing", () => {
     const network = getLocalNetworkInfo();
     const current = loadConfig();
-    const config = generatePairing({
-      serverUrl: `http://${network.preferredAddress}:${current.port || DEFAULT_PORT}`,
-      serverIdentity: current.serverIdentity || os.hostname(),
-    });
+    const config = generatePairing({ serverUrl: `http://${network.preferredAddress}:${current.port || DEFAULT_PORT}`, serverIdentity: current.serverIdentity || os.hostname() });
     return { ...generatePairingQr(config), serverUrl: config.serverUrl, serverIdentity: config.serverIdentity };
   });
 
