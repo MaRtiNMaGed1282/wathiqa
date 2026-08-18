@@ -1,7 +1,11 @@
 {
   "appId": "com.wathiqa.server",
   "productName": "Wathiqa Server",
-  "directories": { "output": "dist-server" },
+  "directories": {
+    "output": "dist-server",
+    "buildResources": "assets"
+  },
+  "artifactName": "Wathiqa-Server-Installer-${version}-${arch}.${ext}",
   "files": [
     "electron/**/*",
     "frontend/**/*",
@@ -19,13 +23,17 @@
   "win": {
     "target": [{ "target": "nsis", "arch": ["x64"] }],
     "icon": "assets/wathiqa.ico",
-    "artifactName": "Wathiqa-Server-Installer.${ext}"
+    "artifactName": "Wathiqa-Server-Installer-${version}-${arch}.${ext}"
   },
   "nsis": {
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Wathiqa Server"
+    "shortcutName": "Wathiqa Server",
+    "deleteAppDataOnUninstall": false,
+    "installerLanguages": ["en_US"],
+    "language": 1033
   }
 }
