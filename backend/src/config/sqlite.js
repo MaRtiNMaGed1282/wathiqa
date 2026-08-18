@@ -14,6 +14,12 @@ function getRestoreRoot() {
   return path.join(process.env.WATHIQA_BACKUP_DIR || path.join(require("os").homedir(), "Wathiqa", "backups"), "pending-restore");
 }
 
+function copyRestoredDirectory(source, target) {
+  if (!fs.existsSync(source)) return;
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.cpSync(source, target, { recursive: true });
+}
+
 function applyPendingRestore(dbPath, userDataDir) {
   const pending = getRestoreRoot();
   const pendingDb = path.join(pending, "wathiqa.db");
@@ -23,13 +29,11 @@ function applyPendingRestore(dbPath, userDataDir) {
 
   const uploadDir = userDataDir ? path.join(userDataDir, "uploads") : path.join(__dirname, "../../../uploads");
   const attorneyDir = userDataDir ? path.join(userDataDir, "attorneys") : path.join(__dirname, "../../../database/attorneys");
+  const officeAssetsDir = userDataDir ? path.join(userDataDir, "office-assets") : path.join(__dirname, "../../../office-assets");
 
-  for (const [sourceName, target] of [["uploads", uploadDir], ["attorneys", attorneyDir]]) {
-    const source = path.join(pending, sourceName);
-    if (!fs.existsSync(source)) continue;
-    fs.rmSync(target, { recursive: true, force: true });
-    fs.cpSync(source, target, { recursive: true });
-  }
+  copyRestoredDirectory(path.join(pending, "uploads"), uploadDir);
+  copyRestoredDirectory(path.join(pending, "attorneys"), attorneyDir);
+  copyRestoredDirectory(path.join(pending, "office-assets"), officeAssetsDir);
 
   fs.rmSync(pending, { recursive: true, force: true });
 }
