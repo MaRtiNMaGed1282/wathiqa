@@ -8,7 +8,7 @@
     "desktop": "electron .",
     "prepare-client": "node backend/scripts/prepare-client-release.js",
     "build": "electron-builder",
-    "office-setup": "electron --config electron-builder.setup.json",
+    "office-setup": "electron electron/setup-main.js",
     "build:office-setup": "electron-builder --config electron-builder.setup.json"
   },
   "build": {
