@@ -70,7 +70,14 @@
           activateButton.disabled = true;
           activateButton.textContent = "جاري التفعيل...";
           const data = await api.post("/license/activate", { payload: selectedLicense.payload, signature: selectedLicense.signature }, { busyElement: activateButton });
-          result.textContent = data?.message || "تم تفعيل النظام بنجاح";
+
+          if (data?.license_type === "TRIAL" && data?.expiry_date) {
+            const expiry = new Date(data.expiry_date);
+            result.textContent = `${data.message || "تم تفعيل الفترة التجريبية"} — تنتهي في ${expiry.toLocaleDateString("ar-EG")}`;
+          } else {
+            result.textContent = data?.message || "تم تفعيل النظام بنجاح";
+          }
+
           result.className = "mt-4 text-center font-bold text-green-600";
           showToast(result.textContent, true);
           setTimeout(() => { window.location.href = "login.html"; }, 2000);
